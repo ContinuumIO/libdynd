@@ -22,6 +22,8 @@
 #include <dynd/types/type_alignment.hpp>
 #include <dynd/types/pointer_type.hpp>
 #include <dynd/types/char_type.hpp>
+#include <dynd/types/cuda_host_type.hpp>
+#include <dynd/types/cuda_device_type.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -72,8 +74,8 @@ static const map<string, ndt::type>& get_builtin_types()
         builtin_types["float32"] = ndt::make_type<float>();
         builtin_types["float64"] = ndt::make_type<double>();
         builtin_types["float128"] = ndt::make_type<dynd_float128>();
-        builtin_types["complex64"] = ndt::make_type<complex<float> >();
-        builtin_types["complex128"] = ndt::make_type<complex<double> >();
+        builtin_types["complex64"] = ndt::make_type<dynd_complex<float> >();
+        builtin_types["complex128"] = ndt::make_type<dynd_complex<double> >();
         builtin_types["json"] = ndt::make_json();
         builtin_types["date"] = ndt::make_date();
         builtin_types["bytes"] = ndt::make_bytes(1);
@@ -97,6 +99,8 @@ static const set<string>& get_reserved_typenames()
         reserved_typenames.insert("unaligned");
         reserved_typenames.insert("pointer");
         reserved_typenames.insert("complex");
+		reserved_typenames.insert("cuda_host");
+		reserved_typenames.insert("cuda_device");
     }
     return reserved_typenames;
 }
@@ -373,12 +377,58 @@ static ndt::type parse_complex_parameters(const char *&begin, const char *end,
             throw datashape_parse_error(begin, "expected closing ']'");
         }
         if (tp.get_type_id() == float32_type_id) {
-            return ndt::make_type<complex<float> >();
+            return ndt::make_type<dynd_complex<float> >();
         } else if (tp.get_type_id() == float64_type_id) {
-            return ndt::make_type<complex<double> >();
+            return ndt::make_type<dynd_complex<double> >();
         } else {
             throw datashape_parse_error(saved_begin, "unsupported real type for complex numbers");
         }
+    } else {
+        throw datashape_parse_error(begin, "expected opening '['");
+    }
+}
+
+// cuda_host_type : cuda_host[storage_type]
+// This is called after 'cuda_host' is already matched
+static ndt::type parse_cuda_host_parameters(const char *&begin, const char *end,
+                map<string, ndt::type>& symtable)
+{
+    if (parse_token(begin, end, '[')) {
+        ndt::type tp = parse_rhs_expression(begin, end, symtable);
+        if (tp.get_type_id() == uninitialized_type_id) {
+            throw datashape_parse_error(begin, "expected a type parameter");
+        }
+        if (!parse_token(begin, end, ']')) {
+            throw datashape_parse_error(begin, "expected closing ']'");
+        }
+#ifdef DYND_CUDA
+		return ndt::make_cuda_host(tp);
+#else
+        throw datashape_parse_error(begin, "type is not available");
+#endif // DYND_CUDA
+    } else {
+        throw datashape_parse_error(begin, "expected opening '['");
+    }
+}
+
+// cuda_device_type : cuda_device[storage_type]
+// This is called after 'cuda_device' is already matched
+static ndt::type parse_cuda_device_parameters(const char *&begin, const char *end,
+                map<string, ndt::type>& symtable)
+{
+    if (parse_token(begin, end, '[')) {
+        ndt::type tp = parse_rhs_expression(begin, end, symtable);
+        if (tp.get_type_id() == uninitialized_type_id) {
+            throw datashape_parse_error(begin, "expected a type parameter");
+        }
+        if (!parse_token(begin, end, ']')) {
+            throw datashape_parse_error(begin, "expected closing ']'");
+        }
+#ifdef DYND_CUDA
+		return ndt::make_cuda_device(tp);
+#else
+        throw datashape_parse_error(begin, "type is not available");
+#endif // DYND_CUDA
     } else {
         throw datashape_parse_error(begin, "expected opening '['");
     }
@@ -586,6 +636,10 @@ static ndt::type parse_rhs_expression(const char *&begin, const char *end, map<s
             result = parse_pointer_parameters(begin, end, symtable);
         } else if (n == "char") {
             result = parse_char_parameters(begin, end);
+        } else if (n == "cuda_host") {
+            result = parse_cuda_host_parameters(begin, end, symtable);
+        } else if (n == "cuda_device") {
+            result = parse_cuda_device_parameters(begin, end, symtable);
         } else {
             const map<string, ndt::type>& builtin_types = get_builtin_types();
             map<string, ndt::type>::const_iterator i = builtin_types.find(n);

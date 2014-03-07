@@ -357,6 +357,7 @@ set(libdynd_SRC
     include/dynd/array_range.hpp
     include/dynd/array_iter.hpp
     include/dynd/dim_iter.hpp
+    include/dynd/foreach.hpp
     include/dynd/shortvector.hpp
     include/dynd/shape_tools.hpp
     include/dynd/string_encodings.hpp

@@ -505,7 +505,7 @@ public:
      * This casts the entire type. If you want to cast the
      * array data type, use 'ucast' instead.
      *
-     * \param dt  The type into which the array should be cast.
+     * \param tp  The type into which the array should be cast.
      * \param errmode  Policy for dealing with errors.
      */
     array cast(const ndt::type& tp, assign_error_mode errmode = assign_error_default) const;

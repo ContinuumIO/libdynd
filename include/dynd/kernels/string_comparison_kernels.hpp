@@ -37,8 +37,7 @@ size_t make_string_comparison_kernel(
 
 /**
  * Makes a kernel which compares two .
- *
- * \param encoding  The encoding of the string.
+ * TODO: update the params description.
  */
 size_t make_general_string_comparison_kernel(
                 ckernel_builder *out, size_t offset_out,

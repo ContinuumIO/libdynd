@@ -8,6 +8,8 @@
 #include <dynd/types/strided_dim_type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
 #include <dynd/types/var_dim_type.hpp>
+#include <dynd/types/base_memory_type.hpp>
+#include <dynd/types/cuda_host_type.hpp>
 #include <dynd/exceptions.hpp>
 #include <dynd/typed_data_assign.hpp>
 #include <dynd/buffer_storage.hpp>
@@ -81,6 +83,24 @@ ndt::type::type(const char *rep_begin, const char *rep_end)
     type_from_datashape(rep_begin, rep_end).swap(*this);
 }
 
+ndt::type ndt::type::without_memory_type() const {
+    if (get_kind() == memory_kind) {
+        return tcast<base_memory_type>()->get_storage_type();
+    }
+
+    return *this;
+}
+
+bool ndt::type::is_cuda_device_readable() const {
+    switch (get_type_id()) {
+        case cuda_host_type_id:
+            return tcast<cuda_host_type>()->get_flags() & cudaHostAllocMapped;
+        case cuda_device_type_id:
+            return true;
+        default:
+            return false;
+    }
+}
 
 ndt::type ndt::type::at_array(int nindices, const irange *indices) const
 {

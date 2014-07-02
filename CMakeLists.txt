@@ -516,9 +516,11 @@ if (DYND_CUDA)
         src/dynd/types/dynd_int128.cpp
         src/dynd/types/dynd_uint128.cpp
         src/dynd/kernels/assignment_kernels.cpp
+        src/dynd/arithmetic_op.cpp
         )        
     list(APPEND libdynd_SRC
         src/dynd/kernels/assignment_kernels.cu
+        src/dynd/arithmetic_op.cu
         )
 
     # Add a preprocessor definition to indicate we're building with CUDA

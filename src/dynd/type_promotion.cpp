@@ -9,6 +9,9 @@
 #include <dynd/type_promotion.hpp>
 #include <dynd/types/string_type.hpp>
 #include <dynd/types/option_type.hpp>
+#include <dynd/types/base_memory_type.hpp>
+#include <dynd/types/cuda_host_type.hpp>
+#include <dynd/types/cuda_device_type.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -218,6 +221,31 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type& tp0, const ndt::type& 
     if (tp0_val.get_kind() == string_kind &&
             tp1_val.get_type_id() == type_type_id) {
         return tp1_val;
+    }
+
+    if (tp0_val.get_kind() == memory_kind ||
+            tp1_val.get_kind() == memory_kind) {
+        if (tp0_val == tp1_val) {
+            return tp0_val.tcast<base_memory_type>()->with_replaced_storage_type(promote_types_arithmetic(
+                tp0_val.tcast<base_memory_type>()->get_storage_type(),
+                tp1_val.tcast<base_memory_type>()->get_storage_type()));
+        }
+
+#ifdef DYND_CUDA
+        // (readable from CUDA device) != (readable from CUDA device) -> CUDA device
+        if (tp0_val.is_cuda_device_readable() && tp1_val.is_cuda_device_readable()) {
+            return ndt::make_cuda_device(promote_types_arithmetic(
+                tp0_val.without_memory_type(),
+                tp1_val.without_memory_type()));
+        }
+#endif // DYND_CUDA
+
+        // (readable from host) != (readable from host) -> default
+        if (tp0_val.is_host_readable() && tp1_val.is_host_readable()) {
+            return promote_types_arithmetic(
+                tp0_val.without_memory_type(),
+                tp1_val.without_memory_type());
+        }
     }
 
     // In general, if one type is void, just return the other type

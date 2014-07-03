@@ -269,5 +269,5 @@ REGISTER_TYPED_TEST_CASE_P(ArithmeticOp, SimpleBroadcast, StridedScalarBroadcast
 
 INSTANTIATE_TYPED_TEST_CASE_P(Default, ArithmeticOp, DefaultMemory);
 #ifdef DYND_CUDA
-INSTANTIATE_TYPED_TEST_CASE_P(CUDA, ArithmeticOp, CUDAMemory);
+INSTANTIATE_TYPED_TEST_CASE_P(CUDA, ArithmeticOp, cuda_device_type);
 #endif // DYND_CUDA

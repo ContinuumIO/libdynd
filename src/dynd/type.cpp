@@ -86,10 +86,12 @@ ndt::type::type(const char *rep_begin, const char *rep_end)
 ndt::type ndt::type::without_memory_type() const {
     if (get_kind() == memory_kind) {
         return tcast<base_memory_type>()->get_storage_type();
+    } else {
+        return *this;
     }
-
-    return *this;
 }
+
+#ifdef DYND_CUDA
 
 bool ndt::type::is_cuda_device_readable() const {
     switch (get_type_id()) {
@@ -101,6 +103,8 @@ bool ndt::type::is_cuda_device_readable() const {
             return false;
     }
 }
+
+#endif // DYND_CUDA
 
 ndt::type ndt::type::at_array(int nindices, const irange *indices) const
 {

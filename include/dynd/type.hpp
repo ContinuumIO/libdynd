@@ -242,10 +242,14 @@ public:
         return is_builtin() || ((m_extended->get_flags() & type_flag_not_host_readable) == 0);
     }
 
+#ifdef DYND_CUDA
+
     /**
      * Returns true if this type is readable directly from a CUDA device.
      */
     bool is_cuda_device_readable() const;
+
+#endif // DYND_CUDA
 
     /**
      * Indexes into the type. This function returns the type which results

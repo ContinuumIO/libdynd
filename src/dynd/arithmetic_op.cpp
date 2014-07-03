@@ -24,30 +24,28 @@ using namespace dynd;
 namespace {
     template<class OP>
     struct binary_single_kernel {
-        static DYND_CUDA_HOST_DEVICE void func(char *dst, const char * const *src,
+        static DYND_CUDA_HOST_DEVICE void func(char *dst, const char *src0, const char *src1,
                         ckernel_prefix *DYND_UNUSED(self))
         {
             typedef typename OP::type T;
-            T s0, s1, r;
+            *reinterpret_cast<T *>(dst) = OP::operate(*reinterpret_cast<const T *>(src0),
+                *reinterpret_cast<const T *>(src1));
+        }
 
-            s0 = *reinterpret_cast<const T *>(src[0]);
-            s1 = *reinterpret_cast<const T *>(src[1]);
-
-            r = OP::operate(s0, s1);
-
-            *reinterpret_cast<T *>(dst) = r;
+        static void func(char *dst, const char * const *src,
+                        ckernel_prefix *self)
+        {
+            func(dst, src[0], src[1], self);
         }
     };
 
     template<class OP>
     struct binary_strided_kernel {
         static DYND_CUDA_HOST_DEVICE void func(char *dst, intptr_t dst_stride,
-                        const char * const *src, const intptr_t *src_stride,
+                        const char *src0, intptr_t src0_stride, const char *src1, intptr_t src1_stride,
                         size_t count, ckernel_prefix *DYND_UNUSED(self))
         {
             typedef typename OP::type T;
-            const char *src0 = src[0], *src1 = src[1];
-            intptr_t src0_stride = src_stride[0], src1_stride = src_stride[1];
 
             for (size_t i = 0; i != count; ++i) {
                 T s0, s1, r;
@@ -63,31 +61,35 @@ namespace {
                 src1 += src1_stride;
             }
         }
+
+        static void func(char *dst, intptr_t dst_stride,
+                        const char * const *src, const intptr_t *src_stride,
+                        size_t count, ckernel_prefix *self)
+        {
+            func(dst, dst_stride, src[0], src_stride[0], src[1], src_stride[1], count, self);
+        }
     };
 
 #ifdef DYND_CUDA
+
+    template<class OP>
+    DYND_CUDA_GLOBAL void cuda_device_single_binary_single_kernel(char *dst,  const char *src0, const char *src1)
+    {
+        binary_single_kernel<OP>::func(dst, src0, src1, NULL);
+    }
 
     template<class OP>
     struct cuda_device_binary_single_kernel {
         static void func(char *dst, const char * const *src,
                         ckernel_prefix *DYND_UNUSED(self))
         {
-            std::cout << "in single" << std::endl;
-
-            typedef typename OP::type T;
-            T s0, s1, r;
-
-            s0 = *reinterpret_cast<const T *>(src[0]);
-            s1 = *reinterpret_cast<const T *>(src[1]);
-
-            r = OP::operate(s0, s1);
-
-            *reinterpret_cast<T *>(dst) = r;
+            cuda_device_single_binary_single_kernel<OP><<<1, 1>>>(dst, src[0], src[1]);
+            throw_if_not_cuda_success(cudaDeviceSynchronize());
         }
     };
 
     template<class OP>
-    DYND_CUDA_GLOBAL void test(char *dst, intptr_t dst_stride,
+    DYND_CUDA_GLOBAL void cuda_device_multiple_binary_single_kernel(char *dst, intptr_t dst_stride,
                                const char *src0, intptr_t src0_stride,
                                const char *src1, intptr_t src1_stride,
                                size_t count)
@@ -95,13 +97,13 @@ namespace {
         unsigned int thread = get_cuda_global_thread<1, 1>();
 
         if (thread < count) {
-            const char *src[2] = {src0 + thread * src0_stride, src1 + thread * src1_stride};
-            binary_single_kernel<OP>::func(dst + thread * dst_stride, src, NULL);
+            binary_single_kernel<OP>::func(dst + thread * dst_stride,
+                src0 + thread * src0_stride, src1 + thread * src1_stride, NULL);
         }
     }
 
     template<class OP>
-    DYND_CUDA_GLOBAL void test_multiple(char *dst, intptr_t dst_stride,
+    DYND_CUDA_GLOBAL void cuda_device_multiple_binary_strided_kernel(char *dst, intptr_t dst_stride,
                                const char *src0, intptr_t src0_stride,
                                const char *src1, intptr_t src1_stride,
                                size_t count_div_threads, size_t count_mod_threads)
@@ -109,17 +111,15 @@ namespace {
         unsigned int thread = get_cuda_global_thread<1, 1>();
 
         if (thread < count_mod_threads) {
-            const char *src[2] = {src0 + thread * (count_div_threads + 1) * src0_stride,
-                src1 + thread * (count_div_threads + 1) * src1_stride};
-            intptr_t src_stride[2] = {src0_stride, src1_stride};
             binary_strided_kernel<OP>::func(dst + thread * (count_div_threads + 1) * dst_stride, dst_stride,
-                src, src_stride, count_div_threads + 1, NULL);
+                src0 + thread * (count_div_threads + 1) * src0_stride, src0_stride,
+                src1 + thread * (count_div_threads + 1) * src1_stride, src1_stride,
+                count_div_threads + 1, NULL);
         } else {
-            const char *src[2] = {src0 + (thread * count_div_threads + count_mod_threads) * src0_stride,
-                src1 + (thread * count_div_threads + count_mod_threads) * src1_stride};
-            intptr_t src_stride[2] = {src0_stride, src1_stride};
             binary_strided_kernel<OP>::func(dst + (thread * count_div_threads + count_mod_threads) * dst_stride, dst_stride,
-                src, src_stride, count_div_threads, NULL);
+                src0 + (thread * count_div_threads + count_mod_threads) * src0_stride, src0_stride,
+                src1 + (thread * count_div_threads + count_mod_threads) * src1_stride, src1_stride,
+                count_div_threads, NULL);
         }
     }
 
@@ -136,10 +136,10 @@ namespace {
             intptr_t src0_stride = src_stride[0], src1_stride = src_stride[1];
 
             if (count < config.threads) {
-                test<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
+                cuda_device_multiple_binary_single_kernel<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
                     count);
             } else {
-                test_multiple<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
+                cuda_device_multiple_binary_strided_kernel<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
                     count / config.threads, count % config.threads);
             }
             throw_if_not_cuda_success(cudaDeviceSynchronize());
@@ -385,8 +385,6 @@ namespace {
     };
 } // anonymous namespace
 
-// C++ exception with description "Cannot evaluate elwise expression from (convert[to=int32, from=cuda_host[int32]], int32) to int32" thrown in the test body.
-
 nd::array nd::operator+(const nd::array& op1, const nd::array& op2)
 {
     nd::array ops[2] = {op1, op2};
@@ -427,7 +425,6 @@ nd::array nd::operator+(const nd::array& op1, const nd::array& op2)
     if (op1dt.is_host_readable() && op2dt.is_host_readable()) {
         if (op1dt.without_memory_type().is_builtin() && op2dt.without_memory_type().is_builtin()) {
             ndt::type rdt = promote_types_arithmetic(op1dt, op2dt);
-//            std::cout << rdt << ", " << op1dt << ", " << op2dt << std::endl;
 
             expr_operation_pair func_ptr;
             int table_index = compress_builtin_type_id[rdt.without_memory_type().get_type_id()];
@@ -441,9 +438,7 @@ nd::array nd::operator+(const nd::array& op1, const nd::array& op2)
             // The signature is (T, T) -> T, so we don't use the original types
             return apply_binary_operator<ckernel_prefix_with_init>(
                 ops, rdt, rdt, rdt, func_ptr, "addition").eval_immutable();
-        }
-
-        if (op1dt.get_kind() == string_kind && op2dt.get_kind() == string_kind) {
+        } else if (op1dt.without_memory_type().get_kind() == string_kind && op2dt.without_memory_type().get_kind() == string_kind) {
             ndt::type rdt = ndt::make_string();
 
             expr_operation_pair func_ptr;

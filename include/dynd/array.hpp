@@ -271,7 +271,7 @@ public:
 
     /** Returns true if the object is a scalar */
     inline bool is_scalar() const {
-        return get_type().is_scalar();
+        return !is_null() && get_type().is_scalar();
     }
 
     /** The type */

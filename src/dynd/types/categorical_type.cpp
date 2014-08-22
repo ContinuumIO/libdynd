@@ -195,7 +195,7 @@ static nd::array make_sorted_categories(const set<const char *, cmp> &uniques,
                                         const char *arrmeta)
 {
     nd::array categories = nd::empty(uniques.size(), element_tp);
-    assignment_ckernel_builder k;
+    unary_ckernel_builder k;
     make_assignment_kernel(
         &k, 0, element_tp,
         categories.get_arrmeta() + sizeof(strided_dim_type_arrmeta), element_tp,
@@ -214,7 +214,7 @@ static nd::array make_sorted_categories(const set<const char *, cmp> &uniques,
 }
 
 categorical_type::categorical_type(const nd::array& categories, bool presorted)
-    : base_type(categorical_type_id, custom_kind, 4, 4, type_flag_scalar, 0, 0)
+    : base_type(categorical_type_id, custom_kind, 4, 4, type_flag_scalar, 0, 0, 0)
 {
     intptr_t category_count;
     if (presorted) {
@@ -304,29 +304,27 @@ categorical_type::categorical_type(const nd::array& categories, bool presorted)
 
 void categorical_type::print_data(std::ostream& o, const char *DYND_UNUSED(arrmeta), const char *data) const
 {
-    uint32_t value;
-    switch (m_storage_type.get_type_id()) {
-        case uint8_type_id:
-            value = *reinterpret_cast<const uint8_t*>(data);
-            break;
-        case uint16_type_id:
-            value = *reinterpret_cast<const uint16_t*>(data);
-            break;
-        case uint32_type_id:
-            value = *reinterpret_cast<const uint32_t*>(data);
-            break;
-        default:
-            throw runtime_error("internal error in categorical_type::print_data");
-    }
-    if (value < m_value_to_category_index.size()) {
-        m_category_tp.print_data(o, get_category_arrmeta(),
-                                 get_category_data_from_value(value));
-    }
-    else {
-        o << "UNK"; // TODO better outpout?
-    }
+  uint32_t value;
+  switch (m_storage_type.get_type_id()) {
+  case uint8_type_id:
+    value = *reinterpret_cast<const uint8_t *>(data);
+    break;
+  case uint16_type_id:
+    value = *reinterpret_cast<const uint16_t *>(data);
+    break;
+  case uint32_type_id:
+    value = *reinterpret_cast<const uint32_t *>(data);
+    break;
+  default:
+    throw runtime_error("internal error in categorical_type::print_data");
+  }
+  if (value < m_value_to_category_index.size()) {
+    m_category_tp.print_data(o, get_category_arrmeta(),
+                             get_category_data_from_value(value));
+  } else {
+    o << "NA";
+  }
 }
-
 
 void categorical_type::print_type(std::ostream& o) const
 {
@@ -396,7 +394,7 @@ nd::array categorical_type::get_categories() const
     //       so this is simply "return m_categories".
     nd::array categories = nd::empty(get_category_count(), m_category_tp);
     array_iter<1,0> iter(categories);
-    assignment_ckernel_builder k;
+    unary_ckernel_builder k;
     ::make_assignment_kernel(&k, 0, iter.get_uniform_dtype(), iter.arrmeta(),
                              m_category_tp, get_category_arrmeta(),
                              kernel_request_single,

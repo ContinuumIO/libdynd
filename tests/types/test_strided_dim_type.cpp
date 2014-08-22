@@ -23,6 +23,8 @@ using namespace dynd;
 TEST(StridedArrayDType, Basic) {
     ndt::type d = ndt::make_strided_dim(ndt::make_type<int32_t>());
 
+    EXPECT_EQ(1, d.get_ndim());
+    EXPECT_EQ(1, d.get_strided_ndim());
     EXPECT_EQ(ndt::make_type<int32_t>(), d.p("element_type").as<ndt::type>());
     // Roundtripping through a string
     EXPECT_EQ(d, ndt::type(d.str()));
@@ -91,7 +93,7 @@ TEST(StridedArrayDType, IsExpression) {
 
 TEST(StridedArrayDType, AssignKernel) {
     nd::array a, b;
-    assignment_ckernel_builder k;
+    unary_ckernel_builder k;
     int vals_int[] = {3,5,7};
 
     // Assignment scalar -> strided array

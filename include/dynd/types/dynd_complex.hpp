@@ -118,6 +118,10 @@ public:
         return m_imag;
     }
 
+    DYND_CUDA_HOST_DEVICE inline bool operator==(const double& rhs) const {
+        return (real() == rhs) && (imag() == 0.0);
+    }
+
     DYND_CUDA_HOST_DEVICE inline bool operator==(const dynd_complex<double>& rhs) const {
         return (real() == rhs.real()) && (imag() == rhs.imag());
     }
@@ -158,6 +162,28 @@ public:
     }
 };
 
+// Metaprogram for determining if a type is a valid C++ scalar
+// of a particular type.
+template<typename T> struct is_complex_scalar {enum {value = false};};
+template <> struct is_complex_scalar<char> {enum {value = true};};
+template <> struct is_complex_scalar<signed char> {enum {value = true};};
+template <> struct is_complex_scalar<short> {enum {value = true};};
+template <> struct is_complex_scalar<int> {enum {value = true};};
+template <> struct is_complex_scalar<long> {enum {value = true};};
+template <> struct is_complex_scalar<long long> {enum {value = true};};
+template <> struct is_complex_scalar<unsigned char> {enum {value = true};};
+template <> struct is_complex_scalar<unsigned short> {enum {value = true};};
+template <> struct is_complex_scalar<unsigned int> {enum {value = true};};
+template <> struct is_complex_scalar<unsigned long> {enum {value = true};};
+template <> struct is_complex_scalar<unsigned long long> {enum {value = true};};
+template <> struct is_complex_scalar<float> {enum {value = true};};
+template <> struct is_complex_scalar<double> {enum {value = true};};
+
+template<class T>
+inline typename enable_if<is_complex_scalar<T>::value, bool>::type operator==(const T& lhs, const dynd_complex<double>& rhs) {
+    return dynd_complex<double>(lhs) == dynd_complex<double>(rhs);
+}
+
 inline dynd_complex<double> operator*(double lhs, const dynd_complex<double>& rhs) {
     return dynd_complex<double>(lhs * rhs.m_real, lhs * rhs.m_imag);
 }
@@ -172,7 +198,7 @@ std::ostream& operator<<(std::ostream& out, const dynd_complex<double>& val);
 
 template <typename T>
 T abs(dynd_complex<T> z) {
-    return hypot(z.real(), z.imag());
+    return static_cast<T>(hypot(z.real(), z.imag()));
 }
 
 template <typename T>

@@ -15,24 +15,30 @@
 #include <dynd/exceptions.hpp>
 #include <dynd/kernels/assignment_kernels.hpp>
 #include <dynd/kernels/var_dim_assignment_kernels.hpp>
+#include <dynd/kernels/string_assignment_kernels.hpp>
 #include <dynd/func/callable.hpp>
 #include <dynd/func/make_callable.hpp>
 
 using namespace std;
 using namespace dynd;
 
-var_dim_type::var_dim_type(const ndt::type& element_tp)
-    : base_uniform_dim_type(var_dim_type_id, element_tp, sizeof(var_dim_type_data),
-                    sizeof(const char *), sizeof(var_dim_type_arrmeta),
-                    type_flag_zeroinit|type_flag_blockref)
+var_dim_type::var_dim_type(const ndt::type &element_tp)
+    : base_dim_type(var_dim_type_id, element_tp,
+                            sizeof(var_dim_type_data), sizeof(const char *),
+                            sizeof(var_dim_type_arrmeta),
+                            type_flag_zeroinit | type_flag_blockref, false)
 {
-    // NOTE: The element type may have type_flag_destructor set. In this case,
-    //       the var_dim type does NOT need to also set it, because the lifetime
-    //       of the elements it allocates is owned by the objectarray_memory_block,
-    //       not by the var_dim elements.
+  // NOTE: The element type may have type_flag_destructor set. In this case,
+  //       the var_dim type does NOT need to also set it, because the lifetime
+  //       of the elements it allocates is owned by the
+  //       objectarray_memory_block,
+  //       not by the var_dim elements.
+  // Propagate just the value-inherited flags from the element
+  m_members.flags |= (element_tp.get_flags() &
+                      (type_flags_value_inherited & ~type_flag_scalar));
 
-    // Copy nd::array properties and functions from the first non-array dimension
-    get_scalar_properties_and_functions(m_array_properties, m_array_functions);
+  // Copy nd::array properties and functions from the first non-array dimension
+  get_scalar_properties_and_functions(m_array_properties, m_array_functions);
 }
 
 var_dim_type::~var_dim_type()
@@ -41,24 +47,19 @@ var_dim_type::~var_dim_type()
 
 void var_dim_type::print_data(std::ostream& o, const char *arrmeta, const char *data) const
 {
-    const var_dim_type_arrmeta *md = reinterpret_cast<const var_dim_type_arrmeta *>(arrmeta);
-    const var_dim_type_data *d = reinterpret_cast<const var_dim_type_data *>(data);
-    const char *element_data = d->begin + md->offset;
-    size_t stride = md->stride;
-    arrmeta += sizeof(var_dim_type_arrmeta);
-    o << "[";
-    for (size_t i = 0, i_end = d->size; i != i_end; ++i, element_data += stride) {
-        m_element_tp.print_data(o, arrmeta, element_data);
-        if (i != i_end - 1) {
-            o << ", ";
-        }
-    }
-    o << "]";
+  const var_dim_type_arrmeta *md =
+      reinterpret_cast<const var_dim_type_arrmeta *>(arrmeta);
+  const var_dim_type_data *d =
+      reinterpret_cast<const var_dim_type_data *>(data);
+  const char *element_data = d->begin + md->offset;
+  strided_array_summarized(o, get_element_type(),
+                           arrmeta + sizeof(var_dim_type_arrmeta),
+                           element_data, d->size, md->stride);
 }
 
 void var_dim_type::print_type(std::ostream& o) const
 {
-    o << "var * " << m_element_tp;
+  o << "var * " << m_element_tp;
 }
 
 bool var_dim_type::is_expression() const
@@ -100,23 +101,6 @@ void var_dim_type::transform_child_types(type_transform_fn_t transform_fn, void 
 ndt::type var_dim_type::get_canonical_type() const
 {
     return ndt::type(new var_dim_type(m_element_tp.get_canonical_type()), false);
-}
-
-bool var_dim_type::is_strided() const
-{
-    return true;
-}
-
-void var_dim_type::process_strided(const char *arrmeta, const char *data,
-                ndt::type& out_dt, const char *&out_origin,
-                intptr_t& out_stride, intptr_t& out_dim_size) const
-{
-    const var_dim_type_arrmeta *md = reinterpret_cast<const var_dim_type_arrmeta *>(arrmeta);
-    const var_dim_type_data *d = reinterpret_cast<const var_dim_type_data *>(data);
-    out_dt = m_element_tp;
-    out_origin = d->begin;
-    out_stride = md->stride;
-    out_dim_size = d->size;
 }
 
 ndt::type var_dim_type::apply_linear_index(intptr_t nindices, const irange *indices,
@@ -226,7 +210,7 @@ intptr_t var_dim_type::apply_linear_index(intptr_t nindices, const irange *indic
                 // We can dereference the pointer as we
                 // index it and produce a strided array result
                 strided_dim_type_arrmeta *out_md = reinterpret_cast<strided_dim_type_arrmeta *>(out_arrmeta);
-                out_md->size = dimension_size;
+                out_md->dim_size = dimension_size;
                 out_md->stride = md->stride * index_stride;
                 *inout_data = d->begin + md->offset + md->stride * start_index;
                 if (*inout_dataref) {
@@ -580,53 +564,57 @@ size_t var_dim_type::make_assignment_kernel(
     const char *dst_arrmeta, const ndt::type &src_tp, const char *src_arrmeta,
     kernel_request_t kernreq, const eval::eval_context *ectx) const
 {
-    if (this == dst_tp.extended()) {
-        intptr_t src_size, src_stride;
-        ndt::type src_el_tp;
-        const char *src_el_arrmeta;
+  if (this == dst_tp.extended()) {
+    intptr_t src_size, src_stride;
+    ndt::type src_el_tp;
+    const char *src_el_arrmeta;
 
-        if (src_tp.get_ndim() < dst_tp.get_ndim()) {
-            // If the src has fewer dimensions, broadcast it across this one
-            return make_broadcast_to_var_dim_assignment_kernel(
-                ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta,
-                kernreq, ectx);
-        } else if (src_tp.get_type_id() == var_dim_type_id) {
-            // var_dim to var_dim
-            return make_var_dim_assignment_kernel(ckb, ckb_offset, dst_tp,
-                                                  dst_arrmeta, src_tp,
-                                                  src_arrmeta, kernreq, ectx);
-        } else if (src_tp.get_as_strided_dim(src_arrmeta, src_size,
-                                             src_stride, src_el_tp,
-                                             src_el_arrmeta)) {
-            // strided_dim to var_dim
-            return make_strided_to_var_dim_assignment_kernel(
-                ckb, ckb_offset, dst_tp, dst_arrmeta, src_size, src_stride,
-                src_el_tp, src_el_arrmeta, kernreq, ectx);
-        } else if (!src_tp.is_builtin()) {
-            // Give the src type a chance to make a kernel
-            return src_tp.extended()->make_assignment_kernel(
-                ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta,
-                kernreq, ectx);
-        } else {
-            stringstream ss;
-            ss << "Cannot assign from " << src_tp << " to " << dst_tp;
-            throw dynd::type_error(ss.str());
-        }
-    } else if (dst_tp.get_ndim() < src_tp.get_ndim()) {
-        throw broadcast_error(dst_tp, dst_arrmeta, src_tp, src_arrmeta);
+    if (src_tp.get_ndim() < dst_tp.get_ndim()) {
+      // If the src has fewer dimensions, broadcast it across this one
+      return make_broadcast_to_var_dim_assignment_kernel(
+          ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta, kernreq,
+          ectx);
+    } else if (src_tp.get_type_id() == var_dim_type_id) {
+      // var_dim to var_dim
+      return make_var_dim_assignment_kernel(ckb, ckb_offset, dst_tp,
+                                            dst_arrmeta, src_tp, src_arrmeta,
+                                            kernreq, ectx);
+    } else if (src_tp.get_as_strided(src_arrmeta, &src_size, &src_stride,
+                                     &src_el_tp, &src_el_arrmeta)) {
+      // strided_dim to var_dim
+      return make_strided_to_var_dim_assignment_kernel(
+          ckb, ckb_offset, dst_tp, dst_arrmeta, src_size, src_stride, src_el_tp,
+          src_el_arrmeta, kernreq, ectx);
+    } else if (!src_tp.is_builtin()) {
+      // Give the src type a chance to make a kernel
+      return src_tp.extended()->make_assignment_kernel(
+          ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta, kernreq,
+          ectx);
     } else {
-        if (dst_tp.get_type_id() == strided_dim_type_id ||
-                        dst_tp.get_type_id() == cfixed_dim_type_id) {
-            // var_dim to strided_dim
-            return make_var_to_strided_dim_assignment_kernel(
-                ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta,
-                kernreq, ectx);
-        } else {
-            stringstream ss;
-            ss << "Cannot assign from " << src_tp << " to " << dst_tp;
-            throw dynd::type_error(ss.str());
-        }
+      stringstream ss;
+      ss << "Cannot assign from " << src_tp << " to " << dst_tp;
+      throw dynd::type_error(ss.str());
     }
+  } else if (dst_tp.get_kind() == string_kind) {
+    return make_any_to_string_assignment_kernel(ckb, ckb_offset, dst_tp,
+                                                dst_arrmeta, src_tp,
+                                                src_arrmeta, kernreq, ectx);
+  } else if (dst_tp.get_ndim() < src_tp.get_ndim()) {
+    throw broadcast_error(dst_tp, dst_arrmeta, src_tp, src_arrmeta);
+  } else {
+    if (dst_tp.get_type_id() == strided_dim_type_id ||
+        dst_tp.get_type_id() == fixed_dim_type_id ||
+        dst_tp.get_type_id() == cfixed_dim_type_id) {
+      // var_dim to strided_dim
+      return make_var_to_strided_dim_assignment_kernel(
+          ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta, kernreq,
+          ectx);
+    } else {
+      stringstream ss;
+      ss << "Cannot assign from " << src_tp << " to " << dst_tp;
+      throw dynd::type_error(ss.str());
+    }
+  }
 }
 
 void var_dim_type::foreach_leading(const char *arrmeta, char *data,

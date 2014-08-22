@@ -9,10 +9,12 @@
 
 #include "inc_gtest.hpp"
 #include "../test_memory.hpp"
+#include "dynd_assertions.hpp"
 
 #include <dynd/array.hpp>
 #include <dynd/types/convert_type.hpp>
 #include <dynd/types/strided_dim_type.hpp>
+#include <dynd/json_parser.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -541,6 +543,29 @@ TEST(ArrayAssign, ZeroSizedAssign) {
     a = nd::empty("var * {a:int32, b:string}");
     b = nd::empty(0, "{a:int32, b:string}");
     a.vals() = b;
+}
+
+TEST(ArrayAssign, VarToFixedStruct) {
+  nd::array a =
+      parse_json("var * {x : string, y : int32}",
+                 "[[\"Alice\", 100], [\"Bob\", 50], [\"Charlie\", 200]]");
+  nd::array b = nd::empty("3 * {x : string, y : int32}");
+  b.vals() = a;
+  EXPECT_JSON_EQ_ARR("[[\"Alice\", 100], [\"Bob\", 50], [\"Charlie\", 200]]",
+                     b);
+}
+
+TEST(ArrayAssign, ArrayValsAtType)
+{
+    nd::array a = nd::empty(4, "int64");
+
+    a.vals_at(irange().by(2)) = 0;
+    a.vals_at(irange(1, 4, 1).by(2)) = 1;
+    const int64_t* data = reinterpret_cast<const int64_t*>(a.get_readonly_originptr());
+    int64_t vals[] = {0, 1, 0, 1};
+    for (int i = 0; i < 4; ++i) {
+        EXPECT_EQ(vals[i], data[i]);
+    }
 }
 
 #if !(defined(_WIN32) && !defined(_M_X64)) // TODO: How to mark as expected failures in googletest?

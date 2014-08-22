@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <limits>
 
+#include <dynd/cmake_config.hpp>
+
 /** The number of elements to process at once when doing chunking/buffering */
 #define DYND_BUFFER_CHUNK_SIZE 128
 
@@ -132,6 +134,21 @@ namespace std {
         val.d = x;
         return (val.u & 0x8000000000000000ULL) ? 1 : 0;
     }
+}
+#endif
+
+#if _MSC_VER == 1700
+// MSVC 2012
+#define DYND_ATOLL(x) (_atoi64(x))
+inline double copysign(double num, double sign) { return _copysign(num, sign); }
+inline int signbit(double x)
+{
+  union {
+    double d;
+    uint64_t u;
+  } val;
+  val.d = x;
+  return (val.u & 0x8000000000000000ULL) ? 1 : 0;
 }
 #endif
 

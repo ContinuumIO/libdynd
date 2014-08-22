@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 #include <dynd/types/base_type.hpp>
-#include <dynd/types/base_expression_type.hpp>
+#include <dynd/types/base_expr_type.hpp>
 #include <dynd/types/base_string_type.hpp>
 #include <dynd/types/dynd_float16.hpp>
 #include <dynd/eval/eval_context.hpp>
@@ -341,12 +341,12 @@ public:
      * printing, etc.
      */
     const type& value_type() const {
-        // Only expression_kind types have different value_type
-        if (is_builtin() || m_extended->get_kind() != expression_kind) {
+        // Only expr_kind types have different value_type
+        if (is_builtin() || m_extended->get_kind() != expr_kind) {
             return *this;
         } else {
             // All chaining happens in the operand_type
-            return static_cast<const base_expression_type *>(m_extended)->get_value_type();
+            return static_cast<const base_expr_type *>(m_extended)->get_value_type();
         }
     }
 
@@ -356,11 +356,11 @@ public:
      * This is one link down the expression chain.
      */
     const type& operand_type() const {
-        // Only expression_kind types have different operand_type
-        if (is_builtin() || m_extended->get_kind() != expression_kind) {
+        // Only expr_kind types have different operand_type
+        if (is_builtin() || m_extended->get_kind() != expr_kind) {
             return *this;
         } else {
-            return static_cast<const base_expression_type *>(m_extended)->get_operand_type();
+            return static_cast<const base_expr_type *>(m_extended)->get_operand_type();
         }
     }
 
@@ -370,14 +370,14 @@ public:
      * This is the bottom of the expression chain.
      */
     const type& storage_type() const {
-        // Only expression_kind types have different storage_type
-        if (is_builtin() || m_extended->get_kind() != expression_kind) {
+        // Only expr_kind types have different storage_type
+        if (is_builtin() || m_extended->get_kind() != expr_kind) {
             return *this;
         } else {
             // Follow the operand type chain to get the storage type
-            const type* dt = &static_cast<const base_expression_type *>(m_extended)->get_operand_type();
-            while (dt->get_kind() == expression_kind) {
-                dt = &static_cast<const base_expression_type *>(dt->m_extended)->get_operand_type();
+            const type* dt = &static_cast<const base_expr_type *>(m_extended)->get_operand_type();
+            while (dt->get_kind() == expr_kind) {
+                dt = &static_cast<const base_expr_type *>(dt->m_extended)->get_operand_type();
             }
             return *dt;
         }
@@ -541,23 +541,39 @@ public:
         }
     }
 
-    inline base_type::flags_type get_flags() const {
-        if (is_builtin()) {
-            return type_flag_scalar;
-        } else {
-            return m_extended->get_flags();
-        }
+    inline base_type::flags_type get_flags() const
+    {
+      if (is_builtin()) {
+        return type_flag_scalar;
+      } else {
+        return m_extended->get_flags();
+      }
     }
 
     /**
      * Gets the number of array dimensions in the type.
      */
-    inline intptr_t get_ndim() const {
-        if (is_builtin()) {
-            return 0;
-        } else {
-            return m_extended->get_ndim();
-        }
+    inline intptr_t get_ndim() const
+    {
+      if (is_builtin()) {
+        return 0;
+      } else {
+        return m_extended->get_ndim();
+      }
+    }
+
+    /**
+     * Gets the number of outer strided dimensions this type has in a row.
+     * The initial arrmeta for this type begins with this many
+     * strided_dim_type_arrmeta instances.
+     */
+    inline intptr_t get_strided_ndim() const
+    {
+      if (is_builtin()) {
+        return 0;
+      } else {
+        return m_extended->get_strided_ndim();
+      }
     }
 
     /**
@@ -608,16 +624,35 @@ public:
      * values and returns true.
      *
      * \param arrmeta  The arrmeta for the type.
-     * \param out_size  Is filled with the size of the dimension.
-     * \param out_stride  Is filled with the stride.
+     * \param ndim  The number of strided dimensions desired.
+     * \param out_size_stride  Is filled with a pointer to an array of
+     *                         size_stride_t of length ``ndim``.
      * \param out_el_tp  Is filled with the element type.
      * \param out_el_arrmeta  Is filled with the arrmeta of the element type.
      *
      * \returns  True if it is a strided array type, false otherwise.
      */
-    bool get_as_strided_dim(const char *arrmeta, intptr_t &out_size,
-                            intptr_t &out_stride, ndt::type &out_el_tp,
-                            const char *&out_el_arrmeta) const;
+    bool get_as_strided(const char *arrmeta, intptr_t *out_dim_size,
+                        intptr_t *out_stride, ndt::type *out_el_tp,
+                        const char **out_el_arrmeta) const;
+
+    /**
+     * If the type is a multidimensional strided dimension type, where the
+     * dimension has a fixed size and the data is at addresses `dst`, `dst +
+     * stride`, etc, this extracts those values and returns true.
+     *
+     * \param arrmeta  The arrmeta for the type.
+     * \param ndim  The number of strided dimensions desired.
+     * \param out_size_stride  Is filled with a pointer to an array of
+     *                         size_stride_t of length ``ndim``.
+     * \param out_el_tp  Is filled with the element type.
+     * \param out_el_arrmeta  Is filled with the arrmeta of the element type.
+     *
+     * \returns  True if it is a strided array type, false otherwise.
+     */
+    bool get_as_strided(const char *arrmeta, intptr_t ndim,
+                        const size_stride_t **out_size_stride, ndt::type *out_el_tp,
+                        const char **out_el_arrmeta) const;
 
     /** The size of the data required for uniform iteration */
     inline size_t get_iterdata_size(intptr_t ndim) const {
@@ -763,6 +798,14 @@ void hexadecimal_print(std::ostream& o, unsigned int value);
 void hexadecimal_print(std::ostream& o, unsigned long value);
 void hexadecimal_print(std::ostream& o, unsigned long long value);
 void hexadecimal_print(std::ostream& o, const char *data, intptr_t element_size);
+void hexadecimal_print_summarized(std::ostream &o, const char *data,
+                                  intptr_t element_size, intptr_t summary_size);
+
+void strided_array_summarized(std::ostream &o, const ndt::type &tp,
+                              const char *arrmeta, const char *data,
+                              intptr_t dim_size, intptr_t stride);
+void print_indented(std::ostream &o, const std::string &indent,
+                    const std::string &s, bool skipfirstline = false);
 
 } // namespace dynd
 

@@ -7,7 +7,7 @@
 #define _DYND__STRIDED_DIM_TYPE_HPP_
 
 #include <dynd/type.hpp>
-#include <dynd/types/base_uniform_dim_type.hpp>
+#include <dynd/types/base_dim_type.hpp>
 #include <dynd/typed_data_assign.hpp>
 #include <dynd/types/view_type.hpp>
 #include <dynd/types/string_type.hpp>
@@ -16,10 +16,7 @@
 
 namespace dynd {
 
-struct strided_dim_type_arrmeta {
-    intptr_t size;
-    intptr_t stride;
-};
+typedef size_stride_t strided_dim_type_arrmeta;
 
 struct strided_dim_type_iterdata {
     iterdata_common common;
@@ -27,7 +24,7 @@ struct strided_dim_type_iterdata {
     intptr_t stride;
 };
 
-class strided_dim_type : public base_uniform_dim_type {
+class strided_dim_type : public base_dim_type {
 public:
     strided_dim_type(const ndt::type& element_tp);
 
@@ -44,10 +41,6 @@ public:
     void transform_child_types(type_transform_fn_t transform_fn, void *extra,
                     ndt::type& out_transformed_tp, bool& out_was_transformed) const;
     ndt::type get_canonical_type() const;
-    bool is_strided() const;
-    void process_strided(const char *arrmeta, const char *data,
-                    ndt::type& out_dt, const char *&out_origin,
-                    intptr_t& out_stride, intptr_t& out_dim_size) const;
 
     ndt::type apply_linear_index(intptr_t nindices, const irange *indices,
                 size_t current_i, const ndt::type& root_tp, bool leading_dimension) const;

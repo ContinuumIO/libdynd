@@ -15,8 +15,11 @@
 using namespace std;
 using namespace dynd;
 
-dynd::busdate_type::busdate_type(busdate_roll_t roll, const bool *weekmask, const nd::array& holidays)
-    : base_type(busdate_type_id, datetime_kind, 4, 4, type_flag_scalar, 0, 0), m_roll(roll)
+dynd::busdate_type::busdate_type(busdate_roll_t roll, const bool *weekmask,
+                                 const nd::array &holidays)
+    : base_type(busdate_type_id, datetime_kind, 4, 4, type_flag_scalar, 0, 0,
+                0),
+      m_roll(roll)
 {
     memcpy(m_workweek, weekmask, sizeof(m_workweek));
     m_busdays_in_weekmask = 0;
@@ -50,16 +53,18 @@ void dynd::busdate_type::print_holidays(std::ostream& /*o*/) const
     throw std::runtime_error("busdate_type::print_holidays to be implemented");
 }
 
-void dynd::busdate_type::print_data(std::ostream& o, const char *DYND_UNUSED(arrmeta), const char *data) const
+void dynd::busdate_type::print_data(std::ostream &o,
+                                    const char *DYND_UNUSED(arrmeta),
+                                    const char *data) const
 {
-    date_ymd ymd;
-    ymd.set_from_days(*reinterpret_cast<const int32_t *>(data));
-    string s = ymd.to_str();
-    if (s.empty()) {
-        o << "NA";
-    } else {
-        o << s;
-    }
+  date_ymd ymd;
+  ymd.set_from_days(*reinterpret_cast<const int32_t *>(data));
+  string s = ymd.to_str();
+  if (s.empty()) {
+    o << "NA";
+  } else {
+    o << s;
+  }
 }
 
 void dynd::busdate_type::print_type(std::ostream& o) const

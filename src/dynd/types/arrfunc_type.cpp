@@ -24,7 +24,7 @@ arrfunc_type::arrfunc_type()
     : base_type(arrfunc_type_id, custom_kind, sizeof(arrfunc_type_data),
                     scalar_align_of<uint64_t>::value,
                     type_flag_scalar|type_flag_zeroinit|type_flag_destructor,
-                    0, 0)
+                    0, 0, 0)
 {
 }
 
@@ -44,9 +44,9 @@ static void print_arrfunc(std::ostream& o, const arrfunc_type_data *af)
 void arrfunc_type::print_data(std::ostream &o, const char *DYND_UNUSED(arrmeta),
                               const char *data) const
 {
-    const arrfunc_type_data *af =
-        reinterpret_cast<const arrfunc_type_data *>(data);
-    print_arrfunc(o, af);
+  const arrfunc_type_data *af =
+      reinterpret_cast<const arrfunc_type_data *>(data);
+  print_arrfunc(o, af);
 }
 
 void arrfunc_type::print_type(std::ostream& o) const

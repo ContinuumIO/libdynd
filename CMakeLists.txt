@@ -37,6 +37,10 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     option(DYND_CUDA
         "Build a libdynd library with CUDA"
         OFF) # While CUDA support is in development, we default to OFF.
+# -DDYND_FFTW=ON/OFF, whether to build libdynd with or without FFTW
+    option(DYND_FFTW
+        "Build a libdynd library with FFTW"
+        OFF)
 #
 # -DDYND_INSTALL_LIB=ON/OFF, whether to install libdynd into the
 #   CMAKE_INSTALL_PREFIX. Its main purpose is to allow dynd-python and
@@ -72,6 +76,8 @@ set(CMAKE_VERBOSE_MAKEFILE 1)
 add_subdirectory(thirdparty/cephes)
 add_subdirectory(thirdparty/datetime)
 include_directories(thirdparty/datetime/include)
+
+set(DYND_LINK_LIBS cephes datetime)
 
 if(WIN32)
     # Treat warnings as errors (-WX does this)
@@ -131,6 +137,7 @@ list(GET DYND_VERSION 0 "${DYND_VERSION}")
 set(libdynd_SRC
     # Preprocessor
     include/dynd/pp/arithmetic.hpp
+    include/dynd/pp/arrfunc_util.hpp
     include/dynd/pp/comparison.hpp
     include/dynd/pp/if.hpp
     include/dynd/pp/list.hpp
@@ -156,12 +163,12 @@ set(libdynd_SRC
     src/dynd/types/adapt_type.cpp
     src/dynd/types/base_bytes_type.cpp
     src/dynd/types/base_type.cpp
-    src/dynd/types/base_expression_type.cpp
+    src/dynd/types/base_expr_type.cpp
     src/dynd/types/base_memory_type.cpp
     src/dynd/types/base_string_type.cpp
     src/dynd/types/base_struct_type.cpp
     src/dynd/types/base_tuple_type.cpp
-    src/dynd/types/base_uniform_dim_type.cpp
+    src/dynd/types/base_dim_type.cpp
     src/dynd/types/busdate_type.cpp
     src/dynd/types/builtin_type_properties.cpp
     src/dynd/types/bytes_type.cpp
@@ -211,6 +218,7 @@ set(libdynd_SRC
     src/dynd/types/type_alignment.cpp
     src/dynd/types/type_id.cpp
     src/dynd/types/type_pattern_match.cpp
+    src/dynd/types/type_substitute.cpp
     src/dynd/types/type_type.cpp
     src/dynd/types/typevar_dim_type.cpp
     src/dynd/types/typevar_type.cpp
@@ -222,11 +230,11 @@ set(libdynd_SRC
     include/dynd/types/base_bytes_type.hpp
     include/dynd/types/base_type.hpp
     include/dynd/types/base_memory_type.hpp
-    include/dynd/types/base_expression_type.hpp
+    include/dynd/types/base_expr_type.hpp
     include/dynd/types/base_string_type.hpp
     include/dynd/types/base_struct_type.hpp
     include/dynd/types/base_tuple_type.hpp
-    include/dynd/types/base_uniform_dim_type.hpp
+    include/dynd/types/base_dim_type.hpp
     include/dynd/types/busdate_type.hpp
     include/dynd/types/builtin_type_properties.hpp
     include/dynd/types/bytes_type.hpp
@@ -278,6 +286,7 @@ set(libdynd_SRC
     include/dynd/types/tuple_type.hpp
     include/dynd/types/type_id.hpp
     include/dynd/types/type_pattern_match.hpp
+    include/dynd/types/type_substitute.hpp
     include/dynd/types/typevar_dim_type.hpp
     include/dynd/types/typevar_type.hpp
     include/dynd/types/unary_expr_type.hpp
@@ -324,15 +333,16 @@ set(libdynd_SRC
     include/dynd/func/elwise_methretres.hpp
     include/dynd/func/elwise_gfunc.hpp
     include/dynd/func/elwise_reduce_gfunc.hpp
+    include/dynd/func/functor_arrfunc.hpp
     include/dynd/func/make_callable.hpp
     include/dynd/func/math_arrfunc.hpp
     include/dynd/func/lift_arrfunc.hpp
     include/dynd/func/lift_reduction_arrfunc.hpp
     include/dynd/func/rolling_arrfunc.hpp
     include/dynd/func/take_arrfunc.hpp
-	# Iter
-	src/dynd/iter/string_iter.cpp
-	include/dynd/iter/string_iter.hpp
+    # Iter
+    src/dynd/iter/string_iter.cpp
+    include/dynd/iter/string_iter.hpp
     # Kernels
     src/dynd/kernels/assignment_kernels.cpp
     src/dynd/kernels/var_dim_assignment_kernels.cpp
@@ -408,7 +418,7 @@ set(libdynd_SRC
     src/dynd/memblock/executable_memory_block_linux_x64.cpp
     src/dynd/memblock/external_memory_block.cpp
     src/dynd/memblock/fixed_size_pod_memory_block.cpp
-	src/dynd/memblock/memmap_memory_block.cpp
+    src/dynd/memblock/memmap_memory_block.cpp
     src/dynd/memblock/pod_memory_block.cpp
     src/dynd/memblock/array_memory_block.cpp
     src/dynd/memblock/objectarray_memory_block.cpp
@@ -417,7 +427,7 @@ set(libdynd_SRC
     include/dynd/memblock/executable_memory_block.hpp
     include/dynd/memblock/external_memory_block.hpp
     include/dynd/memblock/fixed_size_pod_memory_block.hpp
-	include/dynd/memblock/memmap_memory_block.hpp
+    include/dynd/memblock/memmap_memory_block.hpp
     include/dynd/memblock/pod_memory_block.hpp
     include/dynd/memblock/array_memory_block.hpp
     include/dynd/memblock/objectarray_memory_block.hpp
@@ -430,6 +440,7 @@ set(libdynd_SRC
     # Main
     src/dynd/arithmetic_op.cpp
     src/dynd/array.cpp
+    src/dynd/fft.cpp
     src/dynd/array_range.cpp
     src/dynd/config.cpp
     src/dynd/dim_iter.cpp
@@ -443,6 +454,7 @@ set(libdynd_SRC
     src/dynd/json_parser.cpp
     src/dynd/lowlevel_api.cpp
     src/dynd/parser_util.cpp
+    src/dynd/random.cpp
     src/dynd/shape_tools.cpp
     src/dynd/special.cpp
     src/dynd/string.cpp
@@ -456,12 +468,16 @@ set(libdynd_SRC
     include/dynd/auxiliary_data.hpp
     include/dynd/buffer_storage.hpp
     include/dynd/config.hpp
+    include/dynd/cmake_config.hpp.in # Included here for ease of editing in IDEs
+    ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cmake_config.hpp
     include/dynd/cuda_config.hpp
     include/dynd/cling_all.hpp
     include/dynd/diagnostics.hpp
     include/dynd/dim_iter.hpp
     include/dynd/dynd_math.hpp
     include/dynd/ensure_immutable_contig.hpp
+    include/dynd/random.hpp
+    include/dynd/fft.hpp
     include/dynd/type.hpp
     include/dynd/typed_data_assign.hpp
     include/dynd/type_promotion.hpp
@@ -523,18 +539,17 @@ if (DYND_CUDA)
         src/dynd/arithmetic_op.cu
         )
 
-    # Add a preprocessor definition to indicate we're building with CUDA
-    add_definitions(-DDYND_CUDA)
-
     # Disable warnings about "controlling expression is constant"
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcudafe;--diag_suppress=boolean_controlling_expr_is_constant)
 
 #    set(CUDA_SEPARABLE_COMPILATION ON)
 endif()
 
-# Add a preprocessor definition for the maximum number
-# of arguments that elwise will support
-add_definitions(-DDYND_ELWISE_MAX=${DYND_ELWISE_MAX})
+if (DYND_FFTW)
+    find_path(FFTW_PATH fftw3.h)
+    include_directories(${FFTW_PATH})
+    set(DYND_LINK_LIBS ${DYND_LINK_LIBS} fftw3 fftw3f)
+endif()
 
 if ((NOT DYND_SHARED_LIB) AND (DYND_INSTALL_LIB))
     # If we're making an installable static library,
@@ -553,6 +568,8 @@ if ((NOT DYND_SHARED_LIB) AND (DYND_INSTALL_LIB))
         ${datetime_SRC}
         )
 endif()
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (DYND_SHARED_LIB)
     if (DYND_CUDA)
@@ -588,14 +605,20 @@ else()
         )
 endif()
 
+# Add preprocessor definitions from CMake
+configure_file("include/dynd/cmake_config.hpp.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cmake_config.hpp")
+
 # Special build targets that generate part of the library
-execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp)
+execute_process(COMMAND ${CMAKE_COMMAND}
+                -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp)
 add_executable(ppgen include/dynd/pp/gen.cpp)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp/gen.hpp
         DEPENDS include/dynd/pp/gen.cpp
         COMMAND ppgen 8 3 ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp)
 # Make libdynd depend on ppgen_run to make sure gen.hpp is there when it builds
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp/gen.hpp PROPERTIES GENERATED true)
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/include/dynd/pp/gen.hpp
+                            PROPERTIES GENERATED true)
 add_dependencies(libdynd ppgen)
 
 # Copy the headers from cephes that need to be installed with libdynd
@@ -603,8 +626,6 @@ file(COPY thirdparty/cephes/rename.h
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cephes)
 file(COPY thirdparty/cephes/protos.h
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cephes)
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if(WIN32)
     set_target_properties(libdynd
@@ -628,10 +649,7 @@ endif()
 if (DYND_SHARED_LIB OR (NOT DYND_INSTALL_LIB))
     # If we're not making an installable static library,
     # link the sublibraries normally
-    target_link_libraries(libdynd
-        cephes
-        datetime
-        )
+    target_link_libraries(libdynd ${DYND_LINK_LIBS})
 endif()
 
 # add_subdirectory(basic_kernels)

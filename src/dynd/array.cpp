@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-14 Mark Wiebe, DyND Developers
+// Copyright (C) 2011-14 Mark Wiebe, Irwin Zaid, DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -120,7 +120,7 @@ nd::array nd::make_strided_array(const ndt::type &dtp, intptr_t ndim,
             for (ptrdiff_t i = (ptrdiff_t)ndim - 1; i >= 0; --i) {
                 intptr_t dim_size = shape[i];
                 meta[i].stride = dim_size > 1 ? stride : 0;
-                meta[i].size = dim_size;
+                meta[i].dim_size = dim_size;
                 stride *= dim_size;
             }
         } else {
@@ -128,7 +128,7 @@ nd::array nd::make_strided_array(const ndt::type &dtp, intptr_t ndim,
                 int i_perm = axis_perm[i];
                 intptr_t dim_size = shape[i_perm];
                 meta[i_perm].stride = dim_size > 1 ? stride : 0;
-                meta[i_perm].size = dim_size;
+                meta[i_perm].dim_size = dim_size;
                 stride *= dim_size;
             }
         }
@@ -174,7 +174,7 @@ nd::array nd::make_strided_array_from_data(const ndt::type& uniform_tp, intptr_t
     for (intptr_t i = 0; i < ndim; ++i) {
         intptr_t dim_size = shape[i];
         meta[i].stride = dim_size > 1 ? strides[i] : 0;
-        meta[i].size = dim_size;
+        meta[i].dim_size = dim_size;
     }
 
     // Return a pointer to the arrmeta for uniform_tp.
@@ -247,31 +247,33 @@ nd::array nd::make_bytes_array(const char *data, size_t len, size_t alignment)
     return result;
 }
 
-
 nd::array nd::make_string_array(const char *str, size_t len,
-                string_encoding_t encoding, uint64_t access_flags)
+                                string_encoding_t encoding,
+                                uint64_t access_flags)
 {
-    char *data_ptr = NULL, *string_ptr;
-    ndt::type dt = ndt::make_string(encoding);
-    nd::array result(make_array_memory_block(
-        dt.extended()->get_arrmeta_size(), dt.get_data_size() + len,
-        dt.get_data_alignment(), &data_ptr));
-    // Set the string extents
-    string_ptr = data_ptr + dt.get_data_size();
-    ((char **)data_ptr)[0] = string_ptr;
-    ((char **)data_ptr)[1] = string_ptr + len;
-    // Copy the string data
-    memcpy(string_ptr, str, len);
-    // Set the array arrmeta
-    array_preamble *ndo = result.get_ndo();
-    ndo->m_type = dt.release();
-    ndo->m_data_pointer = data_ptr;
-    ndo->m_data_reference = NULL;
-    ndo->m_flags = access_flags;
-    // Set the string arrmeta, telling the system that the string data was embedded in the array memory
-    string_type_arrmeta *ndo_meta = reinterpret_cast<string_type_arrmeta *>(result.get_arrmeta());
-    ndo_meta->blockref = NULL;
-    return result;
+  char *data_ptr = NULL, *string_ptr;
+  ndt::type dt = ndt::make_string(encoding);
+  nd::array result(make_array_memory_block(dt.extended()->get_arrmeta_size(),
+                                           dt.get_data_size() + len,
+                                           dt.get_data_alignment(), &data_ptr));
+  // Set the string extents
+  string_ptr = data_ptr + dt.get_data_size();
+  ((char **)data_ptr)[0] = string_ptr;
+  ((char **)data_ptr)[1] = string_ptr + len;
+  // Copy the string data
+  memcpy(string_ptr, str, len);
+  // Set the array arrmeta
+  array_preamble *ndo = result.get_ndo();
+  ndo->m_type = dt.release();
+  ndo->m_data_pointer = data_ptr;
+  ndo->m_data_reference = NULL;
+  ndo->m_flags = access_flags;
+  // Set the string arrmeta, telling the system that the string data was
+  // embedded in the array memory
+  string_type_arrmeta *ndo_meta =
+      reinterpret_cast<string_type_arrmeta *>(result.get_arrmeta());
+  ndo_meta->blockref = NULL;
+  return result;
 }
 
 nd::array nd::make_strided_string_array(const char **cstr_array, size_t array_size)
@@ -299,7 +301,7 @@ nd::array nd::make_strided_string_array(const char **cstr_array, size_t array_si
     strided_dim_type_arrmeta *md =
         reinterpret_cast<strided_dim_type_arrmeta *>(
             result.get_arrmeta());
-    md->size = array_size;
+    md->dim_size = array_size;
     md->stride = stp.get_data_size();
     string_arr_ptr = reinterpret_cast<string_type_data *>(data_ptr);
     string_ptr = data_ptr + array_size * stp.get_data_size();
@@ -339,7 +341,7 @@ nd::array nd::make_strided_string_array(const std::string **str_array, size_t ar
     strided_dim_type_arrmeta *md =
         reinterpret_cast<strided_dim_type_arrmeta *>(
             result.get_arrmeta());
-    md->size = array_size;
+    md->dim_size = array_size;
     md->stride = stp.get_data_size();
     string_arr_ptr = reinterpret_cast<string_type_data *>(data_ptr);
     string_ptr = data_ptr + array_size * stp.get_data_size();
@@ -643,7 +645,7 @@ nd::array nd::detail::make_from_vec<ndt::type>::make(const std::vector<ndt::type
     // The arrmeta for the strided and string parts of the type
     strided_dim_type_arrmeta *sa_md = reinterpret_cast<strided_dim_type_arrmeta *>(
                                             result.get_arrmeta());
-    sa_md->size = vec.size();
+    sa_md->dim_size = vec.size();
     sa_md->stride = vec.empty() ? 0 : sizeof(type_type_data);
     // The data
     type_type_data *data = reinterpret_cast<type_type_data *>(data_ptr);
@@ -678,7 +680,7 @@ nd::array nd::detail::make_from_vec<std::string>::make(const std::vector<std::st
     // The arrmeta for the strided and string parts of the type
     strided_dim_type_arrmeta *sa_md = reinterpret_cast<strided_dim_type_arrmeta *>(
                                             result.get_arrmeta());
-    sa_md->size = vec.size();
+    sa_md->dim_size = vec.size();
     sa_md->stride = vec.empty() ? 0 : sizeof(string_type_data);
     string_type_arrmeta *s_md = reinterpret_cast<string_type_arrmeta *>(sa_md + 1);
     s_md->blockref = NULL;
@@ -715,7 +717,7 @@ namespace {
                                 storage_dt.extended())->get_target_alignment());
                 out_was_transformed = true;
             } else {
-                if (dt.get_kind() == expression_kind) {
+                if (dt.get_kind() == expr_kind) {
                     out_transformed_tp = storage_dt;
                     out_was_transformed = true;
                 } else {
@@ -783,14 +785,14 @@ nd::array nd::array::at_array(intptr_t nindices, const irange *indices, bool col
 void nd::array::val_assign(const array &rhs, const eval::eval_context *ectx)
     const
 {
-    // Verify read access permission
-    if (!(rhs.get_flags()&read_access_flag)) {
-        throw runtime_error("tried to read from a dynd array that is not readable");
-    }
+  // Verify read access permission
+  if (!(rhs.get_flags() & read_access_flag)) {
+    throw runtime_error("tried to read from a dynd array that is not readable");
+  }
 
-    typed_data_assign(get_type(), get_arrmeta(), get_readwrite_originptr(),
-                      rhs.get_type(), rhs.get_arrmeta(),
-                      rhs.get_readonly_originptr(), ectx);
+  typed_data_assign(get_type(), get_arrmeta(), get_readwrite_originptr(),
+                    rhs.get_type(), rhs.get_arrmeta(),
+                    rhs.get_readonly_originptr(), ectx);
 }
 
 void nd::array::val_assign(const ndt::type &rhs_dt, const char *rhs_arrmeta,
@@ -1111,6 +1113,10 @@ bool nd::array::equals_exact(const array& rhs) const
                         rhs.get_type(), rhs.get_arrmeta(),
                         comparison_type_equal, &eval::default_eval_context);
         return k(get_readonly_originptr(), rhs.get_readonly_originptr());
+    } else if (get_type().get_type_id() == var_dim_type_id) {
+      // If there's a leading var dimension, convert it to strided and compare
+      // (Note: this is a hack)
+      return operator()(irange()).equals_exact(rhs(irange()));
     } else {
         // First compare the shape, to avoid triggering an exception in common cases
         size_t ndim = get_ndim();
@@ -1186,10 +1192,10 @@ namespace {
                         }
                         case strided_dim_type_id:
                         case var_dim_type_id: {
-                            const base_uniform_dim_type *dt_budd =
-                                            dt.tcast<base_uniform_dim_type>();
-                            const base_uniform_dim_type *r_budd =
-                                            static_cast<const base_uniform_dim_type *>(e->replacement_tp.extended());
+                            const base_dim_type *dt_budd =
+                                            dt.tcast<base_dim_type>();
+                            const base_dim_type *r_budd =
+                                            static_cast<const base_dim_type *>(e->replacement_tp.extended());
                             can_keep_dim = true;
                             child_dt = dt_budd->get_element_type();
                             child_replacement_tp = r_budd->get_element_type();
@@ -1220,34 +1226,167 @@ namespace {
 nd::array nd::array::ucast(const ndt::type &scalar_tp, intptr_t replace_ndim)
     const
 {
-    // This creates a type which has a convert type for every scalar of different type.
-    // The result has the exact same arrmeta and data, so we just have to swap in the new
-    // type in a shallow copy.
-    ndt::type replaced_tp;
-    bool was_transformed = false;
-    cast_dtype_extra extra(scalar_tp, replace_ndim);
-    cast_dtype(get_type(), &extra, replaced_tp, was_transformed);
-    if (was_transformed) {
-        return make_array_clone_with_new_type(*this, replaced_tp);
-    } else {
-        return *this;
-    }
+  // This creates a type which has a convert type for every scalar of different
+  // type.
+  // The result has the exact same arrmeta and data, so we just have to swap in
+  // the new
+  // type in a shallow copy.
+  ndt::type replaced_tp;
+  bool was_transformed = false;
+  cast_dtype_extra extra(scalar_tp, replace_ndim);
+  cast_dtype(get_type(), &extra, replaced_tp, was_transformed);
+  if (was_transformed) {
+    return make_array_clone_with_new_type(*this, replaced_tp);
+  } else {
+    return *this;
+  }
 }
 
 nd::array nd::array::view(const ndt::type& tp) const
 {
-    return nd::view(*this, tp);
+  return nd::view(*this, tp);
 }
 
 nd::array nd::array::uview(const ndt::type& uniform_dt, intptr_t replace_ndim) const
 {
-    // Use the view function specifying to replace all dimensions
-    return view(get_type().with_replaced_dtype(uniform_dt, replace_ndim));
+  // Use the view function specifying to replace all dimensions
+  return view(get_type().with_replaced_dtype(uniform_dt, replace_ndim));
 }
 
 nd::array nd::array::adapt(const ndt::type& tp, const nd::string& adapt_op)
 {
-    return uview(ndt::make_adapt(get_dtype(), tp, adapt_op), 0);
+  return uview(ndt::make_adapt(get_dtype(), tp, adapt_op), 0);
+}
+
+namespace {
+static void with_strided_dim_type(const ndt::type &tp, void *extra,
+                                  ndt::type &out_transformed_tp,
+                                  bool &out_was_transformed)
+{
+  if (tp.get_ndim() > 0) {
+    tp.extended()->transform_child_types(
+        &with_strided_dim_type, extra, out_transformed_tp, out_was_transformed);
+    type_id_t tp_id = tp.get_type_id();
+    if (tp_id == fixed_dim_type_id || tp_id == cfixed_dim_type_id) {
+      out_transformed_tp = ndt::make_strided_dim(
+          out_transformed_tp.tcast<base_dim_type>()
+              ->get_element_type());
+      out_was_transformed = true;
+    }
+  } else {
+    out_transformed_tp = tp;
+  }
+}
+} // anonymous namespace
+
+nd::array nd::array::permute(intptr_t ndim, const intptr_t *axes) const
+{
+  if (ndim > get_ndim()) {
+    stringstream ss;
+    ss << "Too many dimensions provided for axis permutation, got " << ndim
+       << " for type " << get_type();
+    throw invalid_argument(ss.str());
+  }
+  ndt::type transformed_tp;
+  bool was_transformed = false;
+  with_strided_dim_type(get_type(), NULL, transformed_tp, was_transformed);
+
+  nd::array res(shallow_copy_array_memory_block(get_memblock()));
+  res = res.view(transformed_tp);
+
+  dimvector shape(get_ndim());
+  get_shape(shape.get());
+
+  dimvector strides(get_ndim());
+  get_strides(strides.get());
+
+  char *md = res.get_arrmeta();
+  shortvector<char> permcheck(ndim);
+  memset(permcheck.get(), 0, ndim * sizeof(bool));
+  // ``barrier`` is the highest ``var`` dimension prior
+  // to ``i``, axes are not permitted to cross this barrier
+  intptr_t barrier = -1;
+  for (intptr_t i = 0; i < ndim; ++i) {
+    // A permutation must leave dimensions that are not strided alone, so this
+    // check handles those.
+    intptr_t axes_i = axes[i];
+    if (axes_i < 0 || axes_i >= ndim || permcheck[axes_i] != 0) {
+      stringstream ss;
+      ss << "Invalid axis permutation [" << axes[0];
+      for (i = 1; i < ndim; ++i) {
+        ss << ", " << i;
+      }
+      ss << "]";
+      throw invalid_argument(ss.str());
+    } else {
+      permcheck[axes_i] = 1;
+    }
+    if (i != axes_i) {
+      if (shape[i] >= 0 && axes_i > barrier) {
+        // It's a strided dim and does not cross the barrier
+        strided_dim_type_arrmeta *smd =
+            reinterpret_cast<strided_dim_type_arrmeta *>(md);
+        smd->dim_size = shape[axes_i];
+        smd->stride = strides[axes_i];
+      } else if (shape[i] < 0) {
+        throw invalid_argument(
+            "Cannot permute a dynd var dimension, it must remain fixed");
+      } else {
+        throw invalid_argument(
+            "Cannot permute a strided dimension across a dynd var dimension");
+      }
+    } else if (shape[i] < 0) {
+      barrier = i;
+    }
+
+    transformed_tp = transformed_tp.get_type_at_dimension(&md, 1);
+  }
+
+  return res;
+}
+
+nd::array nd::array::rotate(intptr_t to, intptr_t from) const
+{
+    if (from < to) {
+        intptr_t ndim = to + 1;
+        dimvector axes(ndim);
+        for (intptr_t i = 0; i < from; ++i) {
+            axes[i] = i;
+        }
+        for (intptr_t i = from; i < to; ++i) {
+            axes[i] = i + 1;
+        }
+        axes[to] = from;
+
+        return permute(ndim, axes.get());
+    }
+
+    if (from > to) {
+        intptr_t ndim = from + 1;
+        dimvector axes(ndim);
+        for (intptr_t i = 0; i < to; ++i) {
+            axes[i] = i;
+        }
+        axes[to] = from;
+        for (intptr_t i = to + 1; i <= from; ++i) {
+            axes[i] = i - 1;
+        }
+
+        return permute(ndim, axes.get());
+    }
+
+    return *this;
+}
+
+nd::array nd::array::transpose() const
+{
+    intptr_t ndim = get_ndim();
+    dimvector axes(ndim);
+    for (intptr_t i = 0; i < ndim; ++i) {
+        axes[i] = ndim - i - 1;
+    }
+
+    return permute(ndim, axes.get());
 }
 
 namespace {
@@ -1309,7 +1448,7 @@ namespace {
         if (dt.is_scalar()) {
             const ndt::type *e = reinterpret_cast<const ndt::type *>(extra);
             // If things aren't simple, use a view_type
-            if (dt.get_kind() == expression_kind || dt.get_data_size() != e->get_data_size() ||
+            if (dt.get_kind() == expr_kind || dt.get_data_size() != e->get_data_size() ||
                         !dt.is_pod() || !e->is_pod()) {
                 // Some special cases that have the same memory layouts
                 switch (dt.get_type_id()) {
@@ -1360,8 +1499,8 @@ nd::array nd::array::view_scalars(const ndt::type& scalar_tp) const
         const strided_dim_type_arrmeta *md = reinterpret_cast<const strided_dim_type_arrmeta *>(get_arrmeta());
         const ndt::type& edt = sad->get_element_type();
         if (edt.is_pod() && (intptr_t)edt.get_data_size() == md->stride &&
-                    sad->get_element_type().get_kind() != expression_kind) {
-            intptr_t nbytes = md->size * edt.get_data_size();
+                    sad->get_element_type().get_kind() != expr_kind) {
+            intptr_t nbytes = md->dim_size * edt.get_data_size();
             // Make sure the element size divides into the # of bytes
             if (nbytes % scalar_tp.get_data_size() != 0) {
                 std::stringstream ss;
@@ -1391,7 +1530,7 @@ nd::array nd::array::view_scalars(const ndt::type& scalar_tp) const
             result.get_ndo()->m_flags = get_ndo()->m_flags;
             // The result has one strided ndarray field
             strided_dim_type_arrmeta *result_md = reinterpret_cast<strided_dim_type_arrmeta *>(result.get_arrmeta());
-            result_md->size = nbytes / scalar_tp.get_data_size();
+            result_md->dim_size = nbytes / scalar_tp.get_data_size();
             result_md->stride = scalar_tp.get_data_size();
             return result;
         }
@@ -1475,14 +1614,18 @@ std::ostream& nd::operator<<(std::ostream& o, const array& rhs)
         o << "array(";
         array v = rhs.eval();
         if (v.get_ndo()->is_builtin_type()) {
-            print_builtin_scalar(v.get_ndo()->get_builtin_type_id(), o, v.get_ndo()->m_data_pointer);
+          print_builtin_scalar(v.get_ndo()->get_builtin_type_id(), o,
+                               v.get_ndo()->m_data_pointer);
         } else {
             if (v.get_ndo()->m_type->get_flags() & type_flag_not_host_readable) {
                 v = v.to_host();
             }
-            v.get_ndo()->m_type->print_data(o, v.get_arrmeta(), v.get_ndo()->m_data_pointer);
+            stringstream ss;
+            v.get_ndo()->m_type->print_data(ss, v.get_arrmeta(),
+                                            v.get_ndo()->m_data_pointer);
+            print_indented(o, "      ", ss.str(), true);
         }
-        o << ", type=\"" << rhs.get_type() << "\")";
+        o << ",\n      type=\"" << rhs.get_type() << "\")";
     } else {
         o << "array()";
     }
@@ -1628,6 +1771,40 @@ nd::array nd::empty_like(const nd::array& rhs)
         }
         return result;
     }
+}
+
+nd::array nd::typed_zeros(intptr_t ndim, const intptr_t *shape,
+                          const ndt::type &tp)
+{
+    nd::array res = nd::typed_empty(ndim, shape, tp);
+    res.val_assign(0);
+
+    return res;
+}
+
+nd::array nd::typed_ones(intptr_t ndim, const intptr_t *shape,
+                          const ndt::type &tp)
+{
+    nd::array res = nd::typed_empty(ndim, shape, tp);
+    res.val_assign(1);
+
+    return res;
+}
+
+nd::array nd::concatenate(const nd::array &x, const nd::array &y) {
+    if (x.get_ndim() != 1 || y.get_ndim() != 1) {
+        throw runtime_error("TODO: nd::concatenate is WIP");
+    }
+
+    if (x.get_dtype() != y.get_dtype()) {
+        throw runtime_error("dtypes must be the same for concatenate");
+    }
+
+    nd::array res = nd::empty(x.get_dim_size() + y.get_dim_size(), x.get_dtype());
+    res(irange(0, x.get_dim_size())).val_assign(x);
+    res(irange(x.get_dim_size(), res.get_dim_size())).val_assign(y);
+
+    return res;
 }
 
 nd::array nd::memmap(const std::string& filename,
@@ -1843,7 +2020,7 @@ bool nd::is_scalar_avail(const ndt::type &tp, const char *arrmeta,
     if (tp.is_scalar()) {
         if (tp.get_type_id() == option_type_id) {
             return tp.tcast<option_type>()->is_avail(arrmeta, data, ectx);
-        } else if (tp.get_kind() == expression_kind &&
+        } else if (tp.get_kind() == expr_kind &&
                    tp.value_type().get_type_id() == option_type_id) {
             nd::array tmp = nd::empty(tp.value_type());
             tmp.val_assign(tp, arrmeta, data, ectx);

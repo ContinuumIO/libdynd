@@ -59,6 +59,7 @@ set(tests_SRC
     types/test_type_type.cpp
     types/test_type_assign.cpp
     types/test_type_casting.cpp
+    types/test_type_substitute.cpp
     types/test_type_pattern_match.cpp
     types/test_type_promotion.cpp
     types/test_var_dim_type.cpp
@@ -72,6 +73,7 @@ set(tests_SRC
     func/test_elwise_methrefres.cpp
     func/test_elwise_callretres.cpp
     func/test_elwise_callrefres.cpp
+    func/test_functor_arrfunc.cpp
     func/test_lift_arrfunc.cpp
     func/test_reduction.cpp
     func/test_rolling.cpp
@@ -92,6 +94,7 @@ set(tests_SRC
     array/test_view.cpp
     vm/test_elwise_program.cpp
     test_arithmetic_op.cpp
+    test_fft.cpp
     test_shape_tools.cpp
     test_platform.cpp
     ../thirdparty/gtest/gtest-all.cc

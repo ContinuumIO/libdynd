@@ -39,15 +39,15 @@ TYPED_TEST_P(ArithmeticOp, SimpleBroadcast) {
     EXPECT_EQ(3, c(1,0).as<int>());
     EXPECT_EQ(7, c(1,1).as<int>());
     EXPECT_EQ(-7, c(1,2).as<int>());
-/*
     c = (a - b).eval();
-    EXPECT_EQ(ndt::make_type<int>(), c.get_dtype());
+    EXPECT_EQ(TestFixture::MakeType(ndt::make_type<int>()), c.get_dtype());
     EXPECT_EQ(1, c(0,0).as<int>());
     EXPECT_EQ(1, c(0,1).as<int>());
     EXPECT_EQ(2, c(0,2).as<int>());
     EXPECT_EQ(-1, c(1,0).as<int>());
     EXPECT_EQ(-3, c(1,1).as<int>());
     EXPECT_EQ(13, c(1,2).as<int>());
+/*
     c = (b * a).eval();
     EXPECT_EQ(ndt::make_type<int>(), c.get_dtype());
     EXPECT_EQ(0, c(0,0).as<int>());
@@ -85,17 +85,17 @@ TYPED_TEST_P(ArithmeticOp, StridedScalarBroadcast) {
     EXPECT_EQ(4, c(0).as<int>());
     EXPECT_EQ(6, c(1).as<int>());
     EXPECT_EQ(8, c(2).as<int>());
-/*
     c = (a - b).eval();
-    EXPECT_EQ(ndt::make_type<int>(), c.get_dtype());
+    EXPECT_EQ(TestFixture::MakeType(ndt::make_type<int>()), c.get_dtype());
     EXPECT_EQ(0, c(0).as<int>());
     EXPECT_EQ(2, c(1).as<int>());
     EXPECT_EQ(4, c(2).as<int>());
     c = (b - a).eval();
-    EXPECT_EQ(ndt::make_type<int>(), c.get_dtype());
+    EXPECT_EQ(TestFixture::MakeType(ndt::make_type<int>()), c.get_dtype());
     EXPECT_EQ(0, c(0).as<int>());
     EXPECT_EQ(-2, c(1).as<int>());
     EXPECT_EQ(-4, c(2).as<int>());
+/*
     c = (a * b).eval();
     EXPECT_EQ(ndt::make_type<int>(), c.get_dtype());
     EXPECT_EQ(4, c(0).as<int>());
@@ -200,11 +200,11 @@ TYPED_TEST_P(ArithmeticOp, ScalarOnTheRight) {
     EXPECT_EQ(13, c(0).as<int>());
     EXPECT_EQ(14, c(1).as<int>());
     EXPECT_EQ(15, c(2).as<int>());
-/*
     c = (a - 12).eval();
     EXPECT_EQ(-11, c(0).as<int>());
     EXPECT_EQ(-10, c(1).as<int>());
     EXPECT_EQ(-9, c(2).as<int>());
+/*
     c = (a * 3).eval();
     EXPECT_EQ(3, c(0).as<int>());
     EXPECT_EQ(6, c(1).as<int>());
@@ -227,11 +227,11 @@ TYPED_TEST_P(ArithmeticOp, ScalarOnTheLeft) {
     EXPECT_EQ(0, c(0).as<int>());
     EXPECT_EQ(1, c(1).as<int>());
     EXPECT_EQ(2, c(2).as<int>());
-/*
     c = ((-1) - a).eval();
     EXPECT_EQ(-2, c(0).as<int>());
     EXPECT_EQ(-3, c(1).as<int>());
     EXPECT_EQ(-4, c(2).as<int>());
+/*
     c = (5 * a).eval();
     EXPECT_EQ(5, c(0).as<int>());
     EXPECT_EQ(10, c(1).as<int>());

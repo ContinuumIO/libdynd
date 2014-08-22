@@ -171,9 +171,17 @@ enum type_id_t {
     dim_fragment_type_id,
 
     // The number of built-in, atomic types (including uninitialized and void)
-    builtin_type_id_count = 19
+    builtin_type_id_count = 19,
+    // The number of memory types (not including default memory)
+    memory_type_id_count = 2
 };
+
 #define DYND_BUILTIN_TYPE_ID_COUNT 19
+
+// Returns the difference between a memory type id and the memory type id that is declared first
+inline int memory_type_id_offset_of(type_id_t memory_type_id) {
+    return memory_type_id - cuda_host_type_id;
+}
 
 enum type_flags_t {
     // A symbolic name instead of just "0"

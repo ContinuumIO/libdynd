@@ -34,7 +34,7 @@ struct strided_expr_kernel_extra {
     {
         extra_type *e = reinterpret_cast<extra_type *>(extra);
         ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-        expr_strided_t opchild = echild->get_function<expr_strided_t>();
+        expr_const_strided_t opchild = echild->get_function<expr_const_strided_t>();
         opchild(dst, e->dst_stride, src, e->src_stride, e->size, echild);
     }
 
@@ -44,7 +44,7 @@ struct strided_expr_kernel_extra {
     {
         extra_type *e = reinterpret_cast<extra_type *>(extra);
         ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-        expr_strided_t opchild = echild->get_function<expr_strided_t>();
+        expr_const_strided_t opchild = echild->get_function<expr_const_strided_t>();
         intptr_t inner_size = e->size, inner_dst_stride = e->dst_stride;
         const intptr_t *inner_src_stride = e->src_stride;
         const char *src_loop[N];
@@ -110,7 +110,7 @@ static size_t make_elwise_strided_dimension_expr_kernel_for_N(
   }
   return elwise_handler->make_expr_kernel(
       ckb, ckb_offset, dst_child_dt, dst_child_arrmeta, N, src_child_dt,
-      src_child_arrmeta, kernel_request_strided, ectx);
+      src_child_arrmeta, kernel_request_const_strided, ectx);
 }
 
 inline static size_t make_elwise_strided_dimension_expr_kernel(
@@ -191,7 +191,7 @@ struct strided_or_var_to_strided_expr_kernel_extra {
     {
         extra_type *e = reinterpret_cast<extra_type *>(extra);
         ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-        expr_strided_t opchild = echild->get_function<expr_strided_t>();
+        expr_const_strided_t opchild = echild->get_function<expr_const_strided_t>();
         // Broadcast all the src 'var' dimensions to dst
         intptr_t dim_size = e->size;
         const char *modified_src[N];
@@ -298,7 +298,7 @@ static size_t make_elwise_strided_or_var_to_strided_dimension_expr_kernel_for_N(
   }
   return elwise_handler->make_expr_kernel(
       ckb, ckb_offset, dst_child_dt, dst_child_arrmeta, N, src_child_dt,
-      src_child_arrmeta, kernel_request_strided, ectx);
+      src_child_arrmeta, kernel_request_const_strided, ectx);
 }
 
 static size_t make_elwise_strided_or_var_to_strided_dimension_expr_kernel(
@@ -380,7 +380,7 @@ struct strided_or_var_to_var_expr_kernel_extra {
     {
         extra_type *e = reinterpret_cast<extra_type *>(extra);
         ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-        expr_strided_t opchild = echild->get_function<expr_strided_t>();
+        expr_const_strided_t opchild = echild->get_function<expr_const_strided_t>();
         var_dim_type_data *dst_vddd = reinterpret_cast<var_dim_type_data *>(dst);
         char *modified_dst;
         intptr_t modified_dst_stride = 0;
@@ -548,7 +548,7 @@ static size_t make_elwise_strided_or_var_to_var_dimension_expr_kernel_for_N(
   }
   return elwise_handler->make_expr_kernel(
       ckb, ckb_offset, dst_child_dt, dst_child_arrmeta, N, src_child_dt,
-      src_child_arrmeta, kernel_request_strided, ectx);
+      src_child_arrmeta, kernel_request_const_strided, ectx);
 }
 
 static size_t make_elwise_strided_or_var_to_var_dimension_expr_kernel(

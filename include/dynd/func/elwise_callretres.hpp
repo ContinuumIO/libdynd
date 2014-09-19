@@ -152,10 +152,10 @@ DYND_PP_JOIN_MAP(CALL_RET_RES_CKERNEL_INSTANTIATOR, (), DYND_PP_RANGE(1, DYND_PP
         make_lifted_expr_ckernel(&af, &ckb, 0, \
                             res.get_type().get_ndim() - dst_tp.get_ndim(), \
                             res.get_type(), res.get_arrmeta(), \
-                            src_ndim, lifted_types, dynd_arrmeta, kernel_request_single, ectx); \
+                            src_ndim, lifted_types, dynd_arrmeta, kernel_request_const_single, ectx); \
 \
         ckernel_prefix *ckprefix = ckb.get(); \
-        expr_single_t op = ckprefix->get_function<expr_single_t>(); \
+        expr_const_single_t op = ckprefix->get_function<expr_const_single_t>(); \
         const char *src[NSRC] = {DYND_PP_JOIN_OUTER_1(DYND_PP_META_DOT_CALL, (,), \
             DYND_PP_META_NAME_RANGE(acast, NSRC), (get_readonly_originptr))}; \
         op(res.get_readwrite_originptr(), src, ckprefix); \

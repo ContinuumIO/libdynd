@@ -24,8 +24,8 @@ struct masked_take_ck : public kernels::expr_ck<masked_take_ck, 2> {
     inline void single(char *dst, const char * const *src)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_strided_t child_fn =
-                     child->get_function<expr_strided_t>();
+        expr_const_strided_t child_fn =
+                     child->get_function<expr_const_strided_t>();
         const char *src0 = src[0];
         const char *mask = src[1];
         intptr_t dim_size = m_dim_size, src0_stride = m_src0_stride,
@@ -80,8 +80,8 @@ struct indexed_take_ck : public kernels::expr_ck<indexed_take_ck, 2> {
     inline void single(char *dst, const char * const *src)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_single_t child_fn =
-                     child->get_function<expr_single_t>();
+        expr_const_single_t child_fn =
+                     child->get_function<expr_const_single_t>();
         const char *src0 = src[0];
         const char *index = src[1];
         intptr_t dst_dim_size = m_dst_dim_size, src0_dim_size = m_src0_dim_size,
@@ -222,7 +222,7 @@ instantiate_masked_take(const arrfunc_type_data *DYND_UNUSED(self_data_ptr), dyn
   // Create the child element assignment ckernel
   return make_assignment_kernel(ckb, ckb_offset, dst_el_tp, dst_el_meta,
                                 src0_el_tp, src0_el_meta,
-                                kernel_request_strided, ectx);
+                                kernel_request_const_strided, ectx);
 }
 
 static intptr_t
@@ -281,7 +281,7 @@ instantiate_indexed_take(const arrfunc_type_data *DYND_UNUSED(self_data_ptr), dy
     // Create the child element assignment ckernel
     return make_assignment_kernel(ckb, ckb_offset, dst_el_tp, dst_el_meta,
                                   src0_el_tp, src0_el_meta,
-                                  kernel_request_single, ectx);
+                                  kernel_request_const_single, ectx);
 }
 
 static intptr_t

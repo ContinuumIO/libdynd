@@ -26,12 +26,12 @@ namespace kernels {
         inline void init_kernfunc(kernel_request_t kernreq)
         {
             switch (kernreq) {
-            case kernel_request_single:
-                this->base.template set_function<expr_single_t>(
+            case kernel_request_const_single:
+                this->base.template set_function<expr_const_single_t>(
                     &self_type::single_wrapper);
                 break;
-            case kernel_request_strided:
-                this->base.template set_function<expr_strided_t>(
+            case kernel_request_const_strided:
+                this->base.template set_function<expr_const_strided_t>(
                     &self_type::strided_wrapper);
                 break;
             default: {

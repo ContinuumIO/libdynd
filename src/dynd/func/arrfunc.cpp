@@ -202,8 +202,8 @@ nd::array nd::arrfunc::call(intptr_t arg_count, const nd::array *args, aux_buffe
   // Generate and evaluate the ckernel
   ckernel_builder ckb;
   af->instantiate(af, &ckb, 0, dst_tp, result.get_arrmeta(), &src_tp[0],
-                  &src_arrmeta[0], kernel_request_single, aux, ectx);
-  expr_single_t fn = ckb.get()->get_function<expr_single_t>();
+                  &src_arrmeta[0], kernel_request_const_single, aux, ectx);
+  expr_const_single_t fn = ckb.get()->get_function<expr_const_single_t>();
   fn(result.get_readwrite_originptr(), src_data.empty() ? NULL : &src_data[0],
      ckb.get());
   result.flag_as_immutable();
@@ -237,8 +237,8 @@ void nd::arrfunc::call_out(intptr_t arg_count, const nd::array *args,
   // Generate and evaluate the ckernel
   ckernel_builder ckb;
   af->instantiate(af, &ckb, 0, out.get_type(), out.get_arrmeta(), &src_tp[0],
-                  &src_arrmeta[0], kernel_request_single, aux, ectx);
-  expr_single_t fn = ckb.get()->get_function<expr_single_t>();
+                  &src_arrmeta[0], kernel_request_const_single, aux, ectx);
+  expr_const_single_t fn = ckb.get()->get_function<expr_const_single_t>();
   fn(out.get_readwrite_originptr(), src_data.empty() ? NULL : &src_data[0],
      ckb.get());
 }

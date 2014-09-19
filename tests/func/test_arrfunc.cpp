@@ -41,11 +41,11 @@ TEST(ArrFunc, Assignment) {
     ckernel_builder ckb;
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
                         af.get_param_types(), src_arrmeta,
-                        kernel_request_single, NULL, &eval::default_eval_context);
+                        kernel_request_const_single, NULL, &eval::default_eval_context);
     int int_out = 0;
     char str_in[16] = "3251";
     const char *str_in_ptr = str_in;
-    expr_single_t usngo = ckb.get()->get_function<expr_single_t>();
+    expr_const_single_t usngo = ckb.get()->get_function<expr_const_single_t>();
     usngo(reinterpret_cast<char *>(&int_out), &str_in_ptr, ckb.get());
     EXPECT_EQ(3251, int_out);
 
@@ -53,11 +53,11 @@ TEST(ArrFunc, Assignment) {
     ckb.reset();
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
                         af.get_param_types(), src_arrmeta,
-                        kernel_request_strided, NULL, &eval::default_eval_context);
+                        kernel_request_const_strided, NULL, &eval::default_eval_context);
     int ints_out[3] = {0, 0, 0};
     char strs_in[3][16] = {"123", "4567", "891029"};
     const char *strs_in_ptr = strs_in[0];
-    expr_strided_t ustro = ckb.get()->get_function<expr_strided_t>();
+    expr_const_strided_t ustro = ckb.get()->get_function<expr_const_strided_t>();
     intptr_t strs_in_stride = sizeof(strs_in[0]);
     ustro(reinterpret_cast<char *>(&ints_out), sizeof(int), &strs_in_ptr,
           &strs_in_stride, 3, ckb.get());
@@ -109,11 +109,11 @@ TEST(ArrFunc, Property) {
     ckernel_builder ckb;
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
                         af.get_param_types(), src_arrmeta,
-                        kernel_request_single, NULL, &eval::default_eval_context);
+                        kernel_request_const_single, NULL, &eval::default_eval_context);
     int int_out = 0;
     int date_in = date_ymd::to_days(2013, 12, 30);
     const char *date_in_ptr = reinterpret_cast<const char *>(&date_in);
-    expr_single_t usngo = ckb.get()->get_function<expr_single_t>();
+    expr_const_single_t usngo = ckb.get()->get_function<expr_const_single_t>();
     usngo(reinterpret_cast<char *>(&int_out), &date_in_ptr, ckb.get());
     EXPECT_EQ(2013, int_out);
 }
@@ -134,25 +134,25 @@ TEST(ArrFunc, AssignmentAsExpr) {
     // Instantiate a single ckernel
     ckernel_builder ckb;
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
-                   af.get_param_types(), src_arrmeta, kernel_request_single,
+                   af.get_param_types(), src_arrmeta, kernel_request_const_single,
                    NULL, &eval::default_eval_context);
     int int_out = 0;
     char str_in[16] = "3251";
     char *str_in_ptr = str_in;
-    expr_single_t usngo = ckb.get()->get_function<expr_single_t>();
+    expr_const_single_t usngo = ckb.get()->get_function<expr_const_single_t>();
     usngo(reinterpret_cast<char *>(&int_out), &str_in_ptr, ckb.get());
     EXPECT_EQ(3251, int_out);
 
     // Instantiate a strided ckernel
     ckb.reset();
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
-                   af.get_param_types(), src_arrmeta, kernel_request_strided,
+                   af.get_param_types(), src_arrmeta, kernel_request_const_strided,
                    NULL, &eval::default_eval_context);
     int ints_out[3] = {0, 0, 0};
     char strs_in[3][16] = {"123", "4567", "891029"};
     char *strs_in_ptr = strs_in[0];
     intptr_t strs_in_stride = 16;
-    expr_strided_t ustro = ckb.get()->get_function<expr_strided_t>();
+    expr_const_strided_t ustro = ckb.get()->get_function<expr_const_strided_t>();
     ustro(reinterpret_cast<char *>(&ints_out), sizeof(int), &strs_in_ptr, &strs_in_stride, 3, ckb.get());
     EXPECT_EQ(123, ints_out[0]);
     EXPECT_EQ(4567, ints_out[1]);
@@ -181,12 +181,12 @@ TEST(ArrFunc, Expr) {
     ckernel_builder ckb;
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
                         af.get_param_types(), src_arrmeta,
-                        kernel_request_single, &eval::default_eval_context);
+                        kernel_request_const_single, &eval::default_eval_context);
     int int_out = 0;
     int int_in1 = 1, int_in2 = 3;
     char *int_in_ptr[2] = {reinterpret_cast<char *>(&int_in1),
                         reinterpret_cast<char *>(&int_in2)};
-    expr_single_t usngo = ckb.get()->get_function<expr_single_t>();
+    expr_const_single_t usngo = ckb.get()->get_function<expr_const_single_t>();
     usngo(reinterpret_cast<char *>(&int_out), int_in_ptr, ckb.get());
     EXPECT_EQ(4, int_out);
 
@@ -194,13 +194,13 @@ TEST(ArrFunc, Expr) {
     ckb.reset();
     af.instantiate(&af, &ckb, 0, af.get_return_type(), NULL,
                         af.get_param_types(), src_arrmeta,
-                        kernel_request_strided, &eval::default_eval_context);
+                        kernel_request_const_strided, &eval::default_eval_context);
     int ints_out[3] = {0, 0, 0};
     int ints_in1[3] = {1,2,3}, ints_in2[3] = {5,-210,1234};
     char *ints_in_ptr[2] = {reinterpret_cast<char *>(&ints_in1),
                         reinterpret_cast<char *>(&ints_in2)};
     intptr_t ints_in_strides[2] = {sizeof(int), sizeof(int)};
-    expr_strided_t ustro = ckb.get()->get_function<expr_strided_t>();
+    expr_const_strided_t ustro = ckb.get()->get_function<expr_const_strided_t>();
     ustro(reinterpret_cast<char *>(ints_out), sizeof(int),
                     ints_in_ptr, ints_in_strides, 3, ckb.get());
     EXPECT_EQ(6, ints_out[0]);

@@ -29,7 +29,7 @@ namespace {
         {
             var_dim_type_data *dst_d = reinterpret_cast<var_dim_type_data *>(dst);
             ckernel_prefix *child = get_child_ckernel();
-            expr_strided_t child_fn = child->get_function<expr_strided_t>();
+            expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
             if (dst_d->begin == NULL) {
                 if (m_dst_md->offset != 0) {
                     throw runtime_error("Cannot assign to an uninitialized dynd var_dim which has a non-zero offset");
@@ -92,7 +92,7 @@ size_t dynd::make_broadcast_to_var_dim_assignment_kernel(
     return ::make_assignment_kernel(
         ckb, ckb_offset, dst_vad->get_element_type(),
         dst_arrmeta + sizeof(var_dim_type_arrmeta), src_tp, src_arrmeta,
-        kernel_request_strided, ectx);
+        kernel_request_const_strided, ectx);
 }
 
 /////////////////////////////////////////
@@ -108,7 +108,7 @@ namespace {
             var_dim_type_data *dst_d = reinterpret_cast<var_dim_type_data *>(dst);
             const var_dim_type_data *src_d = reinterpret_cast<const var_dim_type_data *>(src);
             ckernel_prefix *child = get_child_ckernel();
-            expr_strided_t child_fn = child->get_function<expr_strided_t>();
+            expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
             if (dst_d->begin == NULL) {
                 if (m_dst_md->offset != 0) {
                     throw runtime_error("Cannot assign to an uninitialized dynd var_dim which has a non-zero offset");
@@ -202,7 +202,7 @@ size_t dynd::make_var_dim_assignment_kernel(
     return ::make_assignment_kernel(
         ckb, ckb_offset, dst_vad->get_element_type(),
         dst_arrmeta + sizeof(var_dim_type_arrmeta), src_vad->get_element_type(),
-        src_arrmeta + sizeof(var_dim_type_arrmeta), kernel_request_strided,
+        src_arrmeta + sizeof(var_dim_type_arrmeta), kernel_request_const_strided,
         ectx);
 }
 
@@ -219,7 +219,7 @@ namespace {
         {
             var_dim_type_data *dst_d = reinterpret_cast<var_dim_type_data *>(dst);
             ckernel_prefix *child = get_child_ckernel();
-            expr_strided_t child_fn = child->get_function<expr_strided_t>();
+            expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
             if (dst_d->begin == NULL) {
                 if (m_dst_md->offset != 0) {
                     throw runtime_error("Cannot assign to an uninitialized dynd var_dim which has a non-zero offset");
@@ -296,7 +296,7 @@ size_t dynd::make_strided_to_var_dim_assignment_kernel(
     return ::make_assignment_kernel(
         ckb, ckb_offset, dst_vad->get_element_type(),
         dst_arrmeta + sizeof(var_dim_type_arrmeta), src_el_tp, src_el_arrmeta,
-        kernel_request_strided, ectx);
+        kernel_request_const_strided, ectx);
 }
 
 /////////////////////////////////////////
@@ -311,7 +311,7 @@ namespace {
         {
             const var_dim_type_data *src_d = reinterpret_cast<const var_dim_type_data *>(src);
             ckernel_prefix *child = get_child_ckernel();
-            expr_strided_t child_fn = child->get_function<expr_strided_t>();
+            expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
             if (src_d->begin == NULL) {
                 throw runtime_error("Cannot assign an uninitialized dynd var "
                                     "array to a strided one");
@@ -373,5 +373,5 @@ size_t dynd::make_var_to_strided_dim_assignment_kernel(
                                     dst_element_tp, dst_element_arrmeta,
                                     src_vad->get_element_type(),
                                     src_arrmeta + sizeof(var_dim_type_arrmeta),
-                                    kernel_request_strided, ectx);
+                                    kernel_request_const_strided, ectx);
 }

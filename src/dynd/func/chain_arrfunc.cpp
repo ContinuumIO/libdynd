@@ -29,9 +29,9 @@ struct unary_heap_chain_ck : public kernels::general_ck<unary_heap_chain_ck> {
                                     &self->m_buf_shape[0] + 1, self->m_buf_tp);
     char *buf_data = buf.get_readwrite_originptr();
     ckernel_prefix *first = self->get_child_ckernel();
-    expr_single_t first_fn = first->get_function<expr_single_t>();
+    expr_const_single_t first_fn = first->get_function<expr_const_single_t>();
     ckernel_prefix *second = self->get_child_ckernel(self->m_second_offset);
-    expr_single_t second_fn = second->get_function<expr_single_t>();
+    expr_const_single_t second_fn = second->get_function<expr_const_single_t>();
     first_fn(buf_data, src, first);
     second_fn(dst, &buf_data, second);
   }
@@ -48,9 +48,9 @@ struct unary_heap_chain_ck : public kernels::general_ck<unary_heap_chain_ck> {
     intptr_t buf_stride = reinterpret_cast<const strided_dim_type_arrmeta *>(
                               buf.get_arrmeta())->stride;
     ckernel_prefix *first = self->get_child_ckernel();
-    expr_strided_t first_fn = first->get_function<expr_strided_t>();
+    expr_const_strided_t first_fn = first->get_function<expr_const_strided_t>();
     ckernel_prefix *second = self->get_child_ckernel(self->m_second_offset);
-    expr_strided_t second_fn = second->get_function<expr_strided_t>();
+    expr_const_strided_t second_fn = second->get_function<expr_const_strided_t>();
     const char *src0 = src[0];
     intptr_t src0_stride = src_stride[0];
 

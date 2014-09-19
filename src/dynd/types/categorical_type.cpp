@@ -67,7 +67,7 @@ namespace {
         {
           extra_type *e = reinterpret_cast<extra_type *>(extra);
           ckernel_prefix *echild = extra->get_child_ckernel(sizeof(extra_type));
-          expr_single_t opchild = echild->get_function<expr_single_t>();
+          expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
 
           uint32_t value = *reinterpret_cast<const UIntType *>(src);
           const char *src_val =
@@ -199,7 +199,7 @@ static nd::array make_sorted_categories(const set<const char *, cmp> &uniques,
     make_assignment_kernel(
         &k, 0, element_tp,
         categories.get_arrmeta() + sizeof(strided_dim_type_arrmeta), element_tp,
-        arrmeta, kernel_request_single, &eval::default_eval_context);
+        arrmeta, kernel_request_const_single, &eval::default_eval_context);
 
     intptr_t stride = reinterpret_cast<const strided_dim_type_arrmeta *>(categories.get_arrmeta())->stride;
     char *dst_ptr = categories.get_readwrite_originptr();
@@ -397,7 +397,7 @@ nd::array categorical_type::get_categories() const
     unary_ckernel_builder k;
     ::make_assignment_kernel(&k, 0, iter.get_uniform_dtype(), iter.arrmeta(),
                              m_category_tp, get_category_arrmeta(),
-                             kernel_request_single,
+                             kernel_request_const_single,
                              &eval::default_eval_context);
     if (!iter.empty()) {
         uint32_t i = 0;
@@ -452,15 +452,15 @@ size_t categorical_type::make_assignment_kernel(
           ckb->alloc_ck_leaf<category_to_categorical_kernel_extra>(ckb_offset);
       switch (m_storage_type.get_type_id()) {
       case uint8_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &category_to_categorical_kernel_extra::single_uint8);
         break;
       case uint16_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &category_to_categorical_kernel_extra::single_uint16);
         break;
       case uint32_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &category_to_categorical_kernel_extra::single_uint32);
         break;
       default:
@@ -494,15 +494,15 @@ size_t categorical_type::make_assignment_kernel(
           ckb->alloc_ck<categorical_to_other_kernel_extra>(ckb_offset);
       switch (m_storage_type.get_type_id()) {
       case uint8_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &categorical_to_other_kernel_extra::single_uint8);
         break;
       case uint16_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &categorical_to_other_kernel_extra::single_uint16);
         break;
       case uint32_type_id:
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             &categorical_to_other_kernel_extra::single_uint32);
         break;
       default:
@@ -515,7 +515,7 @@ size_t categorical_type::make_assignment_kernel(
           static_cast<const categorical_type *>(ndt::type(src_tp).release());
       return ::make_assignment_kernel(
           ckb, ckb_offset, dst_tp, dst_arrmeta, get_category_type(),
-          get_category_arrmeta(), kernel_request_single, ectx);
+          get_category_arrmeta(), kernel_request_const_single, ectx);
     } else {
       stringstream ss;
       ss << "Cannot assign from " << src_tp << " to " << dst_tp;

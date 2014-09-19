@@ -733,38 +733,38 @@ size_t datetime_type::make_elwise_property_getter_kernel(
       ckb->alloc_ck_leaf<datetime_property_kernel_extra>(ckb_offset);
   switch (src_property_index) {
   case datetimeprop_struct:
-    e->base.set_function<expr_single_t>(&get_property_kernel_struct_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_struct_single);
     break;
   case datetimeprop_date:
-    e->base.set_function<expr_single_t>(&get_property_kernel_date_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_date_single);
     break;
   case datetimeprop_time:
-    e->base.set_function<expr_single_t>(&get_property_kernel_time_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_time_single);
     break;
   case datetimeprop_year:
-    e->base.set_function<expr_single_t>(&get_property_kernel_year_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_year_single);
     break;
   case datetimeprop_month:
-    e->base.set_function<expr_single_t>(&get_property_kernel_month_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_month_single);
     break;
   case datetimeprop_day:
-    e->base.set_function<expr_single_t>(&get_property_kernel_day_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_day_single);
     break;
   case datetimeprop_hour:
-    e->base.set_function<expr_single_t>(&get_property_kernel_hour_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_hour_single);
     break;
   case datetimeprop_minute:
-    e->base.set_function<expr_single_t>(&get_property_kernel_minute_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_minute_single);
     break;
   case datetimeprop_second:
-    e->base.set_function<expr_single_t>(&get_property_kernel_second_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_second_single);
     break;
   case datetimeprop_microsecond:
-    e->base.set_function<expr_single_t>(
+    e->base.set_function<expr_const_single_t>(
         &get_property_kernel_microsecond_single);
     break;
   case datetimeprop_tick:
-    e->base.set_function<expr_single_t>(&get_property_kernel_tick_single);
+    e->base.set_function<expr_const_single_t>(&get_property_kernel_tick_single);
     break;
   default:
     stringstream ss;
@@ -790,7 +790,7 @@ size_t datetime_type::make_elwise_property_setter_kernel(
       ckb->alloc_ck_leaf<datetime_property_kernel_extra>(ckb_offset);
   switch (dst_property_index) {
   case datetimeprop_struct:
-    e->base.set_function<expr_single_t>(&set_property_kernel_struct_single);
+    e->base.set_function<expr_const_single_t>(&set_property_kernel_struct_single);
     break;
   default:
     stringstream ss;

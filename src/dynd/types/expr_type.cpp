@@ -226,7 +226,7 @@ namespace {
                 src_modified[i] = src[i] + offsets[i];
             }
             ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-            expr_single_t opchild = echild->get_function<expr_single_t>();
+            expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
             opchild(dst, src_modified, echild);
         }
 
@@ -256,7 +256,7 @@ namespace {
             }
             ckernel_prefix *echild = extra->get_child_ckernel(
                 sizeof(extra_type) + src_count * sizeof(size_t));
-            expr_single_t opchild = echild->get_function<expr_single_t>();
+            expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
             opchild(dst, src_modified.get(), echild);
         }
 
@@ -278,21 +278,21 @@ static size_t make_expr_type_offset_applier(
         case 2: {
             expr_type_offset_applier_extra<2> *e = ckb->alloc_ck_leaf<expr_type_offset_applier_extra<2> >(ckb_offset);
             memcpy(e->offsets, src_data_offsets, sizeof(e->offsets));
-            e->base.set_function<expr_single_t>(&expr_type_offset_applier_extra<2>::single);
+            e->base.set_function<expr_const_single_t>(&expr_type_offset_applier_extra<2>::single);
             e->base.destructor = &expr_type_offset_applier_extra<2>::destruct;
             return ckb_offset;
         }
         case 3: {
             expr_type_offset_applier_extra<3> *e = ckb->alloc_ck_leaf<expr_type_offset_applier_extra<3> >(ckb_offset);
             memcpy(e->offsets, src_data_offsets, sizeof(e->offsets));
-            e->base.set_function<expr_single_t>(&expr_type_offset_applier_extra<3>::single);
+            e->base.set_function<expr_const_single_t>(&expr_type_offset_applier_extra<3>::single);
             e->base.destructor = &expr_type_offset_applier_extra<3>::destruct;
             return ckb_offset;
         }
         case 4: {
             expr_type_offset_applier_extra<4> *e = ckb->alloc_ck_leaf<expr_type_offset_applier_extra<4> >(ckb_offset);
             memcpy(e->offsets, src_data_offsets, sizeof(e->offsets));
-            e->base.set_function<expr_single_t>(&expr_type_offset_applier_extra<4>::single);
+            e->base.set_function<expr_const_single_t>(&expr_type_offset_applier_extra<4>::single);
             e->base.destructor = &expr_type_offset_applier_extra<4>::destruct;
             return ckb_offset;
         }
@@ -307,7 +307,7 @@ static size_t make_expr_type_offset_applier(
             e->src_count = src_count;
             size_t *out_offsets = reinterpret_cast<size_t *>(e + 1);
             memcpy(out_offsets, src_data_offsets, src_count * sizeof(size_t));
-            e->base.set_function<expr_single_t>(&expr_type_offset_applier_general_extra::single);
+            e->base.set_function<expr_const_single_t>(&expr_type_offset_applier_general_extra::single);
             e->base.destructor = &expr_type_offset_applier_general_extra::destruct;
             return ckb_offset;
         }
@@ -318,13 +318,13 @@ static void src_deref_single(char *dst, const char *const *src,
                              ckernel_prefix *self)
 {
     ckernel_prefix *child = self->get_child_ckernel(sizeof(ckernel_prefix));
-    expr_single_t child_fn = child->get_function<expr_single_t>();
+    expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
     child_fn(dst, reinterpret_cast<const char *const *>(*src), child);
 }
 
 static size_t make_src_deref_ckernel(ckernel_builder *ckb, intptr_t ckb_offset) {
     ckernel_prefix *self = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
-    self->set_function<expr_single_t>(&src_deref_single);
+    self->set_function<expr_const_single_t>(&src_deref_single);
     self->destructor = &kernels::destroy_trivial_parent_ckernel;
     return ckb_offset;
 }
@@ -369,7 +369,7 @@ size_t expr_type::make_operand_to_value_assignment_kernel(
                     m_value_type, dst_arrmeta,
                     input_count, &src_dt[0],
                     src_arrmeta_array.get(),
-                    kernel_request_single, ectx);
+                    kernel_request_const_single, ectx);
 }
 
 size_t expr_type::make_value_to_operand_assignment_kernel(

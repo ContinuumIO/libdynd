@@ -30,23 +30,23 @@ struct option_to_option_ck
         // TODO: Would be nice to do this as a predicate
         //       instead of having to go through a dst pointer
         ckernel_prefix *src_is_avail = get_child_ckernel();
-        expr_single_t src_is_avail_fn =
-            src_is_avail->get_function<expr_single_t>();
+        expr_const_single_t src_is_avail_fn =
+            src_is_avail->get_function<expr_const_single_t>();
         dynd_bool avail = false;
         src_is_avail_fn(reinterpret_cast<char *>(&avail), &src, src_is_avail);
         if (avail) {
             // It's available, copy using value assignment
             ckernel_prefix *value_assign =
                 get_child_ckernel(m_value_assign_offset);
-            expr_single_t value_assign_fn =
-                value_assign->get_function<expr_single_t>();
+            expr_const_single_t value_assign_fn =
+                value_assign->get_function<expr_const_single_t>();
             value_assign_fn(dst, &src, value_assign);
         } else {
             // It's not available, assign an NA
             ckernel_prefix *dst_assign_na =
                 get_child_ckernel(m_dst_assign_na_offset);
-            expr_single_t dst_assign_na_fn =
-                dst_assign_na->get_function<expr_single_t>();
+            expr_const_single_t dst_assign_na_fn =
+                dst_assign_na->get_function<expr_const_single_t>();
             dst_assign_na_fn(dst, NULL, dst_assign_na);
         }
     }
@@ -56,16 +56,16 @@ struct option_to_option_ck
     {
         // Three child ckernels
         ckernel_prefix *src_is_avail = get_child_ckernel();
-        expr_strided_t src_is_avail_fn =
-            src_is_avail->get_function<expr_strided_t>();
+        expr_const_strided_t src_is_avail_fn =
+            src_is_avail->get_function<expr_const_strided_t>();
         ckernel_prefix *value_assign =
             get_child_ckernel(m_value_assign_offset);
-        expr_strided_t value_assign_fn =
-            value_assign->get_function<expr_strided_t>();
+        expr_const_strided_t value_assign_fn =
+            value_assign->get_function<expr_const_strided_t>();
         ckernel_prefix *dst_assign_na =
             get_child_ckernel(m_dst_assign_na_offset);
-        expr_strided_t dst_assign_na_fn =
-            dst_assign_na->get_function<expr_strided_t>();
+        expr_const_strided_t dst_assign_na_fn =
+            dst_assign_na->get_function<expr_const_strided_t>();
         // Process in chunks using the dynd default buffer size
         dynd_bool avail[DYND_BUFFER_CHUNK_SIZE];
         while (count > 0) {
@@ -136,12 +136,12 @@ struct option_to_value_ck
     inline void single(char *dst, const char *src)
     {
         ckernel_prefix *src_is_avail = get_child_ckernel();
-        expr_single_t src_is_avail_fn =
-            src_is_avail->get_function<expr_single_t>();
+        expr_const_single_t src_is_avail_fn =
+            src_is_avail->get_function<expr_const_single_t>();
         ckernel_prefix *value_assign =
             get_child_ckernel(m_value_assign_offset);
-        expr_single_t value_assign_fn =
-            value_assign->get_function<expr_single_t>();
+        expr_const_single_t value_assign_fn =
+            value_assign->get_function<expr_const_single_t>();
         // Make sure it's not an NA
         dynd_bool avail = false;
         src_is_avail_fn(reinterpret_cast<char *>(&avail), &src, src_is_avail);
@@ -158,12 +158,12 @@ struct option_to_value_ck
     {
         // Two child ckernels
         ckernel_prefix *src_is_avail = get_child_ckernel();
-        expr_strided_t src_is_avail_fn =
-            src_is_avail->get_function<expr_strided_t>();
+        expr_const_strided_t src_is_avail_fn =
+            src_is_avail->get_function<expr_const_strided_t>();
         ckernel_prefix *value_assign =
             get_child_ckernel(m_value_assign_offset);
-        expr_strided_t value_assign_fn =
-            value_assign->get_function<expr_strided_t>();
+        expr_const_strided_t value_assign_fn =
+            value_assign->get_function<expr_const_strided_t>();
         // Process in chunks using the dynd default buffer size
         dynd_bool avail[DYND_BUFFER_CHUNK_SIZE];
         while (count > 0) {
@@ -302,14 +302,14 @@ struct string_to_option_tp_ck : public kernels::unary_ck<string_to_option_tp_ck>
           // It's not available, assign an NA
           ckernel_prefix *dst_assign_na =
               get_child_ckernel(m_dst_assign_na_offset);
-          expr_single_t dst_assign_na_fn =
-              dst_assign_na->get_function<expr_single_t>();
+          expr_const_single_t dst_assign_na_fn =
+              dst_assign_na->get_function<expr_const_single_t>();
           dst_assign_na_fn(dst, NULL, dst_assign_na);
         } else {
           // It's available, copy using value assignment
           ckernel_prefix *value_assign = get_child_ckernel();
-          expr_single_t value_assign_fn =
-              value_assign->get_function<expr_single_t>();
+          expr_const_single_t value_assign_fn =
+              value_assign->get_function<expr_const_single_t>();
           value_assign_fn(dst, &src, value_assign);
         }
     }

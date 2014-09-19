@@ -33,14 +33,14 @@ public:
     {
     }
 
-    inline expr_single_t get_function() const {
-        return get()->get_function<expr_single_t>();
+    inline expr_const_single_t get_function() const {
+        return get()->get_function<expr_const_single_t>();
     }
 
     /** Calls the function to do the assignment */
     inline void operator()(char *dst, const char *src) const {
         ckernel_prefix *kdp = get();
-        expr_single_t fn = kdp->get_function<expr_single_t>();
+        expr_const_single_t fn = kdp->get_function<expr_const_single_t>();
         fn(dst, &src, kdp);
     }
 };
@@ -63,15 +63,15 @@ public:
     {
     }
 
-    inline expr_strided_t get_function() const {
-        return get()->get_function<expr_strided_t>();
+    inline expr_const_strided_t get_function() const {
+        return get()->get_function<expr_const_strided_t>();
     }
 
     /** Calls the function to do the assignment */
     inline void operator()(char *dst, intptr_t dst_stride,
                 const char *src, intptr_t src_stride, size_t count) const {
         ckernel_prefix *kdp = get();
-        expr_strided_t fn = kdp->get_function<expr_strided_t>();
+        expr_const_strided_t fn = kdp->get_function<expr_const_strided_t>();
         fn(dst, dst_stride, &src, &src_stride, count, kdp);
     }
 };
@@ -94,11 +94,11 @@ namespace kernels {
         inline void init_kernfunc(kernel_request_t kernreq)
         {
             switch (kernreq) {
-            case kernel_request_single:
-                this->base.template set_function<expr_single_t>(&self_type::single_wrapper);
+            case kernel_request_const_single:
+                this->base.template set_function<expr_const_single_t>(&self_type::single_wrapper);
                 break;
-            case kernel_request_strided:
-                this->base.template set_function<expr_strided_t>(&self_type::strided_wrapper);
+            case kernel_request_const_strided:
+                this->base.template set_function<expr_const_strided_t>(&self_type::strided_wrapper);
                 break;
             default: {
                 std::stringstream ss;
@@ -247,7 +247,7 @@ struct strided_assign_ck : public kernels::unary_ck<strided_assign_ck> {
     inline void single(char *dst, const char *src)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_strided_t child_fn = child->get_function<expr_strided_t>();
+        expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
         child_fn(dst, m_dst_stride, &src, &m_src_stride, m_size, child);
     }
 
@@ -255,7 +255,7 @@ struct strided_assign_ck : public kernels::unary_ck<strided_assign_ck> {
                         intptr_t src_stride, size_t count)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_strided_t child_fn = child->get_function<expr_strided_t>();
+        expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
         intptr_t inner_size = m_size, inner_dst_stride = m_dst_stride,
                  inner_src_stride = m_src_stride;
         for (size_t i = 0; i != count; ++i) {

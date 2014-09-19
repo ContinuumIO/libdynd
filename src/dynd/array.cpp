@@ -2050,11 +2050,11 @@ void nd::assign_na(const ndt::type &tp, const char *arrmeta, char *data,
                 dtp.tcast<option_type>()->get_assign_na_arrfunc();
             ckernel_builder ckb;
             make_lifted_expr_ckernel(af, &ckb, 0, tp.get_ndim(), tp, arrmeta,
-                                     NULL, NULL, NULL, kernel_request_single,
+                                     NULL, NULL, NULL, kernel_request_const_single,
                                      ectx);
             ckernel_prefix *ckp = ckb.get();
-            expr_single_t ckp_fn =
-                ckp->get_function<expr_single_t>();
+            expr_const_single_t ckp_fn =
+                ckp->get_function<expr_const_single_t>();
             ckp_fn(data, NULL, ckp);
         } else {
             stringstream ss;

@@ -157,10 +157,10 @@ struct single_cuda_host_to_device_assigner_as_expr_single {
 };
 } // anonymous namespace
 
-static expr_single_t assign_table_single_cuda_host_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_single_t assign_table_single_cuda_host_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
-            (expr_single_t)&single_cuda_host_to_device_assigner_as_expr_single<dst_type, src_type, errmode>::single
+            (expr_const_single_t)&single_cuda_host_to_device_assigner_as_expr_single<dst_type, src_type, errmode>::single
         
 #define ERROR_MODE_LEVEL(dst_type, src_type) { \
         SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, assign_error_nocheck), \
@@ -239,10 +239,10 @@ struct single_cuda_device_to_host_assigner_as_expr_single {
 };
 } // anonymous namespace
 
-static expr_single_t assign_table_single_cuda_device_to_host_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_single_t assign_table_single_cuda_device_to_host_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
-            (expr_single_t)&single_cuda_device_to_host_assigner_as_expr_single<dst_type, src_type, errmode>::single
+            (expr_const_single_t)&single_cuda_device_to_host_assigner_as_expr_single<dst_type, src_type, errmode>::single
         
 #define ERROR_MODE_LEVEL(dst_type, src_type) { \
         SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, assign_error_nocheck), \
@@ -329,10 +329,10 @@ struct single_cuda_device_to_device_assigner_as_expr_single {
 };
 } // anonymous namespace
 
-static expr_single_t assign_table_single_cuda_device_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_single_t assign_table_single_cuda_device_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
-            (expr_single_t)&single_cuda_device_to_device_assigner_as_expr_single<dst_type, src_type, errmode>::single
+            (expr_const_single_t)&single_cuda_device_to_device_assigner_as_expr_single<dst_type, src_type, errmode>::single
         
 #define ERROR_MODE_LEVEL(dst_type, src_type) { \
         SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, assign_error_nocheck), \
@@ -458,7 +458,7 @@ namespace {
     };
 } // anonymous namespace
 
-static expr_strided_t assign_table_strided_cuda_device_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_strided_t assign_table_strided_cuda_device_to_device_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define STRIDED_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
             &multiple_cuda_device_to_device_assignment_builtin<dst_type, src_type, errmode>::strided_assign
@@ -524,39 +524,39 @@ size_t dynd::make_cuda_builtin_type_assignment_kernel(
                     errmode != assign_error_default) {
         ckernel_prefix *result = out->get_at<ckernel_prefix>(offset_out);
         switch (kernreq) {
-            case kernel_request_single:
+            case kernel_request_const_single:
                 if (dst_device) {
                     if (src_device) {
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_cuda_device_to_device_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     } else {
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_cuda_host_to_device_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     }
                 } else {
                     if (src_device) {
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_cuda_device_to_host_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     } else {
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     }
                 }
                 break;
-            case kernel_request_strided:
+            case kernel_request_const_strided:
                 if (dst_device) {
                     if (src_device) {
-                        result->set_function<expr_strided_t>(
+                        result->set_function<expr_const_strided_t>(
                                         assign_table_strided_cuda_device_to_device_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     } else {
                         offset_out = make_kernreq_to_single_kernel_adapter(out, offset_out, 1, kernreq);
                         result = out->get_at<ckernel_prefix>(offset_out);
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_cuda_host_to_device_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     }
@@ -564,11 +564,11 @@ size_t dynd::make_cuda_builtin_type_assignment_kernel(
                     if (src_device) {
                         offset_out = make_kernreq_to_single_kernel_adapter(out, offset_out, 1, kernreq);
                         result = out->get_at<ckernel_prefix>(offset_out);
-                        result->set_function<expr_single_t>(
+                        result->set_function<expr_const_single_t>(
                                         assign_table_single_cuda_device_to_host_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     } else {
-                        result->set_function<expr_strided_t>(
+                        result->set_function<expr_const_strided_t>(
                                         assign_table_strided_kernel[dst_type_id-bool_type_id]
                                                         [src_type_id-bool_type_id][errmode]);
                     }
@@ -602,8 +602,8 @@ size_t dynd::make_cuda_pod_typed_data_assignment_kernel(
                 size_t data_size, size_t data_alignment,
                 kernel_request_t kernreq)
 {
-    bool single = (kernreq == kernel_request_single);
-    if (!single && kernreq != kernel_request_strided) {
+    bool single = (kernreq == kernel_request_const_single);
+    if (!single && kernreq != kernel_request_const_strided) {
         stringstream ss;
         ss << "make_cuda_pod_typed_data_assignment_kernel: unrecognized request " << (int)kernreq;
         throw runtime_error(ss.str());
@@ -614,9 +614,9 @@ size_t dynd::make_cuda_pod_typed_data_assignment_kernel(
             out->ensure_capacity_leaf(offset_out + sizeof(unaligned_copy_ck));
             ckernel_prefix *result = out->get_at<ckernel_prefix>(offset_out);
             if (single) {
-                result->set_function<expr_single_t>(&unaligned_copy_single_cuda_device_to_device);
+                result->set_function<expr_const_single_t>(&unaligned_copy_single_cuda_device_to_device);
             } else {
-                result->set_function<expr_strided_t>(&unaligned_copy_strided_cuda_device_to_device);
+                result->set_function<expr_const_strided_t>(&unaligned_copy_strided_cuda_device_to_device);
             }
             reinterpret_cast<unaligned_copy_ck *>(result)->data_size = data_size;
             return offset_out + sizeof(unaligned_copy_ck);
@@ -624,9 +624,9 @@ size_t dynd::make_cuda_pod_typed_data_assignment_kernel(
             out->ensure_capacity_leaf(offset_out + sizeof(unaligned_copy_ck));
             ckernel_prefix *result = out->get_at<ckernel_prefix>(offset_out);
             if (single) {
-                result->set_function<expr_single_t>(&unaligned_copy_single_cuda_host_to_device);
+                result->set_function<expr_const_single_t>(&unaligned_copy_single_cuda_host_to_device);
             } else {
-                result->set_function<expr_strided_t>(&unaligned_copy_strided_cuda_host_to_device);
+                result->set_function<expr_const_strided_t>(&unaligned_copy_strided_cuda_host_to_device);
             }
             reinterpret_cast<unaligned_copy_ck *>(result)->data_size = data_size;
             return offset_out + sizeof(unaligned_copy_ck);
@@ -636,9 +636,9 @@ size_t dynd::make_cuda_pod_typed_data_assignment_kernel(
             out->ensure_capacity_leaf(offset_out + sizeof(unaligned_copy_ck));
             ckernel_prefix *result = out->get_at<ckernel_prefix>(offset_out);
             if (single) {
-                result->set_function<expr_single_t>(&unaligned_copy_single_cuda_device_to_host);
+                result->set_function<expr_const_single_t>(&unaligned_copy_single_cuda_device_to_host);
             } else {
-                result->set_function<expr_strided_t>(&unaligned_copy_strided_cuda_device_to_host);
+                result->set_function<expr_const_strided_t>(&unaligned_copy_strided_cuda_device_to_host);
             }
             reinterpret_cast<unaligned_copy_ck *>(result)->data_size = data_size;
             return offset_out + sizeof(unaligned_copy_ck);

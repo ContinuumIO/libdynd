@@ -101,7 +101,7 @@ TEST(StridedArrayDType, AssignKernel) {
     b = 9.0;
     EXPECT_EQ(strided_dim_type_id, a.get_type().get_type_id());
     make_assignment_kernel(&k, 0, a.get_type(), a.get_arrmeta(), b.get_type(),
-                           b.get_arrmeta(), kernel_request_single,
+                           b.get_arrmeta(), kernel_request_const_single,
                            &eval::default_eval_context);
     k(a.get_readwrite_originptr(), b.get_readonly_originptr());
     EXPECT_EQ(9, a(0).as<int>());
@@ -116,7 +116,7 @@ TEST(StridedArrayDType, AssignKernel) {
     EXPECT_EQ(strided_dim_type_id, a.get_type().get_type_id());
     EXPECT_EQ(strided_dim_type_id, b.get_type().get_type_id());
     make_assignment_kernel(&k, 0, a.get_type(), a.get_arrmeta(), b.get_type(),
-                           b.get_arrmeta(), kernel_request_single,
+                           b.get_arrmeta(), kernel_request_const_single,
                            &eval::default_eval_context);
     k(a.get_readwrite_originptr(), b.get_readonly_originptr());
     EXPECT_EQ(3, a(0).as<int>());
@@ -130,7 +130,7 @@ TEST(StridedArrayDType, AssignKernel) {
     EXPECT_EQ(strided_dim_type_id, b.get_type().get_type_id());
     EXPECT_THROW(make_assignment_kernel(&k, 0, a.get_type(), a.get_arrmeta(),
                                         b.get_type(), b.get_arrmeta(),
-                                        kernel_request_single,
+                                        kernel_request_const_single,
                                         &eval::default_eval_context),
                  broadcast_error);
 }

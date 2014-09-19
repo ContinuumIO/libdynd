@@ -446,19 +446,19 @@ size_t date_type::make_elwise_property_getter_kernel(
   ckernel_prefix *e = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
   switch (src_property_index) {
   case dateprop_year:
-    e->set_function<expr_single_t>(&get_property_kernel_year_single);
+    e->set_function<expr_const_single_t>(&get_property_kernel_year_single);
     return ckb_offset;
   case dateprop_month:
-    e->set_function<expr_single_t>(&get_property_kernel_month_single);
+    e->set_function<expr_const_single_t>(&get_property_kernel_month_single);
     return ckb_offset;
   case dateprop_day:
-    e->set_function<expr_single_t>(&get_property_kernel_day_single);
+    e->set_function<expr_const_single_t>(&get_property_kernel_day_single);
     return ckb_offset;
   case dateprop_weekday:
-    e->set_function<expr_single_t>(&get_property_kernel_weekday_single);
+    e->set_function<expr_const_single_t>(&get_property_kernel_weekday_single);
     return ckb_offset;
   case dateprop_struct:
-    e->set_function<expr_single_t>(&get_property_kernel_struct_single);
+    e->set_function<expr_const_single_t>(&get_property_kernel_struct_single);
     return ckb_offset;
   default:
     stringstream ss;
@@ -479,7 +479,7 @@ size_t date_type::make_elwise_property_setter_kernel(
     ckernel_prefix *e = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
     switch (dst_property_index) {
         case dateprop_struct:
-            e->set_function<expr_single_t>(&set_property_kernel_struct_single);
+            e->set_function<expr_const_single_t>(&set_property_kernel_struct_single);
             return ckb_offset;
         default:
             stringstream ss;

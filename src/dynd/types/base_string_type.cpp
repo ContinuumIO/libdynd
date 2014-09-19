@@ -97,10 +97,10 @@ namespace {
             // This is a leaf kernel, so no additional allocation is needed
             extra_type *e = ckb->alloc_ck_leaf<extra_type>(ckb_offset);
             switch (kernreq) {
-                case kernel_request_single:
+                case kernel_request_const_single:
                     e->base().set_function(m_op_pair.single);
                     break;
-                case kernel_request_strided:
+                case kernel_request_const_strided:
                     e->base().set_function(m_op_pair.strided);
                     break;
                 default: {

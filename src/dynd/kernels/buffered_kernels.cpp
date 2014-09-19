@@ -28,7 +28,7 @@ struct buffered_ck : public kernels::general_ck<buffered_ck> {
         self->m_bufs[i].reset_arrmeta();
         ckernel_prefix *ck =
             self->get_child_ckernel(self->m_src_buf_ck_offsets[i]);
-        expr_single_t ck_fn = ck->get_function<expr_single_t>();
+        expr_const_single_t ck_fn = ck->get_function<expr_const_single_t>();
         ck_fn(self->m_bufs[i].get_storage(), &src[i], ck);
         buf_src[i] = self->m_bufs[i].get_storage();
       } else {
@@ -36,7 +36,7 @@ struct buffered_ck : public kernels::general_ck<buffered_ck> {
       }
     }
     ckernel_prefix *child = self->get_child_ckernel();
-    expr_single_t child_fn = child->get_function<expr_single_t>();
+    expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
     child_fn(dst, &buf_src[0], child);
   }
 
@@ -48,7 +48,7 @@ struct buffered_ck : public kernels::general_ck<buffered_ck> {
     vector<const char *> buf_src(self->m_nsrc);
     vector<intptr_t> buf_stride(self->m_nsrc);
     ckernel_prefix *child = self->get_child_ckernel();
-    expr_strided_t child_fn = child->get_function<expr_strided_t>();
+    expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
 
     for (intptr_t i = 0; i < self->m_nsrc; ++i) {
       if (!self->m_bufs[i].is_null()) {
@@ -67,7 +67,7 @@ struct buffered_ck : public kernels::general_ck<buffered_ck> {
           self->m_bufs[i].reset_arrmeta();
           ckernel_prefix *ck =
               self->get_child_ckernel(self->m_src_buf_ck_offsets[i]);
-          expr_strided_t ck_fn = ck->get_function<expr_strided_t>();
+          expr_const_strided_t ck_fn = ck->get_function<expr_const_strided_t>();
           ck_fn(self->m_bufs[i].get_storage(), self->m_bufs[i].get_stride(),
                 &src[i], &src_stride[i], chunk_size, ck);
         }
@@ -78,7 +78,7 @@ struct buffered_ck : public kernels::general_ck<buffered_ck> {
           self->m_bufs[i].reset_arrmeta();
           ckernel_prefix *ck =
               self->get_child_ckernel(self->m_src_buf_ck_offsets[i]);
-          expr_strided_t ck_fn = ck->get_function<expr_strided_t>();
+          expr_const_strided_t ck_fn = ck->get_function<expr_const_strided_t>();
           ck_fn(self->m_bufs[i].get_storage(), buf_stride[i], &src[i],
                 &src_stride[i], chunk_size, ck);
         } else {

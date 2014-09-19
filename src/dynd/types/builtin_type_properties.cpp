@@ -182,13 +182,13 @@ size_t dynd::make_builtin_type_elwise_property_getter_kernel(
   case complex_float32_type_id:
     switch (src_elwise_property_index) {
     case 0:
-      e->set_function<expr_single_t>(&get_property_kernel_complex_float32_real);
+      e->set_function<expr_const_single_t>(&get_property_kernel_complex_float32_real);
       return ckb_offset;
     case 1:
-      e->set_function<expr_single_t>(&get_property_kernel_complex_float32_imag);
+      e->set_function<expr_const_single_t>(&get_property_kernel_complex_float32_imag);
       return ckb_offset;
     case 2:
-      e->set_function<expr_single_t>(
+      e->set_function<expr_const_single_t>(
           &get_or_set_property_kernel_complex_float32_conj);
       return ckb_offset;
     default:
@@ -198,13 +198,13 @@ size_t dynd::make_builtin_type_elwise_property_getter_kernel(
   case complex_float64_type_id:
     switch (src_elwise_property_index) {
     case 0:
-      e->set_function<expr_single_t>(&get_property_kernel_complex_float64_real);
+      e->set_function<expr_const_single_t>(&get_property_kernel_complex_float64_real);
       return ckb_offset;
     case 1:
-      e->set_function<expr_single_t>(&get_property_kernel_complex_float64_imag);
+      e->set_function<expr_const_single_t>(&get_property_kernel_complex_float64_imag);
       return ckb_offset;
     case 2:
-      e->set_function<expr_single_t>(
+      e->set_function<expr_const_single_t>(
           &get_or_set_property_kernel_complex_float64_conj);
       return ckb_offset;
     default:
@@ -234,7 +234,7 @@ size_t dynd::make_builtin_type_elwise_property_setter_kernel(
   case complex_float32_type_id:
     switch (dst_elwise_property_index) {
     case 2:
-      e->set_function<expr_single_t>(
+      e->set_function<expr_const_single_t>(
           &get_or_set_property_kernel_complex_float32_conj);
       return ckb_offset;
     default:
@@ -244,7 +244,7 @@ size_t dynd::make_builtin_type_elwise_property_setter_kernel(
   case complex_float64_type_id:
     switch (dst_elwise_property_index) {
     case 2:
-      e->set_function<expr_single_t>(
+      e->set_function<expr_const_single_t>(
           &get_or_set_property_kernel_complex_float64_conj);
       return ckb_offset;
     default:

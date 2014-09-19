@@ -214,7 +214,7 @@ struct string_to_json_ck
         json_type_data *out_d = reinterpret_cast<json_type_data *>(dst);
         // First copy it as a string
         ckernel_prefix *child = get_child_ckernel();
-        expr_single_t child_fn = child->get_function<expr_single_t>();
+        expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
         child_fn(dst, &src, child);
         // Then validate that it's correct JSON
         if (m_validate) {
@@ -265,13 +265,13 @@ size_t json_type::make_assignment_kernel(
                         ckb, ckb_offset, dst_arrmeta, string_encoding_utf_8,
                         src_arrmeta,
                         src_tp.tcast<base_string_type>()->get_encoding(),
-                        kernel_request_single, ectx);
+                        kernel_request_const_single, ectx);
                 } else {
                     return make_fixedstring_to_blockref_string_assignment_kernel(
                         ckb, ckb_offset, dst_arrmeta, string_encoding_utf_8,
                         src_tp.get_data_size(),
                         src_tp.tcast<base_string_type>()->get_encoding(),
-                        kernel_request_single, ectx);
+                        kernel_request_const_single, ectx);
                 }
             }
             default: {

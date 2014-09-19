@@ -211,7 +211,7 @@ namespace {
             // Loop through both by_values and data_values,
             // copying the data to the right place in the output
             ckernel_prefix *echild = e->base.get_child_ckernel(sizeof(extra_type));
-            expr_single_t opchild = echild->get_function<expr_single_t>();
+            expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
             array_iter<0, 1> iter(data_values_tp, data_values_arrmeta, data_values_data, 1);
             if (!iter.empty()) {
                 by_values_ptr = by_values_data;
@@ -267,15 +267,15 @@ size_t groupby_type::make_operand_to_value_assignment_kernel(
   const categorical_type *cd = m_groups_type.tcast<categorical_type>();
   switch (cd->get_storage_type().get_type_id()) {
   case uint8_type_id:
-    e->base.set_function<expr_single_t>(
+    e->base.set_function<expr_const_single_t>(
         &groupby_to_value_assign_extra::single_uint8);
     break;
   case uint16_type_id:
-    e->base.set_function<expr_single_t>(
+    e->base.set_function<expr_const_single_t>(
         &groupby_to_value_assign_extra::single_uint16);
     break;
   case uint32_type_id:
-    e->base.set_function<expr_single_t>(
+    e->base.set_function<expr_const_single_t>(
         &groupby_to_value_assign_extra::single_uint32);
     break;
   default:
@@ -310,7 +310,7 @@ size_t groupby_type::make_operand_to_value_assignment_kernel(
 
   return ::make_assignment_kernel(
       ckb, ckb_offset, dst_element_tp, dst_element_arrmeta, src_element_tp,
-      src_element_arrmeta, kernel_request_single, ectx);
+      src_element_arrmeta, kernel_request_const_single, ectx);
 }
 
 size_t groupby_type::make_value_to_operand_assignment_kernel(

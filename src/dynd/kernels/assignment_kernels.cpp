@@ -150,8 +150,8 @@ size_t dynd::make_pod_typed_data_assignment_kernel(ckernel_builder *ckb,
                                                    size_t data_alignment,
                                                    kernel_request_t kernreq)
 {
-  bool single = (kernreq == kernel_request_single);
-  if (!single && kernreq != kernel_request_strided) {
+  bool single = (kernreq == kernel_request_const_single);
+  if (!single && kernreq != kernel_request_const_strided) {
     stringstream ss;
     ss << "make_pod_typed_data_assignment_kernel: unrecognized request "
        << (int)kernreq;
@@ -166,40 +166,40 @@ size_t dynd::make_pod_typed_data_assignment_kernel(ckernel_builder *ckb,
     case 1:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             &aligned_fixed_size_copy_assign<1>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             &aligned_fixed_size_copy_assign<1>::strided);
       }
       return ckb_offset;
     case 2:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             &aligned_fixed_size_copy_assign<2>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             &aligned_fixed_size_copy_assign<2>::strided);
       }
       return ckb_offset;
     case 4:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             &aligned_fixed_size_copy_assign<4>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             &aligned_fixed_size_copy_assign<4>::strided);
       }
       return ckb_offset;
     case 8:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             &aligned_fixed_size_copy_assign<8>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             &aligned_fixed_size_copy_assign<8>::strided);
       }
       return ckb_offset;
@@ -207,9 +207,9 @@ size_t dynd::make_pod_typed_data_assignment_kernel(ckernel_builder *ckb,
       unaligned_copy_ck *self =
           ckb->alloc_ck_leaf<unaligned_copy_ck>(ckb_offset);
       if (single) {
-        self->base.set_function<expr_single_t>(&unaligned_copy_single);
+        self->base.set_function<expr_const_single_t>(&unaligned_copy_single);
       } else {
-        self->base.set_function<expr_strided_t>(&unaligned_copy_strided);
+        self->base.set_function<expr_const_strided_t>(&unaligned_copy_strided);
       }
       self->data_size = data_size;
       return ckb_offset;
@@ -221,30 +221,30 @@ size_t dynd::make_pod_typed_data_assignment_kernel(ckernel_builder *ckb,
     case 2:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             unaligned_fixed_size_copy_assign<2>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             unaligned_fixed_size_copy_assign<2>::strided);
       }
       return ckb_offset;
     case 4:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             unaligned_fixed_size_copy_assign<4>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             unaligned_fixed_size_copy_assign<4>::strided);
       }
       return ckb_offset;
     case 8:
       result = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
       if (single) {
-        result->set_function<expr_single_t>(
+        result->set_function<expr_const_single_t>(
             unaligned_fixed_size_copy_assign<8>::single);
       } else {
-        result->set_function<expr_strided_t>(
+        result->set_function<expr_const_strided_t>(
             unaligned_fixed_size_copy_assign<8>::strided);
       }
       return ckb_offset;
@@ -252,9 +252,9 @@ size_t dynd::make_pod_typed_data_assignment_kernel(ckernel_builder *ckb,
       unaligned_copy_ck *self =
           ckb->alloc_ck_leaf<unaligned_copy_ck>(ckb_offset);
       if (single) {
-        self->base.set_function<expr_single_t>(&unaligned_copy_single);
+        self->base.set_function<expr_const_single_t>(&unaligned_copy_single);
       } else {
-        self->base.set_function<expr_strided_t>(&unaligned_copy_strided);
+        self->base.set_function<expr_const_strided_t>(&unaligned_copy_strided);
       }
       self->data_size = data_size;
       return ckb_offset;
@@ -276,7 +276,7 @@ struct single_assigner_as_expr_single {
 };
 } // anonymous namespace
 
-static expr_single_t assign_table_single_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_single_t assign_table_single_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define SINGLE_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
             &single_assigner_as_expr_single<dst_type, src_type, errmode>::single
@@ -369,7 +369,7 @@ namespace {
     };
 } // anonymous namespace
 
-static expr_strided_t assign_table_strided_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
+static expr_const_strided_t assign_table_strided_kernel[builtin_type_id_count-2][builtin_type_id_count-2][4] =
 {
 #define STRIDED_OPERATION_PAIR_LEVEL(dst_type, src_type, errmode) \
             &multiple_assignment_builtin<dst_type, src_type, errmode>::strided_assign
@@ -436,13 +436,13 @@ size_t dynd::make_builtin_type_assignment_kernel(
         ckernel_prefix *result = ckb->get_at<ckernel_prefix>(ckb_offset);
         kernels::inc_ckb_offset<ckernel_prefix>(ckb_offset);
         switch (kernreq) {
-            case kernel_request_single:
-                result->set_function<expr_single_t>(
+            case kernel_request_const_single:
+                result->set_function<expr_const_single_t>(
                                 assign_table_single_kernel[dst_type_id-bool_type_id]
                                                 [src_type_id-bool_type_id][errmode]);
                 break;
-            case kernel_request_strided:
-                result->set_function<expr_strided_t>(
+            case kernel_request_const_strided:
+                result->set_function<expr_const_strided_t>(
                                 assign_table_strided_kernel[dst_type_id-bool_type_id]
                                                 [src_type_id-bool_type_id][errmode]);
                 break;
@@ -468,7 +468,7 @@ struct wrap_single_as_strided_fixedcount_ck {
                         ckernel_prefix *self)
     {
         ckernel_prefix *echild = self->get_child_ckernel(sizeof(ckernel_prefix));
-        expr_single_t opchild = echild->get_function<expr_single_t>();
+        expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
         const char *src_copy[N];
         for (int j = 0; j < N; ++j) {
             src_copy[j] = src[j];
@@ -491,7 +491,7 @@ struct wrap_single_as_strided_fixedcount_ck<0> {
                       ckernel_prefix *self)
   {
     ckernel_prefix *echild = self->get_child_ckernel(sizeof(ckernel_prefix));
-    expr_single_t opchild = echild->get_function<expr_single_t>();
+    expr_const_single_t opchild = echild->get_function<expr_const_single_t>();
     for (size_t i = 0; i != count; ++i) {
       opchild(dst, NULL, echild);
       dst += dst_stride;
@@ -499,7 +499,7 @@ struct wrap_single_as_strided_fixedcount_ck<0> {
   }
 };
 
-static const expr_strided_t wrap_single_as_strided_fixedcount[7] = {
+static const expr_const_strided_t wrap_single_as_strided_fixedcount[7] = {
     &wrap_single_as_strided_fixedcount_ck<0>::strided,
     &wrap_single_as_strided_fixedcount_ck<1>::strided,
     &wrap_single_as_strided_fixedcount_ck<2>::strided,
@@ -526,7 +526,7 @@ struct wrap_single_as_strided_ck {
     intptr_t nsrc = reinterpret_cast<self_type *>(self)->nsrc;
     shortvector<const char *> src_copy(nsrc, src);
     ckernel_prefix *child = self->get_child_ckernel(sizeof(self_type));
-    expr_single_t child_fn = child->get_function<expr_single_t>();
+    expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
     for (size_t i = 0; i != count; ++i) {
       child_fn(dst, src_copy.get(), child);
       dst += dst_stride;
@@ -549,21 +549,21 @@ size_t dynd::make_kernreq_to_single_kernel_adapter(ckernel_builder *ckb,
                                                    kernel_request_t kernreq)
 {
   switch (kernreq) {
-  case kernel_request_single: {
+  case kernel_request_const_single: {
     return ckb_offset;
   }
-  case kernel_request_strided: {
+  case kernel_request_const_strided: {
     if (nsrc >= 0 &&
         nsrc < (int)(sizeof(wrap_single_as_strided_fixedcount) /
                      sizeof(wrap_single_as_strided_fixedcount[0]))) {
       ckernel_prefix *e = ckb->alloc_ck<ckernel_prefix>(ckb_offset);
-      e->set_function<expr_strided_t>(wrap_single_as_strided_fixedcount[nsrc]);
+      e->set_function<expr_const_strided_t>(wrap_single_as_strided_fixedcount[nsrc]);
       e->destructor = &simple_wrapper_kernel_destruct;
       return ckb_offset;
     } else {
       wrap_single_as_strided_ck *e =
           ckb->alloc_ck<wrap_single_as_strided_ck>(ckb_offset);
-      e->base.set_function<expr_strided_t>(&wrap_single_as_strided_ck::strided);
+      e->base.set_function<expr_const_strided_t>(&wrap_single_as_strided_ck::strided);
       e->base.destructor = &wrap_single_as_strided_ck::destruct;
       e->nsrc = nsrc;
       return ckb_offset;

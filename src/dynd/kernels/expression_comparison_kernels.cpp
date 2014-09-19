@@ -64,9 +64,9 @@ namespace {
 
             // Get and execute the assignment kernel
             ckernel_prefix *echild;
-            expr_single_t opchild;
+            expr_const_single_t opchild;
             echild = reinterpret_cast<ckernel_prefix *>(eraw + b.kernel_offset);
-            opchild = echild->get_function<expr_single_t>();
+            opchild = echild->get_function<expr_const_single_t>();
             opchild(dst, &src, echild);
 
             // Return the buffer
@@ -150,7 +150,7 @@ size_t dynd::make_expression_comparison_kernel(
         e->buf[0].kernel_offset = ckb_offset - root_ckb_offset;
         ckb_offset = make_assignment_kernel(
             ckb, ckb_offset, src0_dt.value_type(), e->buf[0].arrmeta,
-            src0_dt, src0_arrmeta, kernel_request_single, ectx);
+            src0_dt, src0_arrmeta, kernel_request_const_single, ectx);
         // Have to re-retrieve 'e', because creating another kernel may invalidate it
         e = ckb->get_at<buffered_kernel_extra>(root_ckb_offset);
     }
@@ -159,7 +159,7 @@ size_t dynd::make_expression_comparison_kernel(
         e->buf[1].kernel_offset = ckb_offset - root_ckb_offset;
         ckb_offset = make_assignment_kernel(
             ckb, ckb_offset, src1_dt.value_type(), e->buf[1].arrmeta, src1_dt,
-            src1_arrmeta, kernel_request_single, ectx);
+            src1_arrmeta, kernel_request_const_single, ectx);
         // Have to re-retrieve 'e', because creating another kernel may invalidate it
         e = ckb->get_at<buffered_kernel_extra>(root_ckb_offset);
     }

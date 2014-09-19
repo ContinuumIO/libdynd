@@ -229,10 +229,10 @@ static array_preamble *function___call__(const array_preamble *params, void *DYN
     ckernel_builder ckb;
     af->instantiate(af, &ckb, 0, args[0].get_type(),
                          args[0].get_arrmeta(), src_tp,
-                         dynd_arrmeta, kernel_request_single,
+                         dynd_arrmeta, kernel_request_const_single,
                          NULL, &eval::default_eval_context);
     // Call the ckernel
-    expr_single_t usngo = ckb.get()->get_function<expr_single_t>();
+    expr_const_single_t usngo = ckb.get()->get_function<expr_const_single_t>();
     const char *in_ptrs[max_args];
     for (int i = 0; i < nargs - 1; ++i) {
         in_ptrs[i] = args[i+1].get_readonly_originptr();

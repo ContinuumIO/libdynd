@@ -16,9 +16,9 @@ namespace dynd {
 
 struct ckernel_prefix;
 
-typedef void (*expr_single_t)(char *dst, const char *const *src,
+typedef void (*expr_const_single_t)(char *dst, const char *const *src,
                               ckernel_prefix *self);
-typedef void (*expr_strided_t)(char *dst, intptr_t dst_stride,
+typedef void (*expr_const_strided_t)(char *dst, intptr_t dst_stride,
                                const char *const *src,
                                const intptr_t *src_stride, size_t count,
                                ckernel_prefix *self);
@@ -29,9 +29,9 @@ typedef int (*expr_predicate_t)(const char *const *src, ckernel_prefix *self);
  */
 enum {
     /** Kernel function expr_single_t, "(T1, T2, ...) -> R" */
-    kernel_request_single = 0,
+    kernel_request_const_single = 0,
     /** Kernel function expr_strided_t, "(T1, T2, ...) -> R" */
-    kernel_request_strided = 1,
+    kernel_request_const_strided = 1,
     /** Kernel function expr_predicate_t, "(T1, T2, ...) -> bool" */
     kernel_request_predicate = 2,
     /**
@@ -104,13 +104,13 @@ struct ckernel_prefix {
     }
 
     inline void set_expr_function(kernel_request_t kernreq,
-                                  expr_single_t single,
-                                  expr_strided_t strided)
+                                  expr_const_single_t const_single,
+                                  expr_const_strided_t const_strided)
     {
-        if (kernreq == kernel_request_single) {
-            function = reinterpret_cast<void *>(single);
-        } else if (kernreq == kernel_request_strided) {
-            function = reinterpret_cast<void *>(strided);
+        if (kernreq == kernel_request_const_single) {
+            function = reinterpret_cast<void *>(const_single);
+        } else if (kernreq == kernel_request_const_strided) {
+            function = reinterpret_cast<void *>(const_strided);
         } else {
             std::stringstream ss;
             ss << "unrecognized dynd kernel request " << kernreq;

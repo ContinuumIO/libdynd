@@ -32,11 +32,11 @@ namespace {
         void init(const ndt::type& buffer_tp_, kernel_request_t kernreq) {
             size_t element_count = 1;
             switch (kernreq) {
-                case kernel_request_single:
-                    base.set_function<expr_single_t>(&single);
+                case kernel_request_const_single:
+                    base.set_function<expr_const_single_t>(&single);
                     break;
-                case kernel_request_strided:
-                    base.set_function<expr_strided_t>(&strided);
+                case kernel_request_const_strided:
+                    base.set_function<expr_const_strided_t>(&strided);
                     element_count = DYND_BUFFER_CHUNK_SIZE;
                     break;
                 default: {
@@ -75,7 +75,7 @@ namespace {
             char *eraw = reinterpret_cast<char *>(extra);
             extra_type *e = reinterpret_cast<extra_type *>(extra);
             ckernel_prefix *echild_first, *echild_second;
-            expr_single_t opchild;
+            expr_const_single_t opchild;
             const base_type *buffer_tp = e->buffer_tp;
             char *buffer_arrmeta = e->buffer_arrmeta;
             char *buffer_data_ptr = eraw + e->buffer_data_offset;
@@ -87,10 +87,10 @@ namespace {
                 memset(buffer_data_ptr, 0, e->buffer_data_size);
             }
             // First kernel (src -> buffer)
-            opchild = echild_first->get_function<expr_single_t>();
+            opchild = echild_first->get_function<expr_const_single_t>();
             opchild(buffer_data_ptr, src, echild_first);
             // Second kernel (buffer -> dst)
-            opchild = echild_second->get_function<expr_single_t>();
+            opchild = echild_second->get_function<expr_const_single_t>();
             opchild(dst, &buffer_data_ptr, echild_second);
             // Reset the buffer storage if used
             if (buffer_arrmeta != NULL) {
@@ -104,7 +104,7 @@ namespace {
             char *eraw = reinterpret_cast<char *>(extra);
             extra_type *e = reinterpret_cast<extra_type *>(extra);
             ckernel_prefix *echild_first, *echild_second;
-            expr_strided_t opchild_first, opchild_second;
+            expr_const_strided_t opchild_first, opchild_second;
             const base_type *buffer_tp = e->buffer_tp;
             char *buffer_arrmeta = e->buffer_arrmeta;
             char *buffer_data_ptr = eraw + e->buffer_data_offset;
@@ -112,8 +112,8 @@ namespace {
             echild_first = reinterpret_cast<ckernel_prefix *>(eraw + e->first_kernel_offset);
             echild_second = reinterpret_cast<ckernel_prefix *>(eraw + e->second_kernel_offset);
 
-            opchild_first = echild_first->get_function<expr_strided_t>();
-            opchild_second = echild_second->get_function<expr_strided_t>();
+            opchild_first = echild_first->get_function<expr_const_strided_t>();
+            opchild_second = echild_second->get_function<expr_const_strided_t>();
             const char *src0 = src[0];
             intptr_t src0_stride = src_stride[0];
             while (count > 0) {

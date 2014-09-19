@@ -395,22 +395,22 @@ size_t time_type::make_elwise_property_getter_kernel(
     ckernel_prefix *e = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
     switch (src_property_index) {
         case timeprop_hour:
-            e->set_function<expr_single_t>(&get_property_kernel_hour_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_hour_single);
             return ckb_offset;
         case timeprop_minute:
-            e->set_function<expr_single_t>(&get_property_kernel_minute_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_minute_single);
             return ckb_offset;
         case timeprop_second:
-            e->set_function<expr_single_t>(&get_property_kernel_second_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_second_single);
             return ckb_offset;
         case timeprop_microsecond:
-            e->set_function<expr_single_t>(&get_property_kernel_microsecond_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_microsecond_single);
             return ckb_offset;
         case timeprop_tick:
-            e->set_function<expr_single_t>(&get_property_kernel_tick_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_tick_single);
             return ckb_offset;
         case timeprop_struct:
-            e->set_function<expr_single_t>(&get_property_kernel_struct_single);
+            e->set_function<expr_const_single_t>(&get_property_kernel_struct_single);
             return ckb_offset;
         default:
             stringstream ss;
@@ -430,7 +430,7 @@ size_t time_type::make_elwise_property_setter_kernel(
   ckernel_prefix *e = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
   switch (dst_property_index) {
   case timeprop_struct:
-    e->set_function<expr_single_t>(&set_property_kernel_struct_single);
+    e->set_function<expr_const_single_t>(&set_property_kernel_struct_single);
     return ckb_offset;
   default:
     stringstream ss;

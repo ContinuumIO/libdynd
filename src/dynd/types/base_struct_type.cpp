@@ -244,7 +244,7 @@ struct struct_property_getter_ck
     inline void single(char *dst, const char *src)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_single_t child_fn = child->get_function<expr_single_t>();
+        expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
         src += m_field_offset;
         child_fn(dst, &src, child);
     }
@@ -253,7 +253,7 @@ struct struct_property_getter_ck
                         intptr_t src_stride, size_t count)
     {
         ckernel_prefix *child = get_child_ckernel();
-        expr_strided_t child_fn = child->get_function<expr_strided_t>();
+        expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
         src += m_field_offset;
         child_fn(dst, dst_stride, &src, &src_stride, count, child);
     }

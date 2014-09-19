@@ -27,7 +27,7 @@ struct neighborhood_ck_iter;
 
 template <int N>
 struct neighborhood_ck_iter<N, N> {
-    static void interior(expr_strided_t nh_op_fn,
+    static void interior(expr_const_strided_t nh_op_fn,
                          char *dst, intptr_t *dst_strides,
                          const char **src, intptr_t *DYND_UNUSED(src_strides), intptr_t *src_inner_strides,
                          intptr_t *shape, const strided_dim_type_arrmeta *nh_arrmeta, ckernel_prefix *nh_op) {
@@ -37,7 +37,7 @@ struct neighborhood_ck_iter<N, N> {
 
 template <int N, int K = 0>
 struct neighborhood_ck_iter {
-    static void interior(expr_strided_t nh_op_fn,
+    static void interior(expr_const_strided_t nh_op_fn,
                          char *dst, intptr_t *dst_strides,
                          const char **src, intptr_t *src_strides, intptr_t *src_inner_strides,
                          intptr_t *shape, const strided_dim_type_arrmeta *nh_arrmeta, ckernel_prefix *nh_op) {
@@ -66,7 +66,7 @@ struct neighborhood_ck : public kernels::expr_ck<neighborhood_ck<N>, 2> {
 
     inline void single(char *dst, const char *const *src) {
         ckernel_prefix *nh_op = kernels::expr_ck<neighborhood_ck<N>, 2>::get_child_ckernel();
-        expr_strided_t nh_op_fn = nh_op->get_function<expr_strided_t>();
+        expr_const_strided_t nh_op_fn = nh_op->get_function<expr_const_strided_t>();
 
         const char *src_it[1] = {src[0]};
         const strided_dim_type_arrmeta *nh_arrmeta =
@@ -158,7 +158,7 @@ static intptr_t instantiate_neighborhood(
 
     ckb_offset = nh->neighborhood_op.get()->instantiate(
         nh->neighborhood_op.get(), ckb, ckb_offset, nh_dst_tp, nh_dst_arrmeta,
-        nh_src_tp, nh_src_arrmeta, kernel_request_strided, aux, ectx);
+        nh_src_tp, nh_src_arrmeta, kernel_request_const_strided, aux, ectx);
     return ckb_offset;
 }
 

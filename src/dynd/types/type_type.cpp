@@ -175,13 +175,13 @@ size_t type_type::make_assignment_kernel(
   if (this == dst_tp.extended()) {
     if (src_tp.get_type_id() == type_type_id) {
       ckernel_prefix *e = ckb->alloc_ck_leaf<ckernel_prefix>(ckb_offset);
-      e->set_function<expr_single_t>(typed_data_assignment_kernel_single);
+      e->set_function<expr_const_single_t>(typed_data_assignment_kernel_single);
       return ckb_offset;
     } else if (src_tp.get_kind() == string_kind) {
       // String to type
       string_to_type_kernel_extra *e =
           ckb->alloc_ck_leaf<string_to_type_kernel_extra>(ckb_offset);
-      e->base.set_function<expr_single_t>(&string_to_type_kernel_extra::single);
+      e->base.set_function<expr_const_single_t>(&string_to_type_kernel_extra::single);
       e->base.destructor = &string_to_type_kernel_extra::destruct;
       // The kernel data owns a reference to this type
       e->src_string_dt =
@@ -199,7 +199,7 @@ size_t type_type::make_assignment_kernel(
       // Type to string
       type_to_string_kernel_extra *e =
           ckb->alloc_ck_leaf<type_to_string_kernel_extra>(ckb_offset);
-      e->base.set_function<expr_single_t>(&type_to_string_kernel_extra::single);
+      e->base.set_function<expr_const_single_t>(&type_to_string_kernel_extra::single);
       e->base.destructor = &type_to_string_kernel_extra::destruct;
       // The kernel data owns a reference to this type
       e->dst_string_dt =

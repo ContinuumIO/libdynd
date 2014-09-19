@@ -27,7 +27,7 @@ namespace {
         inline void single(char *dst, const char *const *DYND_UNUSED(src))
         {
             ckernel_prefix *child = get_child_ckernel();
-            expr_single_t child_fn = child->get_function<expr_single_t>();
+            expr_const_single_t child_fn = child->get_function<expr_const_single_t>();
             child_fn(dst, &m_constant_data, child);
         }
 
@@ -37,7 +37,7 @@ namespace {
                             size_t count)
         {
             ckernel_prefix *child = get_child_ckernel();
-            expr_strided_t child_fn = child->get_function<expr_strided_t>();
+            expr_const_strided_t child_fn = child->get_function<expr_const_strided_t>();
             intptr_t zero_stride = 0;
             child_fn(dst, dst_stride, &m_constant_data, &zero_stride, count,
                      child);
@@ -75,7 +75,7 @@ static void binary_as_unary_right_associative_reduction_adapter_single_ckernel(
     //    dst_(0) = a[n-1]
     //    dst_(i+1) = dst_(i) <OP> a[n-1-(i+1)]
     ckernel_prefix *child = ckp + 1;
-    expr_single_t childop = child->get_function<expr_single_t>();
+    expr_const_single_t childop = child->get_function<expr_const_single_t>();
     const char *src_binary[2] = {dst, src[0]};
     childop(dst, src_binary, child);
 }
@@ -87,7 +87,7 @@ static void binary_as_unary_left_associative_reduction_adapter_single_ckernel(
     //    dst_(0) = a[0]
     //    dst_(i+1) = a[i+1] <OP> dst_(i)
     ckernel_prefix *child = ckp + 1;
-    expr_single_t childop = child->get_function<expr_single_t>();
+    expr_const_single_t childop = child->get_function<expr_const_single_t>();
     const char *src_binary[2] = {src[0], dst};
     childop(dst, src_binary, child);
 }
@@ -100,7 +100,7 @@ static void binary_as_unary_right_associative_reduction_adapter_strided_ckernel(
     //    dst_(0) = a[n-1]
     //    dst_(i+1) = dst_(i) <OP> a[n-1-(i+1)]
     ckernel_prefix *child = ckp + 1;
-    expr_strided_t childop = child->get_function<expr_strided_t>();
+    expr_const_strided_t childop = child->get_function<expr_const_strided_t>();
     const char *src_binary[2] = {dst, src[0]};
     const intptr_t src_binary_stride[2] = {dst_stride, src_stride[0]};
     childop(dst, dst_stride, src_binary, src_binary_stride, count, child);
@@ -114,7 +114,7 @@ static void binary_as_unary_left_associative_reduction_adapter_strided_ckernel(
     //    dst_(0) = a[n-1]
     //    dst_(i+1) = dst_(i) <OP> a[n-1-(i+1)]
     ckernel_prefix *child = ckp + 1;
-    expr_strided_t childop = child->get_function<expr_strided_t>();
+    expr_const_strided_t childop = child->get_function<expr_const_strided_t>();
     const char *src_binary[2] = {src[0], dst};
     const intptr_t src_binary_stride[2] = {src_stride[0], dst_stride};
     childop(dst, dst_stride, src_binary, src_binary_stride, count, child);

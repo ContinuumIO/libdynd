@@ -25,10 +25,10 @@ struct strided_rolling_ck : public kernels::unary_ck<strided_rolling_ck> {
     {
         ckernel_prefix *nachild = get_child_ckernel();
         ckernel_prefix *wopchild = get_child_ckernel(m_window_op_offset);
-        expr_strided_t nachild_fn =
-                     nachild->get_function<expr_strided_t>();
-        expr_strided_t wopchild_fn =
-                     wopchild->get_function<expr_strided_t>();
+        expr_const_strided_t nachild_fn =
+                     nachild->get_function<expr_const_strided_t>();
+        expr_const_strided_t wopchild_fn =
+                     wopchild->get_function<expr_const_strided_t>();
         // Fill in NA/NaN at the beginning
         if (m_dim_size > 0) {
             nachild_fn(dst, m_dst_stride, NULL, NULL,
@@ -63,10 +63,10 @@ struct var_rolling_ck : public kernels::unary_ck<var_rolling_ck> {
         // Get the child ckernels
         ckernel_prefix *nachild = get_child_ckernel();
         ckernel_prefix *wopchild = get_child_ckernel(m_window_op_offset);
-        expr_strided_t nachild_fn =
-                     nachild->get_function<expr_strided_t>();
-        expr_strided_t wopchild_fn =
-                     wopchild->get_function<expr_strided_t>();
+        expr_const_strided_t nachild_fn =
+                     nachild->get_function<expr_const_strided_t>();
+        expr_const_strided_t wopchild_fn =
+                     wopchild->get_function<expr_const_strided_t>();
         // Get pointers to the src and dst data
         var_dim_type_data *dst_dat = reinterpret_cast<var_dim_type_data *>(dst);
         intptr_t dst_stride =
@@ -226,7 +226,7 @@ instantiate_strided(const arrfunc_type_data *af_self, dynd::ckernel_builder *ckb
     // Create the NA-filling child ckernel
     ckb_offset = kernels::make_constant_value_assignment_ckernel(
         ckb, ckb_offset, dst_el_tp, dst_el_arrmeta,
-        numeric_limits<double>::quiet_NaN(), kernel_request_strided, ectx);
+        numeric_limits<double>::quiet_NaN(), kernel_request_const_strided, ectx);
     // Re-retrieve the self pointer, because it may be at a new memory location now
     self = ckb->get_at<self_type>(root_ckb_offset);
     // Create the window op child ckernel
@@ -249,7 +249,7 @@ instantiate_strided(const arrfunc_type_data *af_self, dynd::ckernel_builder *ckb
     return window_af->instantiate(
         window_af, ckb, ckb_offset, dst_el_tp, dst_el_arrmeta,
         &self->m_src_winop_meta.get_type(), &src_winop_meta,
-        kernel_request_strided, aux, ectx);
+        kernel_request_const_strided, aux, ectx);
 }
 
 void dynd::make_rolling_arrfunc(arrfunc_type_data *out_af,

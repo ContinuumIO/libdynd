@@ -23,7 +23,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
     unary_ckernel_builder ckb;
 
     // int32
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, int32_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, int32_type_id, kernel_request_const_single);
     int32_t s32 = 0, a32[3] = {1, -2, 12};
     ckb((char *)&s32, (char *)&a32[0]);
     EXPECT_EQ(1, s32);
@@ -34,7 +34,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
 
     // int64
     ckb.reset();
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, int64_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, int64_type_id, kernel_request_const_single);
     int64_t s64 = 0, a64[3] = {1, -20000000000LL, 12};
     ckb((char *)&s64, (char *)&a64[0]);
     EXPECT_EQ(1, s64);
@@ -45,7 +45,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
 
     // float32
     ckb.reset();
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, float32_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, float32_type_id, kernel_request_const_single);
     float sf32 = 0, af32[3] = {1.25f, -2.5f, 12.125f};
     ckb((char *)&sf32, (char *)&af32[0]);
     EXPECT_EQ(1.25f, sf32);
@@ -56,7 +56,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
 
     // float64
     ckb.reset();
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, float64_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, float64_type_id, kernel_request_const_single);
     double sf64 = 0, af64[3] = {1.25, -2.5, 12.125};
     ckb((char *)&sf64, (char *)&af64[0]);
     EXPECT_EQ(1.25, sf64);
@@ -67,7 +67,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
 
     // complex[float32]
     ckb.reset();
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, complex_float32_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, complex_float32_type_id, kernel_request_const_single);
     dynd_complex<float> scf32 = 0, acf32[3] = {dynd_complex<float>(1.25f, -2.125f),
                                              dynd_complex<float>(-2.5f, 1.0f),
                                              dynd_complex<float>(12.125f, 12345.f)};
@@ -80,7 +80,7 @@ TEST(Reduction, BuiltinSum_Kernel) {
 
     // complex[float64]
     ckb.reset();
-    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, complex_float64_type_id, kernel_request_single);
+    kernels::make_builtin_sum_reduction_ckernel(&ckb, 0, complex_float64_type_id, kernel_request_const_single);
     dynd_complex<double> scf64 = 0, acf64[3] = {dynd_complex<double>(1.25, -2.125),
                                               dynd_complex<double>(-2.5, 1.0),
                                               dynd_complex<double>(12.125, 12345.)};
@@ -115,7 +115,7 @@ TEST(Reduction, BuiltinSum_Lift0D_NoIdentity) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -147,7 +147,7 @@ TEST(Reduction, BuiltinSum_Lift0D_WithIdentity) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -179,7 +179,7 @@ TEST(Reduction, BuiltinSum_Lift1D_NoIdentity) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -193,7 +193,7 @@ TEST(Reduction, BuiltinSum_Lift1D_NoIdentity) {
     src_tp[0] = a.get_type();
     src_arrmeta[0] = a.get_arrmeta();
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -226,7 +226,7 @@ TEST(Reduction, BuiltinSum_Lift1D_WithIdentity) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -259,7 +259,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -275,7 +275,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce) {
     src_tp[0] = a.get_type();
     src_arrmeta[0] = a.get_arrmeta();
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -308,7 +308,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -342,7 +342,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -361,7 +361,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce) {
     src_tp[0] = a.get_type();
     src_arrmeta[0] = a.get_arrmeta();
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -396,7 +396,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce_KeepDim) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -432,7 +432,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast) {
     ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -452,7 +452,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast) {
     src_tp[0] = a.get_type();
     src_arrmeta[0] = a.get_arrmeta();
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -488,7 +488,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -525,7 +525,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -561,7 +561,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_BroadcastReduceReduce) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data
@@ -599,7 +599,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceBroadcastReduce) {
     const ndt::type src_tp[1] = {a.get_type()};
     const char *src_arrmeta[1] = {a.get_arrmeta()};
     af.instantiate(&af, &ckb, 0, b.get_type(), b.get_arrmeta(),
-                        src_tp, src_arrmeta, kernel_request_single,
+                        src_tp, src_arrmeta, kernel_request_const_single,
                         NULL, &eval::default_eval_context);
 
     // Call it on the data

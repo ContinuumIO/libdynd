@@ -176,11 +176,11 @@ public:
         date_strftime_kernel_extra *e =
             ckb->alloc_ck_leaf<date_strftime_kernel_extra>(ckb_offset);
         switch (kernreq) {
-            case kernel_request_single:
-                e->base.set_function<expr_single_t>(&date_strftime_kernel_extra::single_unary);
+            case kernel_request_const_single:
+                e->base.set_function<expr_const_single_t>(&date_strftime_kernel_extra::single_unary);
                 break;
-            case kernel_request_strided:
-                e->base.set_function<expr_strided_t>(&date_strftime_kernel_extra::strided_unary);
+            case kernel_request_const_strided:
+                e->base.set_function<expr_const_strided_t>(&date_strftime_kernel_extra::strided_unary);
                 break;
             default: {
                 stringstream ss;
@@ -328,12 +328,12 @@ public:
       date_replace_kernel_extra *e =
           ckb->alloc_ck_leaf<date_replace_kernel_extra>(ckb_offset);
       switch (kernreq) {
-      case kernel_request_single:
-        e->base.set_function<expr_single_t>(
+      case kernel_request_const_single:
+        e->base.set_function<expr_const_single_t>(
             &date_replace_kernel_extra::single_unary);
         break;
-      case kernel_request_strided:
-        e->base.set_function<expr_strided_t>(
+      case kernel_request_const_strided:
+        e->base.set_function<expr_const_strided_t>(
             &date_replace_kernel_extra::strided_unary);
         break;
       default: {

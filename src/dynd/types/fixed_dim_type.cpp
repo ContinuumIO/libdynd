@@ -510,7 +510,7 @@ size_t fixed_dim_type::make_assignment_kernel(
       return ::make_assignment_kernel(
           ckb, ckb_offset, m_element_tp,
           dst_arrmeta + sizeof(fixed_dim_type_arrmeta), src_tp, src_arrmeta,
-          kernel_request_strided, ectx);
+          kernel_request_const_strided, ectx);
     } else if (src_tp.get_as_strided(src_arrmeta, &src_size, &src_stride,
                                      &src_el_tp, &src_el_arrmeta)) {
       kernels::strided_assign_ck *self =
@@ -526,7 +526,7 @@ size_t fixed_dim_type::make_assignment_kernel(
       return ::make_assignment_kernel(
           ckb, ckb_offset, m_element_tp,
           dst_arrmeta + sizeof(fixed_dim_type_arrmeta), src_el_tp,
-          src_el_arrmeta, kernel_request_strided, ectx);
+          src_el_arrmeta, kernel_request_const_strided, ectx);
     } else if (!src_tp.is_builtin()) {
       // Give the src type a chance to make a kernel
       return src_tp.extended()->make_assignment_kernel(

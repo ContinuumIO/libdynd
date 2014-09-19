@@ -403,7 +403,7 @@ string_to_complex_float64_single(char *DYND_UNUSED(dst),
     throw std::runtime_error("TODO: implement string_to_complex_float64_single");
 }
 
-static expr_single_t static_string_to_builtin_kernels[builtin_type_id_count-2] = {
+static expr_const_single_t static_string_to_builtin_kernels[builtin_type_id_count-2] = {
         &string_to_bool_single,
         &string_to_int<int8_t>::single,
         &string_to_int<int16_t>::single,
@@ -440,7 +440,7 @@ size_t dynd::make_string_to_builtin_assignment_kernel(
             make_kernreq_to_single_kernel_adapter(ckb, ckb_offset, 1, kernreq);
         string_to_builtin_kernel_extra *e =
             ckb->alloc_ck<string_to_builtin_kernel_extra>(ckb_offset);
-        e->base.set_function<expr_single_t>(
+        e->base.set_function<expr_const_single_t>(
             static_string_to_builtin_kernels[dst_type_id - bool_type_id]);
         e->base.destructor = &string_to_builtin_kernel_extra::destruct;
         // The kernel data owns this reference
@@ -510,7 +510,7 @@ size_t dynd::make_builtin_to_string_assignment_kernel(
         ckb_offset = make_kernreq_to_single_kernel_adapter(ckb, ckb_offset, 1, kernreq);
         builtin_to_string_kernel_extra *e =
             ckb->alloc_ck_leaf<builtin_to_string_kernel_extra>(ckb_offset);
-        e->base.set_function<expr_single_t>(builtin_to_string_kernel_extra::single);
+        e->base.set_function<expr_const_single_t>(builtin_to_string_kernel_extra::single);
         e->base.destructor = builtin_to_string_kernel_extra::destruct;
         // The kernel data owns this reference
         e->dst_string_tp = static_cast<const base_string_type *>(ndt::type(dst_string_tp).release());
@@ -540,6 +540,6 @@ void dynd::assign_utf8_string_to_builtin(type_id_t dst_type_id, char *dst,
     unary_ckernel_builder k;
     make_string_to_builtin_assignment_kernel(
         &k, 0, dst_type_id, dt, reinterpret_cast<const char *>(&md),
-        kernel_request_single, ectx);
+        kernel_request_const_single, ectx);
     k(dst, reinterpret_cast<const char *>(&d));
 }

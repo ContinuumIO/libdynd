@@ -142,7 +142,7 @@ DYND_PP_JOIN_MAP(METH_RET_RES_CKERNEL_INSTANTIATOR, (), DYND_PP_RANGE(1, DYND_PP
         std::pair<const T *, func_type *> obj_func(&obj, &func); \
 \
         arrfunc_type_data af; \
-        af.func_proto = ndt::make_funcproto(src_tp, dst_tp); \
+        af.func_proto = ndt::make_funcproto(src_tp, dst_tp, true); \
         *af.get_data_as<std::pair<const T *, func_type *> *>() = &obj_func; \
         af.instantiate = &detail::elwise_ckernel_instantiator<func_type>::instantiate; \
         af.free_func = NULL; \

@@ -26,13 +26,21 @@ namespace kernels {
         inline void init_kernfunc(kernel_request_t kernreq)
         {
             switch (kernreq) {
+            case kernel_request_single:
+                this->base.template set_function<expr_single_t>(
+                    static_cast<expr_single_t>(&self_type::single_wrapper));
+                break;
             case kernel_request_const_single:
                 this->base.template set_function<expr_const_single_t>(
-                    &self_type::single_wrapper);
+                    static_cast<expr_const_single_t>(&self_type::single_wrapper));
+                break;
+            case kernel_request_strided:
+                this->base.template set_function<expr_strided_t>(
+                    static_cast<expr_strided_t>(&self_type::strided_wrapper));
                 break;
             case kernel_request_const_strided:
                 this->base.template set_function<expr_const_strided_t>(
-                    &self_type::strided_wrapper);
+                    static_cast<expr_const_strided_t>(&self_type::strided_wrapper));
                 break;
             default: {
                 std::stringstream ss;
@@ -42,30 +50,71 @@ namespace kernels {
             }
         }
 
-        static void single_wrapper(char *dst, const char *const *src,
+        void single(char *DYND_UNUSED(dst), const char *const *DYND_UNUSED(src))
+        {
+//            return parent_type::get_self(rawself)->single(dst, src);
+        }
+
+        void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
+        {
+//            return parent_type::get_self(rawself)->single(dst, src);
+        }
+
+        static void single_wrapper(char *dst, char *const *,
                                    ckernel_prefix *rawself)
         {
-            return parent_type::get_self(rawself)->single(dst, src);
+            return parent_type::get_self(rawself)->single(dst, NULL);
+        }
+
+        static void single_wrapper(char *dst, const char *const *,
+                                   ckernel_prefix *rawself)
+        {
+            return parent_type::get_self(rawself)->single(dst, NULL);
         }
 
         static void strided_wrapper(char *dst, intptr_t dst_stride,
-                                    const char *const *src,
+                                    const char *const *,
                                     const intptr_t *src_stride, size_t count,
                                     ckernel_prefix *rawself)
         {
             return parent_type::get_self(rawself)
-                ->strided(dst, dst_stride, src, src_stride, count);
+                ->strided(dst, dst_stride, NULL, src_stride, count);
+        }
+
+        static void strided_wrapper(char *dst, intptr_t dst_stride,
+                                    char *const *,
+                                    const intptr_t *src_stride, size_t count,
+                                    ckernel_prefix *rawself)
+        {
+            return parent_type::get_self(rawself)
+                ->strided(dst, dst_stride, NULL, src_stride, count);
         }
 
         /**
          * Default strided implementation calls single repeatedly.
          */
-        inline void strided(char *dst, intptr_t dst_stride,
+        void strided(char *dst, intptr_t dst_stride,
                             const char *const *src, const intptr_t *src_stride,
                             size_t count)
         {
             self_type *self = parent_type::get_self(&this->base);
             const char *src_copy[Nsrc];
+            memcpy(src_copy, src, sizeof(src_copy));
+            for (size_t i = 0; i != count; ++i) {
+                self->single(dst, src_copy);
+                dst += dst_stride;
+                for (int j = 0; j < Nsrc; ++j) {
+                    src_copy[j] += src_stride[j];
+                }
+            }
+        }
+
+        void strided(char *dst, intptr_t dst_stride,
+                            char *const *src, const intptr_t *src_stride,
+                            size_t count)
+        {
+            self_type *self = parent_type::get_self(&this->base);
+            char *src_copy[Nsrc];
             memcpy(src_copy, src, sizeof(src_copy));
             for (size_t i = 0; i != count; ++i) {
                 self->single(dst, src_copy);

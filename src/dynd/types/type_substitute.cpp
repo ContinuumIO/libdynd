@@ -104,7 +104,7 @@ ndt::detail::internal_substitute(const ndt::type &pattern,
               pattern.tcast<funcproto_type>()->get_param_types(), typevars,
               concrete),
           substitute(pattern.tcast<funcproto_type>()->get_return_type(),
-                     typevars, concrete));
+                     typevars, concrete), true); // TODO: make_funcproto should not default to const here
     case typevar_type_id: {
       map<nd::string, ndt::type>::const_iterator it =
           typevars.find(pattern.tcast<typevar_type>()->get_name());

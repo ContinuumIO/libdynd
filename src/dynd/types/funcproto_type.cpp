@@ -13,10 +13,11 @@ using namespace std;
 using namespace dynd;
 
 funcproto_type::funcproto_type(const nd::array &param_types,
-                               const ndt::type &return_type)
+                               const ndt::type &return_type,
+                               bool param_all_const)
     : base_type(funcproto_type_id, symbolic_kind, 0, 1, type_flag_none, 0, 0,
                 0),
-      m_param_types(param_types), m_return_type(return_type)
+      m_param_types(param_types), m_return_type(return_type), m_const(param_all_const)
 {
     if (!nd::ensure_immutable_contig<ndt::type>(m_param_types)) {
         stringstream ss;
@@ -68,7 +69,7 @@ void funcproto_type::transform_child_types(type_transform_fn_t transform_fn, voi
     transform_fn(m_return_type, extra, tmp_return_type, was_transformed);
     if (was_transformed) {
         out_transformed_tp =
-            ndt::make_funcproto(tmp_param_types, tmp_return_type);
+            ndt::make_funcproto(tmp_param_types, tmp_return_type, m_const);
         out_was_transformed = true;
     } else {
         out_transformed_tp = ndt::type(this, true);
@@ -86,7 +87,7 @@ ndt::type funcproto_type::get_canonical_type() const
     }
     return_type = m_return_type.get_canonical_type();
 
-    return ndt::make_funcproto(tmp_param_types, return_type);
+    return ndt::make_funcproto(tmp_param_types, return_type, m_const);
 }
 
 ndt::type funcproto_type::apply_linear_index(
@@ -200,5 +201,5 @@ ndt::type ndt::make_generic_funcproto(intptr_t nargs)
   vector<ndt::type> args;
   ndt::make_typevar_range("T", nargs, args);
   ndt::type ret = ndt::make_typevar("R");
-  return ndt::make_funcproto(args, ret);
+  return ndt::make_funcproto(args, ret, true); // TODO: make_funcproto should not default to const here
 }

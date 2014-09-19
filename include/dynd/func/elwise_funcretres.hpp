@@ -134,7 +134,7 @@ DYND_PP_JOIN_MAP(FUNC_RET_RES_CKERNEL_INSTANTIATOR, (), DYND_PP_RANGE(1, DYND_PP
         nd::array res = nd::make_strided_array(dst_tp, res_ndim, res_shape.get()); \
 \
         arrfunc_type_data af; \
-        af.func_proto = ndt::make_funcproto(src_tp, dst_tp); \
+        af.func_proto = ndt::make_funcproto(src_tp, dst_tp, true); \
         *af.get_data_as<func_type>() = func; \
         af.instantiate = &detail::elwise_ckernel_instantiator<func_type>::instantiate; \
         af.free_func = NULL; \

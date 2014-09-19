@@ -16,11 +16,15 @@ namespace dynd {
 
 struct ckernel_prefix;
 
+typedef void (*expr_single_t)(char *dst, char *const *src,
+                              ckernel_prefix *self);
 typedef void (*expr_const_single_t)(char *dst, const char *const *src,
                               ckernel_prefix *self);
+typedef void (*expr_strided_t)(char *dst, intptr_t dst_stride,
+                               char *const *src, const intptr_t *src_stride, size_t count,
+                               ckernel_prefix *self);
 typedef void (*expr_const_strided_t)(char *dst, intptr_t dst_stride,
-                               const char *const *src,
-                               const intptr_t *src_stride, size_t count,
+                               const char *const *src, const intptr_t *src_stride, size_t count,
                                ckernel_prefix *self);
 typedef int (*expr_predicate_t)(const char *const *src, ckernel_prefix *self);
 
@@ -29,11 +33,13 @@ typedef int (*expr_predicate_t)(const char *const *src, ckernel_prefix *self);
  */
 enum {
     /** Kernel function expr_single_t, "(T1, T2, ...) -> R" */
-    kernel_request_const_single = 0,
+    kernel_request_single = 0,
+    kernel_request_const_single = 1,
     /** Kernel function expr_strided_t, "(T1, T2, ...) -> R" */
-    kernel_request_const_strided = 1,
+    kernel_request_strided = 2,
+    kernel_request_const_strided = 3,
     /** Kernel function expr_predicate_t, "(T1, T2, ...) -> bool" */
-    kernel_request_predicate = 2,
+    kernel_request_predicate = 4,
     /**
      * Kernel function expr_single_t,
      * but the data in the kernel at position 'ckb_offset'

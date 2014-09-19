@@ -22,9 +22,10 @@ class funcproto_type : public base_type {
     // This is always a contiguous immutable "strided * type" array
     nd::array m_param_types;
     ndt::type m_return_type;
+    bool m_const;
 
 public:
-    funcproto_type(const nd::array &param_types, const ndt::type &return_type);
+    funcproto_type(const nd::array &param_types, const ndt::type &return_type, bool param_all_const);
 
     virtual ~funcproto_type() {}
 
@@ -46,6 +47,10 @@ public:
 
     inline const ndt::type& get_return_type() const {
         return m_return_type;
+    }
+
+    inline bool get_const() const {
+        return m_const;
     }
 
     void print_data(std::ostream& o, const char *arrmeta, const char *data) const;
@@ -84,16 +89,18 @@ public:
 namespace ndt {
     /** Makes a funcproto type with the specified types */
     inline ndt::type make_funcproto(const nd::array &param_types,
-                                    const ndt::type &return_type)
+                                    const ndt::type &return_type,
+                                    bool param_all_const)
     {
         return ndt::type(
-            new funcproto_type(param_types, return_type), false);
+            new funcproto_type(param_types, return_type, param_all_const), false);
     }
 
     /** Makes a funcproto type with the specified types */
     inline ndt::type make_funcproto(intptr_t param_count,
                                     const ndt::type *param_types,
-                                    const ndt::type &return_type)
+                                    const ndt::type &return_type,
+                                    bool param_all_const)
     {
         nd::array tmp =
             nd::typed_empty(1, &param_count, ndt::make_strided_of_type());
@@ -104,16 +111,17 @@ namespace ndt {
         }
         tmp.flag_as_immutable();
         return ndt::type(
-            new funcproto_type(tmp, return_type), false);
+            new funcproto_type(tmp, return_type, param_all_const), false);
     }
 
     /** Makes a unary funcproto type with the specified types */
     inline ndt::type make_funcproto(const ndt::type& single_param_type,
-                                    const ndt::type &return_type)
+                                    const ndt::type &return_type,
+                                    bool param_all_const)
     {
         ndt::type param_types[1] = {single_param_type};
         return ndt::type(
-            new funcproto_type(param_types, return_type), false);
+            new funcproto_type(param_types, return_type, param_all_const), false);
     }
 
 namespace detail {
@@ -130,7 +138,7 @@ struct funcproto_type_from<R (), false, false> {
         intptr_t zero = 0;
         nd::array param_types = nd::typed_empty(1, &zero, ndt::make_strided_of_type());
         param_types.flag_as_immutable();
-        return make_funcproto(param_types, make_type<R>());
+        return make_funcproto(param_types, make_type<R>(), true);
     }
 };
 
@@ -143,7 +151,7 @@ struct funcproto_type_from<R (), false, false> {
     public: \
         static inline ndt::type make() { \
             ndt::type param_types[N] = {DYND_PP_JOIN_MAP_1(MAKE_TYPE, (,), DYND_PP_META_NAME_RANGE(D, N))}; \
-            return make_funcproto(param_types, make_type<R>()); \
+            return make_funcproto(param_types, make_type<R>(), is_const_funcproto<R DYND_PP_META_NAME_RANGE(A, N)>::value); \
         } \
     };
 
@@ -157,7 +165,7 @@ struct funcproto_type_from<void (R &), false, false> {
         intptr_t zero = 0;
         nd::array param_types = nd::typed_empty(1, &zero, ndt::make_strided_of_type());
         param_types.flag_as_immutable();
-        return make_funcproto(param_types, make_type<R>());
+        return make_funcproto(param_types, make_type<R>(), true);
     }
 };
 
@@ -170,7 +178,7 @@ struct funcproto_type_from<void (R &), false, false> {
     public: \
         static inline ndt::type make() { \
             ndt::type param_types[N] = {DYND_PP_JOIN_MAP_1(MAKE_TYPE, (,), DYND_PP_META_NAME_RANGE(D, N))}; \
-            return make_funcproto(param_types, make_type<R>()); \
+            return make_funcproto(param_types, make_type<R>(), true); \
         } \
     };
 

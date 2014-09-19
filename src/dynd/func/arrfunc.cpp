@@ -106,7 +106,7 @@ void dynd::make_arrfunc_from_assignment(const ndt::type &dst_tp,
   *out_af.get_data_as<assign_error_mode>() = errmode;
   out_af.free_func = NULL;
   out_af.instantiate = &instantiate_assignment_ckernel;
-  out_af.func_proto = ndt::make_funcproto(src_tp, dst_tp);
+  out_af.func_proto = ndt::make_funcproto(src_tp, dst_tp, true); // TODO: make_funcproto should not default to const here
 }
 
 void dynd::make_arrfunc_from_property(const ndt::type &tp,
@@ -120,7 +120,7 @@ void dynd::make_arrfunc_from_property(const ndt::type &tp,
         throw type_error(ss.str());
     }
     ndt::type prop_tp = ndt::make_property(tp, propname);
-    out_af.func_proto = ndt::make_funcproto(tp, prop_tp.value_type());
+    out_af.func_proto = ndt::make_funcproto(tp, prop_tp.value_type(), true); // TODO: make_funcproto should not default to const here
     out_af.free_func = &delete_property_arrfunc_data;
     *out_af.get_data_as<const base_type *>() = prop_tp.release();
     out_af.instantiate = &instantiate_property_ckernel;
@@ -183,9 +183,39 @@ nd::array nd::arrfunc::call(intptr_t arg_count, const nd::array *args, aux_buffe
   for (intptr_t i = 0; i < arg_count; ++i) {
     src_arrmeta[i] = args[i].get_arrmeta();
   }
-  std::vector<const char *> src_data(arg_count);
+
+  if (af->func_proto.tcast<funcproto_type>()->get_const()) {
+    std::vector<const char *> src_data(arg_count);
+    for (intptr_t i = 0; i < arg_count; ++i) {
+      src_data[i] = args[i].get_readonly_originptr();
+    }
+
+    // Resolve the destination shape if needed
+    nd::array result;
+    if (dst_tp.get_ndim() > 0 && af->resolve_dst_shape != NULL) {
+      dimvector shape(dst_tp.get_ndim());
+      af->resolve_dst_shape(af, shape.get(), dst_tp, &src_tp[0], &src_arrmeta[0],
+                          &src_data[0]);
+      result = nd::typed_empty(dst_tp.get_ndim(), shape.get(), dst_tp);
+    } else {
+      result = nd::empty(dst_tp);
+    }
+
+    // Generate and evaluate the ckernel
+    ckernel_builder ckb;
+    af->instantiate(af, &ckb, 0, dst_tp, result.get_arrmeta(), &src_tp[0],
+                    &src_arrmeta[0], kernel_request_const_single, aux, ectx);
+    expr_const_single_t fn = ckb.get()->get_function<expr_const_single_t>();
+    fn(result.get_readwrite_originptr(), src_data.empty() ? NULL : &src_data[0],
+       ckb.get());
+    result.flag_as_immutable();
+
+    return result;
+  }
+
+  std::vector<char *> src_data(arg_count);
   for (intptr_t i = 0; i < arg_count; ++i) {
-    src_data[i] = args[i].get_readonly_originptr();
+    src_data[i] = args[i].get_readwrite_originptr();
   }
 
   // Resolve the destination shape if needed
@@ -193,7 +223,7 @@ nd::array nd::arrfunc::call(intptr_t arg_count, const nd::array *args, aux_buffe
   if (dst_tp.get_ndim() > 0 && af->resolve_dst_shape != NULL) {
     dimvector shape(dst_tp.get_ndim());
     af->resolve_dst_shape(af, shape.get(), dst_tp, &src_tp[0], &src_arrmeta[0],
-                          &src_data[0]);
+                        &src_data[0]);
     result = nd::typed_empty(dst_tp.get_ndim(), shape.get(), dst_tp);
   } else {
     result = nd::empty(dst_tp);
@@ -202,8 +232,8 @@ nd::array nd::arrfunc::call(intptr_t arg_count, const nd::array *args, aux_buffe
   // Generate and evaluate the ckernel
   ckernel_builder ckb;
   af->instantiate(af, &ckb, 0, dst_tp, result.get_arrmeta(), &src_tp[0],
-                  &src_arrmeta[0], kernel_request_const_single, aux, ectx);
-  expr_const_single_t fn = ckb.get()->get_function<expr_const_single_t>();
+                  &src_arrmeta[0], kernel_request_single, aux, ectx);
+  expr_single_t fn = ckb.get()->get_function<expr_single_t>();
   fn(result.get_readwrite_originptr(), src_data.empty() ? NULL : &src_data[0],
      ckb.get());
   result.flag_as_immutable();

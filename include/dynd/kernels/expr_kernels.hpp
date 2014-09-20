@@ -50,50 +50,50 @@ namespace kernels {
             }
         }
 
-        void single(char *DYND_UNUSED(dst), const char *const *DYND_UNUSED(src))
-        {
-//            return parent_type::get_self(rawself)->single(dst, src);
-        }
-
-        void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
-        {
-//            return parent_type::get_self(rawself)->single(dst, src);
-        }
-
-        static void single_wrapper(char *dst, char *const *,
+        static void single_wrapper(char *dst, char *const *src,
                                    ckernel_prefix *rawself)
         {
-            return parent_type::get_self(rawself)->single(dst, NULL);
+            return parent_type::get_self(rawself)
+                ->single(dst, src);
         }
-
-        static void single_wrapper(char *dst, const char *const *,
+        static void single_wrapper(char *dst, const char *const *src,
                                    ckernel_prefix *rawself)
         {
-            return parent_type::get_self(rawself)->single(dst, NULL);
+            return parent_type::get_self(rawself)
+                ->single(dst, src);
+        }
+
+        /**
+         * Default single implementation raises an error.
+         */
+        inline void single(char *DYND_UNUSED(dst), const char *const *DYND_UNUSED(src))
+        {
+            // throw error
+        }
+        inline void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
+        {
+            // throw error
         }
 
         static void strided_wrapper(char *dst, intptr_t dst_stride,
-                                    const char *const *,
-                                    const intptr_t *src_stride, size_t count,
-                                    ckernel_prefix *rawself)
+                                    const char *const *src, const intptr_t *src_stride,
+                                    size_t count, ckernel_prefix *rawself)
         {
             return parent_type::get_self(rawself)
-                ->strided(dst, dst_stride, NULL, src_stride, count);
+                ->strided(dst, dst_stride, src, src_stride, count);
         }
-
         static void strided_wrapper(char *dst, intptr_t dst_stride,
-                                    char *const *,
-                                    const intptr_t *src_stride, size_t count,
-                                    ckernel_prefix *rawself)
+                                    char *const *src, const intptr_t *src_stride,
+                                    size_t count, ckernel_prefix *rawself)
         {
             return parent_type::get_self(rawself)
-                ->strided(dst, dst_stride, NULL, src_stride, count);
+                ->strided(dst, dst_stride, src, src_stride, count);
         }
 
         /**
          * Default strided implementation calls single repeatedly.
          */
-        void strided(char *dst, intptr_t dst_stride,
+        inline void strided(char *dst, intptr_t dst_stride,
                             const char *const *src, const intptr_t *src_stride,
                             size_t count)
         {
@@ -108,8 +108,7 @@ namespace kernels {
                 }
             }
         }
-
-        void strided(char *dst, intptr_t dst_stride,
+        inline void strided(char *dst, intptr_t dst_stride,
                             char *const *src, const intptr_t *src_stride,
                             size_t count)
         {

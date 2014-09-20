@@ -66,6 +66,8 @@ struct functor_ck;
     struct functor_ck<func_type, R DYND_PP_META_NAME_RANGE(A, N), false, false> \
       : kernels::expr_ck<functor_ck<func_type, R DYND_PP_META_NAME_RANGE(A, N), false, false>, N> { \
         typedef functor_ck self_type; \
+        typedef kernels::expr_ck<self_type, N> parent_type; \
+\
         typedef typename std::conditional<is_const_funcproto<R DYND_PP_META_NAME_RANGE(A, N)>::value, \
             const char *const *, char *const *>::type src_type; \
         typedef typename std::conditional<is_const_funcproto<R DYND_PP_META_NAME_RANGE(A, N)>::value, \
@@ -77,10 +79,14 @@ struct functor_ck;
         DYND_PP_JOIN_ELWISE_1(DECL_TYPED_PARAM_FROM_BYTES, (;), \
             DYND_PP_META_NAME_RANGE(D, N), DYND_PP_META_NAME_RANGE(from_src, N)); \
 \
+        using parent_type::single; \
+\
         inline void single(char *dst, src_type src) { \
             *reinterpret_cast<R *>(dst) = this->func(DYND_PP_JOIN_ELWISE_1(PASS, (,), \
                 DYND_PP_META_NAME_RANGE(this->from_src, N), DYND_PP_META_AT_RANGE(src, N))); \
         } \
+\
+        using parent_type::strided; \
 \
         inline void strided(char *dst, intptr_t dst_stride, \
                             src_type src, const intptr_t *src_stride, \

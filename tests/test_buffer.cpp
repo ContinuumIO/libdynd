@@ -28,11 +28,11 @@ struct func_thread_aux_buffer : thread_aux_buffer {
     }
 };
 
-int ret_func_with_aux(int src, func_aux_buffer *aux) {
+int ret_func_with_aux(int &src, func_aux_buffer *aux) {
     return src + aux->val;
 }
 
-void ref_func_with_aux(int &dst, int src, func_aux_buffer *aux) {
+void ref_func_with_aux(int &dst, int &src, func_aux_buffer *aux) {
     dst = src + aux->val;
 }
 
@@ -49,16 +49,14 @@ void func_with_aux_and_thread_aux(int &dst, int src, func_aux_buffer *aux, func_
 */
 
 TEST(Buffer, Aux) {
-/*
     func_aux_buffer aux;
     aux.val = 7;
 
     nd::arrfunc af = nd::make_functor_arrfunc(ret_func_with_aux);
-    EXPECT_EQ(12, af(5, &aux).as<int>());
+    EXPECT_EQ(12, af(nd::array_rw(5), &aux).as<int>());
 
     af = nd::make_functor_arrfunc(ref_func_with_aux);
-    EXPECT_EQ(12, af(5, &aux).as<int>());
-*/
+    EXPECT_EQ(12, af(nd::array_rw(5), &aux).as<int>());
 
 /*
 TODO: Need thread_aux to reenable.

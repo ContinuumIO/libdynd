@@ -178,7 +178,7 @@ struct funcproto_type_from<void (R &), false, false> {
     public: \
         static inline ndt::type make() { \
             ndt::type param_types[N] = {DYND_PP_JOIN_MAP_1(MAKE_TYPE, (,), DYND_PP_META_NAME_RANGE(D, N))}; \
-            return make_funcproto(param_types, make_type<R>(), true); \
+            return make_funcproto(param_types, make_type<R>(), is_const_funcproto<void DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N))>::value); \
         } \
     };
 

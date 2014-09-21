@@ -67,8 +67,8 @@ struct functor_ck;
       : kernels::expr_ck<functor_ck<func_type, R DYND_PP_META_NAME_RANGE(A, N), const_funcproto, false, false>, N, const_funcproto> { \
         typedef functor_ck self_type; \
         typedef kernels::expr_ck<self_type, N, const_funcproto> parent_type; \
-        using typename parent_type::dst_type; \
-        using typename parent_type::src_type; \
+        typedef typename parent_type::dst_type dst_type; \
+        typedef typename parent_type::src_type src_type; \
 \
         DYND_PP_JOIN_ELWISE_1(DYND_PP_META_TYPEDEF_TYPENAME, (;), \
             DYND_PP_MAP_1(PARTIAL_DECAY, DYND_PP_META_NAME_RANGE(A, N)), DYND_PP_META_NAME_RANGE(D, N)); \
@@ -105,7 +105,7 @@ struct functor_ck;
                                     kernel_request_t kernreq, aux_buffer *DYND_UNUSED(aux), \
                                     const eval::eval_context *DYND_UNUSED(ectx)) { \
             bool kernreq_const = (kernreq == kernel_request_const_single) || (kernreq == kernel_request_const_strided); \
-            if (kernreq_const != af_self->func_proto.tcast<funcproto_type>()->get_const()) { \
+            if (kernreq_const != af_self->get_const()) { \
                 std::stringstream ss; \
                 ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                    << " do not match the arrfunc proto " << af_self->func_proto; \
@@ -140,6 +140,10 @@ struct functor_ck;
     struct functor_ck<func_type, R DYND_PP_APPEND(aux_buffer_type *, DYND_PP_META_NAME_RANGE(A, N)), const_funcproto, true, false> \
       : kernels::expr_ck<functor_ck<func_type, R DYND_PP_APPEND(aux_buffer_type *, DYND_PP_META_NAME_RANGE(A, N)), const_funcproto, true, false>, N, const_funcproto> { \
         typedef functor_ck self_type; \
+        typedef kernels::expr_ck<self_type, N, const_funcproto> parent_type; \
+        typedef typename parent_type::dst_type dst_type; \
+        typedef typename parent_type::src_type src_type; \
+\
         DYND_PP_JOIN_ELWISE_1(DYND_PP_META_TYPEDEF_TYPENAME, (;), \
             DYND_PP_MAP_1(PARTIAL_DECAY, DYND_PP_META_NAME_RANGE(A, N)), DYND_PP_META_NAME_RANGE(D, N)); \
 \
@@ -148,16 +152,16 @@ struct functor_ck;
             DYND_PP_META_NAME_RANGE(D, N), DYND_PP_META_NAME_RANGE(from_src, N)); \
         aux_buffer_type *aux; \
 \
-        inline void single(char *dst, const char *const *src) { \
+        inline void single(dst_type dst, const src_type *src) { \
             *reinterpret_cast<R *>(dst) = this->func(DYND_PP_JOIN_ELWISE_1(PASS, (,), \
                 DYND_PP_META_NAME_RANGE(this->from_src, N), DYND_PP_META_AT_RANGE(src, N)), this->aux); \
         } \
 \
-        inline void strided(char *dst, intptr_t dst_stride, \
-                            const char *const *src, const intptr_t *src_stride, \
+        inline void strided(dst_type dst, intptr_t dst_stride, \
+                            const src_type *src, const intptr_t *src_stride, \
                             size_t count) { \
             DYND_PP_JOIN_ELWISE_1(DYND_PP_META_DECL_ASGN, (;), \
-                DYND_PP_REPEAT_1(const char *, N), DYND_PP_META_NAME_RANGE(src, N), DYND_PP_META_AT_RANGE(src, N)); \
+                DYND_PP_REPEAT_1(src_type, N), DYND_PP_META_NAME_RANGE(src, N), DYND_PP_META_AT_RANGE(src, N)); \
             DYND_PP_JOIN_ELWISE_1(DYND_PP_META_DECL_ASGN, (;), \
                 DYND_PP_REPEAT_1(intptr_t, N), DYND_PP_META_NAME_RANGE(src_stride, N), DYND_PP_META_AT_RANGE(src_stride, N)); \
             for (size_t i = 0; i < count; ++i) { \
@@ -175,17 +179,24 @@ struct functor_ck;
                                     const ndt::type *src_tp, const char *const *src_arrmeta, \
                                     kernel_request_t kernreq, aux_buffer *aux, \
                                     const eval::eval_context *DYND_UNUSED(ectx)) { \
+            bool kernreq_const = (kernreq == kernel_request_const_single) || (kernreq == kernel_request_const_strided); \
+            if (kernreq_const != af_self->get_const()) { \
+                std::stringstream ss; \
+                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
+                   << " do not match the arrfunc proto " << af_self->func_proto; \
+                throw type_error(ss.str()); \
+            } \
             for (intptr_t i = 0; i < N; ++i) { \
                 if (src_tp[i] != af_self->get_param_type(i)) { \
                     std::stringstream ss; \
-                    ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, true) \
+                    ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                        << " do not match the arrfunc proto " << af_self->func_proto; \
                     throw type_error(ss.str()); \
                 } \
             } \
             if (dst_tp != af_self->get_return_type()) { \
                 std::stringstream ss; \
-                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, true) \
+                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                    << " do not match the arrfunc proto " << af_self->func_proto; \
                 throw type_error(ss.str()); \
             } \
@@ -214,8 +225,8 @@ DYND_PP_JOIN_MAP(FUNCTOR_CK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_SRC_MAX)))
       : kernels::expr_ck<functor_ck<func_type, void DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N)), const_funcproto, false, false>, N, const_funcproto> { \
         typedef functor_ck self_type; \
         typedef kernels::expr_ck<self_type, N, const_funcproto> parent_type; \
-        using typename parent_type::dst_type; \
-        using typename parent_type::src_type; \
+        typedef typename parent_type::dst_type dst_type; \
+        typedef typename parent_type::src_type src_type; \
 \
         DYND_PP_JOIN_ELWISE_1(DYND_PP_META_TYPEDEF_TYPENAME, (;), \
             DYND_PP_MAP_1(PARTIAL_DECAY, DYND_PP_META_NAME_RANGE(A, N)), DYND_PP_META_NAME_RANGE(D, N)); \
@@ -253,7 +264,7 @@ DYND_PP_JOIN_MAP(FUNCTOR_CK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_SRC_MAX)))
                                     kernel_request_t kernreq, aux_buffer *DYND_UNUSED(aux), \
                                     const eval::eval_context *DYND_UNUSED(ectx)) { \
             bool kernreq_const = (kernreq == kernel_request_const_single) || (kernreq == kernel_request_const_strided); \
-            if (kernreq_const != af_self->func_proto.tcast<funcproto_type>()->get_const()) { \
+            if (kernreq_const != af_self->get_const()) { \
                 std::stringstream ss; \
                 ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                    << " do not match the arrfunc proto " << af_self->func_proto; \
@@ -284,12 +295,16 @@ DYND_PP_JOIN_MAP(FUNCTOR_CK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_SRC_MAX)))
         } \
     }; \
 \
-    template <typename func_type, typename R, DYND_PP_JOIN_MAP_1(DYND_PP_META_TYPENAME, (,), DYND_PP_META_NAME_RANGE(A, N)), \
+    template <typename func_type, typename R, DYND_PP_JOIN_MAP_1(DYND_PP_META_TYPENAME, (,), DYND_PP_META_NAME_RANGE(A, N)), bool const_funcproto, \
         typename aux_buffer_type> \
-    struct functor_ck<func_type, void DYND_PP_APPEND(aux_buffer_type *, DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N))), true, true, false> \
-      : kernels::expr_ck<functor_ck<func_type, void DYND_PP_APPEND(aux_buffer_type *, DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N))), true, \
-            true, false>, N, true> { \
+    struct functor_ck<func_type, void DYND_PP_APPEND(aux_buffer_type *, DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N))), const_funcproto, true, false> \
+      : kernels::expr_ck<functor_ck<func_type, void DYND_PP_APPEND(aux_buffer_type *, DYND_PP_PREPEND(R &, DYND_PP_META_NAME_RANGE(A, N))), const_funcproto, \
+            true, false>, N, const_funcproto> { \
         typedef functor_ck self_type; \
+        typedef kernels::expr_ck<self_type, N, const_funcproto> parent_type; \
+        typedef typename parent_type::dst_type dst_type; \
+        typedef typename parent_type::src_type src_type; \
+\
         DYND_PP_JOIN_ELWISE_1(DYND_PP_META_TYPEDEF_TYPENAME, (;), \
             DYND_PP_MAP_1(PARTIAL_DECAY, DYND_PP_META_NAME_RANGE(A, N)), DYND_PP_META_NAME_RANGE(D, N)); \
 \
@@ -299,16 +314,16 @@ DYND_PP_JOIN_MAP(FUNCTOR_CK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_SRC_MAX)))
             DYND_PP_META_NAME_RANGE(D, N), DYND_PP_META_NAME_RANGE(from_src, N)); \
         aux_buffer_type *aux; \
 \
-        inline void single(char *dst, const char *const *src) { \
+        inline void single(dst_type dst, const src_type *src) { \
             this->func(PASS(this->from_dst, dst), DYND_PP_JOIN_ELWISE_1(PASS, (,), \
                 DYND_PP_META_NAME_RANGE(this->from_src, N), DYND_PP_META_AT_RANGE(src, N)), this->aux); \
         } \
 \
-        inline void strided(char *dst, intptr_t dst_stride, \
-                            const char *const *src, const intptr_t *src_stride, \
+        inline void strided(dst_type dst, intptr_t dst_stride, \
+                            const src_type *src, const intptr_t *src_stride, \
                             size_t count) { \
             DYND_PP_JOIN_ELWISE_1(DYND_PP_META_DECL_ASGN, (;), \
-                DYND_PP_REPEAT_1(const char *, N), DYND_PP_META_NAME_RANGE(src, N), DYND_PP_META_AT_RANGE(src, N)); \
+                DYND_PP_REPEAT_1(src_type, N), DYND_PP_META_NAME_RANGE(src, N), DYND_PP_META_AT_RANGE(src, N)); \
             DYND_PP_JOIN_ELWISE_1(DYND_PP_META_DECL_ASGN, (;), \
                 DYND_PP_REPEAT_1(intptr_t, N), DYND_PP_META_NAME_RANGE(src_stride, N), DYND_PP_META_AT_RANGE(src_stride, N)); \
             for (size_t i = 0; i < count; ++i) { \
@@ -326,17 +341,24 @@ DYND_PP_JOIN_MAP(FUNCTOR_CK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_SRC_MAX)))
                                     const ndt::type *src_tp, const char *const *src_arrmeta, \
                                     kernel_request_t kernreq, aux_buffer *aux, \
                                     const eval::eval_context *DYND_UNUSED(ectx)) { \
+            bool kernreq_const = (kernreq == kernel_request_const_single) || (kernreq == kernel_request_const_strided); \
+            if (kernreq_const != af_self->get_const()) { \
+                std::stringstream ss; \
+                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
+                   << " do not match the arrfunc proto " << af_self->func_proto; \
+                throw type_error(ss.str()); \
+            } \
             for (intptr_t i = 0; i < N; ++i) { \
                 if (src_tp[i] != af_self->get_param_type(i)) { \
                     std::stringstream ss; \
-                    ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, true) \
+                    ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                        << " do not match the arrfunc proto " << af_self->func_proto; \
                     throw type_error(ss.str()); \
                 } \
             } \
             if (dst_tp != af_self->get_return_type()) { \
                 std::stringstream ss; \
-                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, true) \
+                ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp, kernreq_const) \
                    << " do not match the arrfunc proto " << af_self->func_proto; \
                 throw type_error(ss.str()); \
             } \

@@ -218,9 +218,24 @@ TYPED_TEST_P(FunctorArrfunc_FuncRetRes, FuncRetRes) {
   EXPECT_EQ(6, res.as<TypeParam>());
 }
 
+template <typename T>
+void func_inplace(int &dst, T &x, T &y) {
+    x += 2;
+    dst = x + y;
+}
+
 TYPED_TEST_P(FunctorArrfunc_FuncRefRes, FuncRefRes) {
   nd::array res, a, b;
   nd::arrfunc af;
+
+  a = nd::array_rw(static_cast<TypeParam>(10));
+  b = nd::array_rw(static_cast<TypeParam>(20));
+
+  af = nd::make_functor_arrfunc(
+      static_cast<void (*)(int &, TypeParam &, TypeParam &)>(&func_inplace));
+  res = af(a, b);
+  EXPECT_EQ(32, res.as<int>());
+  EXPECT_EQ(12, a.as<int>());
 
   a = static_cast<TypeParam>(10);
   b = static_cast<TypeParam>(20);

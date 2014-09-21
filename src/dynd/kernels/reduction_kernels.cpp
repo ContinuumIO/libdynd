@@ -115,7 +115,7 @@ void kernels::make_builtin_sum_reduction_arrfunc(
         ss << ndt::type(tid) << " is not supported";
         throw type_error(ss.str());
     }
-    out_af->func_proto = ndt::make_funcproto(ndt::type(tid), ndt::type(tid), true); // TODO: make_funcproto should not default to const here
+    out_af->func_proto = ndt::make_funcproto(ndt::type(tid), ndt::type(tid), true);
     *out_af->get_data_as<type_id_t>() = tid;
     out_af->instantiate = &instantiate_builtin_sum_reduction_arrfunc;
     out_af->free_func = NULL;
@@ -222,7 +222,7 @@ nd::arrfunc kernels::make_builtin_mean1d_arrfunc(type_id_t tid, intptr_t minp)
         reinterpret_cast<arrfunc_type_data *>(mean1d.get_readwrite_originptr());
     out_af->func_proto =
         ndt::make_funcproto(ndt::make_strided_dim(ndt::make_type<double>()),
-                            ndt::make_type<double>(), true); // TODO: make_funcproto should not default to const here
+                            ndt::make_type<double>(), true);
     mean1d_arrfunc_data *data = new mean1d_arrfunc_data;
     data->minp = minp;
     *out_af->get_data_as<mean1d_arrfunc_data *>() = data;

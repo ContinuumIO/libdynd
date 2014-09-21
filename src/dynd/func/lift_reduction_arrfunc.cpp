@@ -136,5 +136,5 @@ void dynd::lift_reduction_arrfunc(arrfunc_type_data *out_ar,
     memcpy(self->reduction_dimflags.get(), reduction_dimflags, sizeof(bool) * reduction_ndim);
 
     out_ar->instantiate = &instantiate_lifted_reduction_arrfunc_data;
-    out_ar->func_proto = ndt::make_funcproto(lifted_arr_type, lifted_dst_type, true); // TODO: make_funcproto should not default to const here
+    out_ar->func_proto = ndt::make_funcproto(lifted_arr_type, lifted_dst_type, elwise_reduction->get_const());
 }

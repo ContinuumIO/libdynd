@@ -903,10 +903,10 @@ nd::array datetime_type::get_option_nafunc() const
 
     // Use a typevar instead of option[T] to avoid a circular dependency
     is_avail->func_proto = ndt::make_funcproto(ndt::make_typevar("T"),
-                                               ndt::make_type<dynd_bool>(), true);  // TODO: make_funcproto should not default to const here
+                                               ndt::make_type<dynd_bool>(), true);
     is_avail->instantiate = &datetime_is_avail_ck::instantiate;
     assign_na->func_proto =
-        ndt::make_funcproto(0, NULL, ndt::make_typevar("T"), true); // TODO: make_funcproto should not default to const here
+        ndt::make_funcproto(0, NULL, ndt::make_typevar("T"), true);
     assign_na->instantiate = &datetime_assign_na_ck::instantiate;
     naf.flag_as_immutable();
     return naf;

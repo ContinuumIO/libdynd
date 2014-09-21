@@ -231,7 +231,7 @@ static ndt::type lift_proto(const ndt::type& proto)
     }
     return ndt::make_funcproto(
         out_param_types,
-        ndt::make_ellipsis_dim(dimsname, p->get_return_type()), true); // TODO: make_funcproto should not default to const here
+        ndt::make_ellipsis_dim(dimsname, p->get_return_type()), p->get_const());
 }
 
 void dynd::lift_arrfunc(arrfunc_type_data *out_af, const nd::arrfunc &af)

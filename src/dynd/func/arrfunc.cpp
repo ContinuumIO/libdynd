@@ -106,7 +106,7 @@ void dynd::make_arrfunc_from_assignment(const ndt::type &dst_tp,
   *out_af.get_data_as<assign_error_mode>() = errmode;
   out_af.free_func = NULL;
   out_af.instantiate = &instantiate_assignment_ckernel;
-  out_af.func_proto = ndt::make_funcproto(src_tp, dst_tp, true); // TODO: make_funcproto should not default to const here
+  out_af.func_proto = ndt::make_funcproto(src_tp, dst_tp, true);
 }
 
 void dynd::make_arrfunc_from_property(const ndt::type &tp,
@@ -120,7 +120,7 @@ void dynd::make_arrfunc_from_property(const ndt::type &tp,
         throw type_error(ss.str());
     }
     ndt::type prop_tp = ndt::make_property(tp, propname);
-    out_af.func_proto = ndt::make_funcproto(tp, prop_tp.value_type(), true); // TODO: make_funcproto should not default to const here
+    out_af.func_proto = ndt::make_funcproto(tp, prop_tp.value_type(), true);
     out_af.free_func = &delete_property_arrfunc_data;
     *out_af.get_data_as<const base_type *>() = prop_tp.release();
     out_af.instantiate = &instantiate_property_ckernel;

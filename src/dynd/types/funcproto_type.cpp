@@ -196,10 +196,10 @@ void funcproto_type::get_dynamic_type_properties(const std::pair<std::string, gf
     *out_count = sizeof(type_properties) / sizeof(type_properties[0]);
 }
 
-ndt::type ndt::make_generic_funcproto(intptr_t nargs)
+ndt::type ndt::make_generic_funcproto(intptr_t nargs, bool args_all_const)
 {
   vector<ndt::type> args;
   ndt::make_typevar_range("T", nargs, args);
   ndt::type ret = ndt::make_typevar("R");
-  return ndt::make_funcproto(args, ret, true); // TODO: make_funcproto should not default to const here
+  return ndt::make_funcproto(args, ret, args_all_const);
 }

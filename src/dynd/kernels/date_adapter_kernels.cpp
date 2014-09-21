@@ -114,20 +114,20 @@ bool dynd::make_date_adapter_arrfunc(const ndt::type &operand_tp,
             case int32_type_id:
                 out_forward = make_int_offset_arrfunc<int32_t, int32_t>(
                     epoch_date, ndt::make_funcproto(ndt::make_type<int32_t>(),
-                                                    ndt::make_date(), true)); // TODO: make_funcproto should not default to const here
+                                                    ndt::make_date(), true));
                 out_reverse = make_int_offset_arrfunc<int32_t, int32_t>(
                     -epoch_date,
                     ndt::make_funcproto(ndt::make_date(),
-                                        ndt::make_type<int32_t>(), true)); // TODO: make_funcproto should not default to const here
+                                        ndt::make_type<int32_t>(), true));
                 return true;
             case int64_type_id:
                 out_forward = make_int_offset_arrfunc<int64_t, int32_t>(
                     epoch_date, ndt::make_funcproto(ndt::make_type<int64_t>(),
-                                                    ndt::make_date(), true)); // TODO: make_funcproto should not default to const here
+                                                    ndt::make_date(), true));
                 out_reverse = make_int_offset_arrfunc<int32_t, int64_t>(
                     -epoch_date,
                     ndt::make_funcproto(ndt::make_date(),
-                                        ndt::make_type<int64_t>(), true)); // TODO: make_funcproto should not default to const here
+                                        ndt::make_type<int64_t>(), true));
                 return true;
             default:
                 return false;

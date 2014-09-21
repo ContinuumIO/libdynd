@@ -224,7 +224,7 @@ inline ndt::type make_funcproto() {
         is_aux_buffered<funcproto_type>::value, is_thread_aux_buffered<funcproto_type>::value>::make();
 }
 
-ndt::type make_generic_funcproto(intptr_t nargs);
+ndt::type make_generic_funcproto(intptr_t nargs, bool args_all_const);
 } // namespace ndt
 
 } // namespace dynd

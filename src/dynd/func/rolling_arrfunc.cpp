@@ -284,7 +284,7 @@ void dynd::make_rolling_arrfunc(arrfunc_type_data *out_af,
     rolling_arrfunc_data *data = new rolling_arrfunc_data;
     *out_af->get_data_as<rolling_arrfunc_data *>() = data;
     out_af->free_func = &free_rolling_arrfunc_data;
-    out_af->func_proto = ndt::make_funcproto(roll_src_tp, roll_dst_tp, true); // TODO: make_funcproto should not default to const here
+    out_af->func_proto = ndt::make_funcproto(roll_src_tp, roll_dst_tp, window_af->get_const());
     out_af->resolve_dst_type = &resolve_rolling_dst_type;
     out_af->resolve_dst_shape = &resolve_rolling_dst_shape;
     out_af->instantiate = &instantiate_strided;

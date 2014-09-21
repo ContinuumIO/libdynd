@@ -186,6 +186,11 @@ struct arrfunc_type_data {
     return func_proto.tcast<funcproto_type>()->get_return_type();
   }
 
+  inline bool get_const() const
+  {
+    return func_proto.tcast<funcproto_type>()->get_const();
+  }
+
   inline ndt::type resolve(const ndt::type *src_tp) const
   {
     if (resolve_dst_type != NULL) {

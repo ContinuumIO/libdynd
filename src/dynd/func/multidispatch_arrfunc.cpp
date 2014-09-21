@@ -308,6 +308,17 @@ void dynd::make_multidispatch_arrfunc(arrfunc_type_data *out_af, intptr_t naf,
       throw invalid_argument(ss.str());
     }
   }
+  // Constness must be the same across all
+  bool args_all_const = af[0].get()->get_const();
+  for (intptr_t i = 1; i < naf; ++i) {
+    if (args_all_const != af[i].get()->get_const()) {
+      stringstream ss;
+      ss << "All child arrfuncs must have the same const qualifier to "
+            "generate a multidispatch arrfunc, differing: "
+         << af[0].get()->func_proto << " and " << af[i].get()->func_proto;
+      throw invalid_argument(ss.str());
+    }
+  }
 
   // Generate the topologically sorted array of arrfuncs
   vector<nd::arrfunc> sorted_af;
@@ -345,6 +356,6 @@ void dynd::make_multidispatch_arrfunc(arrfunc_type_data *out_af, intptr_t naf,
   af_data->swap(sorted_af);
   out_af->instantiate = &instantiate_multidispatch_af;
   // TODO: Component arrfuncs might be arrays, not just scalars
-  out_af->func_proto = ndt::make_generic_funcproto(nargs);
+  out_af->func_proto = ndt::make_generic_funcproto(nargs, args_all_const);
   out_af->resolve_dst_type = &resolve_multidispatch_dst_type;
 }

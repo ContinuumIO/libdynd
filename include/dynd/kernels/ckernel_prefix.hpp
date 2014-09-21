@@ -40,7 +40,7 @@ enum {
     kernel_request_strided = 2,
     /** Kernel function expr_const_strided_t, "const (T1, T2, ...) -> R" */
     kernel_request_const_strided = 3,
-    /** Kernel function expr_predicate_t, "(T1, T2, ...) -> bool" */
+    /** Kernel function expr_predicate_t, "const (T1, T2, ...) -> bool" */
     kernel_request_predicate = 4,
     /**
      * Kernel function expr_single_t,
@@ -60,6 +60,29 @@ enum {
 //    kernel_request_strided_multistride
 };
 typedef uint32_t kernel_request_t;
+
+template <typename T>
+struct kernel_request_of;
+template <>
+struct kernel_request_of<expr_single_t> {
+    static const kernel_request_t value = kernel_request_single;
+};
+template <>
+struct kernel_request_of<expr_const_single_t> {
+    static const kernel_request_t value = kernel_request_const_single;
+};
+template <>
+struct kernel_request_of<expr_strided_t> {
+    static const kernel_request_t value = kernel_request_strided;
+};
+template <>
+struct kernel_request_of<expr_const_strided_t> {
+    static const kernel_request_t value = kernel_request_const_strided;
+};
+template <>
+struct kernel_request_of<expr_predicate_t> {
+    static const kernel_request_t value = kernel_request_predicate;
+};
 
 /**
  * This is the struct which begins the memory layout
@@ -112,13 +135,27 @@ struct ckernel_prefix {
     }
 
     inline void set_expr_function(kernel_request_t kernreq,
-                                  expr_const_single_t const_single,
-                                  expr_const_strided_t const_strided)
+                                  expr_single_t single,
+                                  expr_strided_t strided)
+    {
+        if (kernreq == kernel_request_single) {
+            function = reinterpret_cast<void *>(single);
+        } else if (kernreq == kernel_request_strided) {
+            function = reinterpret_cast<void *>(strided);
+        } else {
+            std::stringstream ss;
+            ss << "unrecognized dynd kernel request " << kernreq;
+            throw std::runtime_error(ss.str());
+        }
+    }
+    inline void set_expr_function(kernel_request_t kernreq,
+                                  expr_const_single_t single,
+                                  expr_const_strided_t strided)
     {
         if (kernreq == kernel_request_const_single) {
-            function = reinterpret_cast<void *>(const_single);
+            function = reinterpret_cast<void *>(single);
         } else if (kernreq == kernel_request_const_strided) {
-            function = reinterpret_cast<void *>(const_strided);
+            function = reinterpret_cast<void *>(strided);
         } else {
             std::stringstream ss;
             ss << "unrecognized dynd kernel request " << kernreq;

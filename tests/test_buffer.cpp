@@ -49,6 +49,7 @@ void func_with_aux_and_thread_aux(int &dst, int src, func_aux_buffer *aux, func_
 */
 
 TEST(Buffer, Aux) {
+/*
     func_aux_buffer aux;
     aux.val = 7;
 
@@ -57,6 +58,7 @@ TEST(Buffer, Aux) {
 
     af = nd::make_functor_arrfunc(ref_func_with_aux);
     EXPECT_EQ(12, af(5, &aux).as<int>());
+*/
 
 /*
 TODO: Need thread_aux to reenable.

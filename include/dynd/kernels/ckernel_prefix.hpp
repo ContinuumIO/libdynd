@@ -34,9 +34,11 @@ typedef int (*expr_predicate_t)(const char *const *src, ckernel_prefix *self);
 enum {
     /** Kernel function expr_single_t, "(T1, T2, ...) -> R" */
     kernel_request_single = 0,
+    /** Kernel function expr_const_single_t, "const (T1, T2, ...) -> R" */
     kernel_request_const_single = 1,
     /** Kernel function expr_strided_t, "(T1, T2, ...) -> R" */
     kernel_request_strided = 2,
+    /** Kernel function expr_const_strided_t, "const (T1, T2, ...) -> R" */
     kernel_request_const_strided = 3,
     /** Kernel function expr_predicate_t, "(T1, T2, ...) -> bool" */
     kernel_request_predicate = 4,

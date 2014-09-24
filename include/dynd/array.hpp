@@ -687,11 +687,12 @@ public:
     array to_host() const;
 
 #ifdef DYND_CUDA
+
     /** Returns a copy of this array in CUDA host memory. */
     array to_cuda_host(unsigned int cuda_host_flags = cudaHostAllocDefault) const;
-
     /** Returns a copy of this array in CUDA global memory. */
     array to_cuda_device() const;
+
 #endif // DYND_CUDA
 
     /** Sorting comparison between two arrays. (Returns a bool, does not broadcast) */

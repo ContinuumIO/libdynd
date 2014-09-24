@@ -237,6 +237,22 @@ public:
     }
 
     /**
+     * Returns true if this type is readable directly from the host.
+     */
+    inline bool is_host_readable() const {
+        return is_builtin() || ((m_extended->get_flags() & type_flag_not_host_readable) == 0);
+    }
+
+#ifdef DYND_CUDA
+
+    /**
+     * Returns true if this type is readable directly from a CUDA device.
+     */
+    bool is_cuda_device_readable() const;
+
+#endif // DYND_CUDA
+
+    /**
      * Indexes into the type. This function returns the type which results
      * from applying the same index to an ndarray of this type.
      *
@@ -510,6 +526,8 @@ public:
     type with_replaced_dtype(const type &replacement_tp,
                              intptr_t replace_ndim = 0) const;
 
+    type without_memory_type() const;
+
     /**
      * Returns a modified type with all expression types replaced with
      * their value types, and types replaced with "standard versions"
@@ -564,7 +582,7 @@ public:
      *
      * \param include_ndim  The number of array dimensions to keep
      */
-    inline type get_dtype(size_t include_ndim = 0) const {
+    type get_dtype(size_t include_ndim = 0) const {
         size_t ndim = get_ndim();
         if (ndim == include_ndim) {
             return *this;

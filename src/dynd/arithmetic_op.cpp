@@ -1,10 +1,11 @@
 //
-// Copyright (C) 2011-14 Mark Wiebe, DyND Developers
+// Copyright (C) 2011-14 Mark Wiebe, Irwin Zaid, DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #include <sstream>
 
+#include <dynd/pp/if.hpp>
 #include <dynd/array.hpp>
 #include <dynd/array_iter.hpp>
 #include <dynd/type_promotion.hpp>
@@ -15,6 +16,7 @@
 #include <dynd/types/var_dim_type.hpp>
 #include <dynd/types/expr_type.hpp>
 #include <dynd/types/string_type.hpp>
+#include <dynd/types/base_memory_type.hpp>
 #include <dynd/kernels/string_algorithm_kernels.hpp>
 
 using namespace std;
@@ -23,30 +25,28 @@ using namespace dynd;
 namespace {
     template<class OP>
     struct binary_single_kernel {
-        static void func(char *dst, const char * const *src,
+        static DYND_CUDA_HOST_DEVICE void func(char *dst, const char *src0, const char *src1,
                         ckernel_prefix *DYND_UNUSED(self))
         {
             typedef typename OP::type T;
-            T s0, s1, r;
+            *reinterpret_cast<T *>(dst) = OP::operate(*reinterpret_cast<const T *>(src0),
+                *reinterpret_cast<const T *>(src1));
+        }
 
-            s0 = *reinterpret_cast<const T *>(src[0]);
-            s1 = *reinterpret_cast<const T *>(src[1]);
-
-            r = OP::operate(s0, s1);
-
-            *reinterpret_cast<T *>(dst) = r;
+        static void func(char *dst, const char * const *src,
+                        ckernel_prefix *self)
+        {
+            func(dst, src[0], src[1], self);
         }
     };
 
     template<class OP>
     struct binary_strided_kernel {
-        static void func(char *dst, intptr_t dst_stride,
-                        const char * const *src, const intptr_t *src_stride,
+        static DYND_CUDA_HOST_DEVICE void func(char *dst, intptr_t dst_stride,
+                        const char *src0, intptr_t src0_stride, const char *src1, intptr_t src1_stride,
                         size_t count, ckernel_prefix *DYND_UNUSED(self))
         {
             typedef typename OP::type T;
-            const char *src0 = src[0], *src1 = src[1];
-            intptr_t src0_stride = src_stride[0], src1_stride = src_stride[1];
 
             for (size_t i = 0; i != count; ++i) {
                 T s0, s1, r;
@@ -62,7 +62,92 @@ namespace {
                 src1 += src1_stride;
             }
         }
+
+        static void func(char *dst, intptr_t dst_stride,
+                        const char * const *src, const intptr_t *src_stride,
+                        size_t count, ckernel_prefix *self)
+        {
+            func(dst, dst_stride, src[0], src_stride[0], src[1], src_stride[1], count, self);
+        }
     };
+
+#ifdef DYND_CUDA
+
+    template<class OP>
+    DYND_CUDA_GLOBAL void cuda_device_single_binary_single_kernel(char *dst,  const char *src0, const char *src1)
+    {
+        binary_single_kernel<OP>::func(dst, src0, src1, NULL);
+    }
+
+    template<class OP>
+    struct cuda_device_binary_single_kernel {
+        static void func(char *dst, const char * const *src,
+                        ckernel_prefix *DYND_UNUSED(self))
+        {
+            cuda_device_single_binary_single_kernel<OP><<<1, 1>>>(dst, src[0], src[1]);
+            throw_if_not_cuda_success(cudaDeviceSynchronize());
+        }
+    };
+
+    template<class OP>
+    DYND_CUDA_GLOBAL void cuda_device_multiple_binary_single_kernel(char *dst, intptr_t dst_stride,
+                               const char *src0, intptr_t src0_stride,
+                               const char *src1, intptr_t src1_stride,
+                               size_t count)
+    {
+        unsigned int thread = get_cuda_global_thread<1, 1>();
+
+        if (thread < count) {
+            binary_single_kernel<OP>::func(dst + thread * dst_stride,
+                src0 + thread * src0_stride, src1 + thread * src1_stride, NULL);
+        }
+    }
+
+    template<class OP>
+    DYND_CUDA_GLOBAL void cuda_device_multiple_binary_strided_kernel(char *dst, intptr_t dst_stride,
+                               const char *src0, intptr_t src0_stride,
+                               const char *src1, intptr_t src1_stride,
+                               size_t count_div_threads, size_t count_mod_threads)
+    {
+        unsigned int thread = get_cuda_global_thread<1, 1>();
+
+        if (thread < count_mod_threads) {
+            binary_strided_kernel<OP>::func(dst + thread * (count_div_threads + 1) * dst_stride, dst_stride,
+                src0 + thread * (count_div_threads + 1) * src0_stride, src0_stride,
+                src1 + thread * (count_div_threads + 1) * src1_stride, src1_stride,
+                count_div_threads + 1, NULL);
+        } else {
+            binary_strided_kernel<OP>::func(dst + (thread * count_div_threads + count_mod_threads) * dst_stride, dst_stride,
+                src0 + (thread * count_div_threads + count_mod_threads) * src0_stride, src0_stride,
+                src1 + (thread * count_div_threads + count_mod_threads) * src1_stride, src1_stride,
+                count_div_threads, NULL);
+        }
+    }
+
+    template<class OP>
+    struct cuda_device_binary_strided_kernel {
+        static void func(char *dst, intptr_t dst_stride,
+                        const char * const *src, const intptr_t *src_stride,
+                        size_t count, ckernel_prefix *DYND_UNUSED(self))
+        {
+            cuda_global_config<1, 1> config = make_cuda_global_config<1, 1>(count);
+
+            typedef typename OP::type T;
+            const char *src0 = src[0], *src1 = src[1];
+            intptr_t src0_stride = src_stride[0], src1_stride = src_stride[1];
+
+            if (count < config.threads) {
+                cuda_device_multiple_binary_single_kernel<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
+                    count);
+            } else {
+                cuda_device_multiple_binary_strided_kernel<OP><<<config.grid, config.block>>>(dst, dst_stride, src0, src0_stride, src1, src1_stride,
+                    count / config.threads, count % config.threads);
+            }
+            throw_if_not_cuda_success(cudaDeviceSynchronize());
+        }
+    };
+
+#endif // DYND_CUDA
 
     template<class extra_type>
     class arithmetic_op_kernel_generator : public expr_kernel_generator {
@@ -137,7 +222,7 @@ namespace {
     template<class T>
     struct addition {
         typedef T type;
-        static inline T operate(T x, T y) {
+        static inline DYND_CUDA_HOST_DEVICE T operate(T x, T y) {
             return x + y;
         }
     };
@@ -145,7 +230,7 @@ namespace {
     template<class T>
     struct subtraction {
         typedef T type;
-        static inline T operate(T x, T y) {
+        static inline DYND_CUDA_HOST_DEVICE T operate(T x, T y) {
             return x - y;
         }
     };
@@ -153,7 +238,7 @@ namespace {
     template<class T>
     struct multiplication {
         typedef T type;
-        static inline T operate(T x, T y) {
+        static inline DYND_CUDA_HOST_DEVICE T operate(T x, T y) {
             return x * y;
         }
     };
@@ -161,7 +246,7 @@ namespace {
     template<class T>
     struct division {
         typedef T type;
-        static inline T operate(T x, T y) {
+        static inline DYND_CUDA_HOST_DEVICE T operate(T x, T y) {
             return x / y;
         }
     };
@@ -188,7 +273,7 @@ namespace {
 #define DYND_FLOAT128_BINARY_OP_PAIR(operation) {NULL, NULL}
 #endif
 
-#define DYND_BUILTIN_DTYPE_BINARY_OP_TABLE(operation) { \
+#define DYND_DEFAULT_BUILTIN_DTYPE_BINARY_OP_TABLE(operation) { \
     {&binary_single_kernel<operation<int32_t> >::func, &binary_strided_kernel<operation<int32_t> >::func}, \
     {&binary_single_kernel<operation<int64_t> >::func, &binary_strided_kernel<operation<int64_t> >::func}, \
     DYND_INT128_BINARY_OP_PAIR(operation), \
@@ -202,19 +287,53 @@ namespace {
     {&binary_single_kernel<operation<dynd_complex<double> > >::func, &binary_strided_kernel<operation<dynd_complex<double> > >::func} \
     }
 
+#ifdef DYND_CUDA
+
+#define DYND_CUDA_DEVICE_BUILTIN_DTYPE_BINARY_OP_TABLE(operation) { \
+    {&cuda_device_binary_single_kernel<operation<int32_t> >::func, &cuda_device_binary_strided_kernel<operation<int32_t> >::func}, \
+    {&cuda_device_binary_single_kernel<operation<int64_t> >::func, &cuda_device_binary_strided_kernel<operation<int64_t> >::func}, \
+    DYND_INT128_BINARY_OP_PAIR(operation), \
+    {&cuda_device_binary_single_kernel<operation<int32_t> >::func, &cuda_device_binary_strided_kernel<operation<uint32_t> >::func}, \
+    {&cuda_device_binary_single_kernel<operation<uint64_t> >::func, &cuda_device_binary_strided_kernel<operation<uint64_t> >::func}, \
+    DYND_UINT128_BINARY_OP_PAIR(operation), \
+    {&cuda_device_binary_single_kernel<operation<float> >::func, &cuda_device_binary_strided_kernel<operation<float> >::func}, \
+    {&cuda_device_binary_single_kernel<operation<double> >::func, &cuda_device_binary_strided_kernel<operation<double> >::func}, \
+    DYND_FLOAT128_BINARY_OP_PAIR(operation), \
+    {&cuda_device_binary_single_kernel<operation<dynd_complex<float> > >::func, &cuda_device_binary_strided_kernel<operation<dynd_complex<float> > >::func}, \
+    {&cuda_device_binary_single_kernel<operation<dynd_complex<double> > >::func, &cuda_device_binary_strided_kernel<operation<dynd_complex<double> > >::func} \
+    }
+
+#else
+
+#define DYND_CUDA_DEVICE_BUILTIN_DTYPE_BINARY_OP_TABLE(operation) { \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL}, \
+    {NULL, NULL} \
+    }
+
+#endif // DYND_CUDA
+
 #define DYND_BUILTIN_DTYPE_BINARY_OP_TABLE_DEFS(operation) \
-    static const expr_operation_pair operation##_table[11] = \
-                DYND_BUILTIN_DTYPE_BINARY_OP_TABLE(operation);
+    static const expr_operation_pair operation##_table[2][11] = { \
+                DYND_DEFAULT_BUILTIN_DTYPE_BINARY_OP_TABLE(operation), \
+                DYND_CUDA_DEVICE_BUILTIN_DTYPE_BINARY_OP_TABLE(operation) \
+                };
 
 DYND_BUILTIN_DTYPE_BINARY_OP_TABLE_DEFS(addition);
 DYND_BUILTIN_DTYPE_BINARY_OP_TABLE_DEFS(subtraction);
 DYND_BUILTIN_DTYPE_BINARY_OP_TABLE_DEFS(multiplication);
 DYND_BUILTIN_DTYPE_BINARY_OP_TABLE_DEFS(division);
 
-// These operators are declared in nd::array.hpp
-
-// Get the table index by compressing the type_id's we do implement
-static int compress_builtin_type_id[builtin_type_id_count] = {
+// Get the table indices by compressing the type_id's we do implement
+static const int compress_builtin_type_id[builtin_type_id_count] = {
                 -1, -1, // uninitialized, bool
                 -1, -1, 0, 1,// int8, ..., int64
                 2, // int128
@@ -223,7 +342,11 @@ static int compress_builtin_type_id[builtin_type_id_count] = {
                 -1, 6, 7, // float16, ..., float64
                 8, // float128
                 9, 10, // complex[float32], complex[float64]
-                -1};
+                -1
+                };
+static const int compress_memory_type_id[memory_type_id_count] = {
+                -1, 1 // cuda_host[...], cuda_device[...]
+                };
 
 template<class KD>
 nd::array apply_binary_operator(const nd::array *ops,
@@ -274,54 +397,105 @@ namespace {
     };
 } // anonymous namespace
 
+// These operators are declared in nd::array.hpp
+
 nd::array nd::operator+(const nd::array& op1, const nd::array& op2)
 {
-    nd::array ops[2] = {op1, op2};
-    expr_operation_pair func_ptr;
     ndt::type op1dt = op1.get_dtype().value_type();
     ndt::type op2dt = op2.get_dtype().value_type();
-    if (op1dt.is_builtin() && op1dt.is_builtin()) {
+
+    int memory_index;
+    if (op1dt.is_host_readable() && op2dt.is_host_readable()) {
+        memory_index = 0;
+    } else {
+        memory_index = -1;
+    }
+
+#ifdef DYND_CUDA
+
+    if (op1dt.is_cuda_device_readable()) {
+        if (op2dt.is_cuda_device_readable()) {
+            memory_index = compress_memory_type_id[memory_type_id_offset_of(cuda_device_type_id)];
+        } else if (op2.is_scalar()) {
+            return op1 + op2.to_cuda_device();
+        }
+    } else if (op2dt.is_cuda_device_readable()) {
+        if (op1.is_scalar()) {
+            return op1.to_cuda_device() + op2;
+        }
+    }
+
+#endif // DYND_CUDA
+
+    if (op1dt.without_memory_type().is_builtin() && op2dt.without_memory_type().is_builtin()) {
         ndt::type rdt = promote_types_arithmetic(op1dt, op2dt);
-        int table_index = compress_builtin_type_id[rdt.get_type_id()];
-        if (table_index >= 0) {
-            func_ptr = addition_table[table_index];
-        } else {
-            func_ptr.single = NULL;
-            func_ptr.strided = NULL;
+
+        expr_operation_pair func_ptr;
+        int builtin_index = compress_builtin_type_id[rdt.without_memory_type().get_type_id()];
+        if (memory_index >= 0 && builtin_index >= 0) {
+            func_ptr = addition_table[memory_index][builtin_index];
         }
 
         // The signature is (T, T) -> T, so we don't use the original types
+        nd::array ops[2] = {op1, op2};
         return apply_binary_operator<ckernel_prefix_with_init>(
             ops, rdt, rdt, rdt, func_ptr, "addition").eval_immutable();
-    } else if (op1dt.get_kind() == string_kind && op2dt.get_kind() == string_kind) {
+    } else if (op1dt.without_memory_type().get_kind() == string_kind && op2dt.without_memory_type().get_kind() == string_kind) {
         ndt::type rdt = ndt::make_string();
+
+        expr_operation_pair func_ptr;
         func_ptr.single = &kernels::string_concatenation_kernel::single;
         func_ptr.strided = &kernels::string_concatenation_kernel::strided;
+
         // The signature is (string, string) -> string, so we don't use the original types
         // NOTE: Using a different name for string concatenation in the generated expression
+        nd::array ops[2] = {op1, op2};
         nd::array tmp = apply_binary_operator<kernels::string_concatenation_kernel>(
             ops, rdt, rdt, rdt, func_ptr, "string_concat");
-
         return tmp.eval_immutable();
-    } else {
-        stringstream ss;
-        ss << "Addition is not supported for dynd types ";
-        ss << op1dt << " and " << op2dt;
-        throw runtime_error(ss.str());
     }
+
+    stringstream ss;
+    ss << "Addition is not supported for dynd types ";
+    ss << op1dt << " and " << op2dt;
+    throw runtime_error(ss.str());
 }
 
 nd::array nd::operator-(const nd::array& op1, const nd::array& op2)
 {
-    ndt::type rdt;
-    expr_operation_pair func_ptr;
     ndt::type op1dt = op1.get_dtype().value_type();
     ndt::type op2dt = op2.get_dtype().value_type();
-    if (op1dt.is_builtin() && op1dt.is_builtin()) {
+
+    int memory_index;
+    if (op1dt.is_host_readable() && op2dt.is_host_readable()) {
+        memory_index = 0;
+    } else {
+        memory_index = -1;
+    }
+
+#ifdef DYND_CUDA
+
+    if (op1dt.is_cuda_device_readable()) {
+        if (op2dt.is_cuda_device_readable()) {
+            memory_index = compress_memory_type_id[memory_type_id_offset_of(cuda_device_type_id)];
+        } else if (op2.is_scalar()) {
+            return op1 - op2.to_cuda_device();
+        }
+    } else if (op2dt.is_cuda_device_readable()) {
+        if (op1.is_scalar()) {
+            return op1.to_cuda_device() - op2;
+        }
+    }
+
+#endif // DYND_CUDA
+
+    ndt::type rdt;
+    expr_operation_pair func_ptr;
+    if (op1dt.without_memory_type().is_builtin() && op1dt.without_memory_type().is_builtin()) {
         rdt = promote_types_arithmetic(op1dt, op2dt);
-        int table_index = compress_builtin_type_id[rdt.get_type_id()];
-        if (table_index >= 0) {
-            func_ptr = subtraction_table[table_index];
+        int builtin_index = compress_builtin_type_id[rdt.without_memory_type().get_type_id()];
+        if (memory_index >= 0 && builtin_index >= 0) {
+            func_ptr = subtraction_table[memory_index][builtin_index];
         }
     }
 
@@ -340,7 +514,7 @@ nd::array nd::operator*(const nd::array& op1, const nd::array& op2)
         rdt = promote_types_arithmetic(op1dt, op2dt);
         int table_index = compress_builtin_type_id[rdt.get_type_id()];
         if (table_index >= 0) {
-            func_ptr = multiplication_table[table_index];
+            func_ptr = multiplication_table[0][table_index];
         }
     }
 
@@ -359,7 +533,7 @@ nd::array nd::operator/(const nd::array& op1, const nd::array& op2)
         rdt = promote_types_arithmetic(op1dt, op2dt);
         int table_index = compress_builtin_type_id[rdt.get_type_id()];
         if (table_index >= 0) {
-            func_ptr = division_table[table_index];
+            func_ptr = division_table[0][table_index];
         }
     }
 

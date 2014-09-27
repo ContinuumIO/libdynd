@@ -351,6 +351,22 @@ void pointer_type::arrmeta_debug_print(const char *arrmeta, std::ostream &o,
     }
 }
 
+size_t pointer_type::make_assignment_kernel(
+    ckernel_builder *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
+    const char *dst_arrmeta, const ndt::type &src_tp, const char *src_arrmeta,
+    kernel_request_t kernreq, const eval::eval_context *ectx) const
+{
+    if (*this == *src_tp.extended()) {
+        return make_pod_typed_data_assignment_kernel(ckb, ckb_offset, get_data_size(), get_data_alignment(), kernreq);
+    }
+
+    // need a assign pointer from 
+
+    return base_expr_type::make_assignment_kernel(ckb, ckb_offset,
+                    dst_tp, dst_arrmeta, src_tp, src_arrmeta,
+                    kernreq, ectx);
+}
+
 static ndt::type property_get_target_type(const ndt::type &tp)
 {
     const pointer_type *pd = tp.tcast<pointer_type>();

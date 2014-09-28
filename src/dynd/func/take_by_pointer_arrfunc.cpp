@@ -24,8 +24,9 @@ struct apply_ck : kernels::expr_ck<apply_ck, 2> {
         const char *src1 = src[1];
 
         for (intptr_t i = 0; i < dst_dim_size; ++i) {
-            intptr_t ix = apply_single_index(*reinterpret_cast<const intptr_t *>(src1), src0_dim_size, NULL);
-            const char *child_src0 = src0 + ix * src0_stride;
+            intptr_t j = apply_single_index(*reinterpret_cast<const intptr_t *>(src1),
+                src0_dim_size, NULL);
+            const char *child_src0 = src0 + j * src0_stride;
             const char *child_pointer_src0 = reinterpret_cast<const char *>(&child_src0);
             child_fn(dst, &child_pointer_src0, child);
             dst += dst_stride;
@@ -46,6 +47,7 @@ static intptr_t instantiate_apply(const arrfunc_type_data *DYND_UNUSED(af_self),
     ndt::type dst_el_tp, src0_el_tp, src1_el_tp;
     const char *dst_el_meta, *src0_el_meta, *src1_el_meta;
     intptr_t src1_dim_size;
+
     for (intptr_t i = 0; i < ndim; ++i) {
         typedef apply_ck self_type;
         self_type *self = self_type::create(ckb, kernreq, ckb_offset);
@@ -163,7 +165,6 @@ static void resolve_take_dst_shape(const arrfunc_type_data *DYND_UNUSED(af_self)
 
 static void free(arrfunc_type_data *) {}
 
-// take_by_pointer ?
 void dynd::make_take_by_pointer_arrfunc(arrfunc_type_data *out_af)
 {
     static ndt::type param_types[2] = {ndt::type("M * T"), ndt::type("N * Ix")};

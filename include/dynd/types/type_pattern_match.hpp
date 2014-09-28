@@ -30,7 +30,15 @@ namespace dynd { namespace ndt {
  *                  dimension of the type only is what is relevant.
  */
 bool pattern_match(const ndt::type &concrete, const ndt::type &pattern,
-                    std::map<nd::string, ndt::type> &typevars);
+                   std::map<nd::string, ndt::type> &typevars,
+                   std::map<nd::string, intptr_t> &intvars);
+
+inline bool pattern_match(const ndt::type &concrete, const ndt::type &pattern,
+                          std::map<nd::string, ndt::type> &typevars)
+{
+    std::map<nd::string, intptr_t> intvars;
+    return pattern_match(concrete, pattern, typevars, intvars);
+}
 
 /**
  * Matches the provided concrete type against the pattern type, which may
@@ -42,7 +50,8 @@ inline bool pattern_match(const ndt::type &concrete, const ndt::type &pattern)
     return true;
   } else {
     std::map<nd::string, ndt::type> typevars;
-    return pattern_match(concrete, pattern, typevars);
+    std::map<nd::string, intptr_t> intvars;
+    return pattern_match(concrete, pattern, typevars, intvars);
   }
 }
 }} // namespace dynd::ndt

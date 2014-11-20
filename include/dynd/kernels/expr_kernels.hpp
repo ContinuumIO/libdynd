@@ -63,8 +63,10 @@ namespace kernels {
                             size_t count)
         {
             self_type *self = parent_type::get_self(&this->base);
-            char *src_copy[Nsrc];
-            memcpy(src_copy, src, sizeof(src_copy));
+            // Can't do this as just [Nsrc] when Nsrc is 0
+            // (at least not on MSVC 2013)
+            char *src_copy[Nsrc ? Nsrc : 1];
+            memcpy(src_copy, src, Nsrc * sizeof(char *));
             for (size_t i = 0; i != count; ++i) {
                 self->single(dst, src_copy);
                 dst += dst_stride;

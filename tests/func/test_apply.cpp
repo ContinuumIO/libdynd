@@ -72,9 +72,11 @@ TEST(Apply, Function)
   EXPECT_EQ(53.15, af(3.75, 19).as<double>());
 
   af = nd::make_apply_arrfunc<decltype(&func2), &func2>();
-  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})
+                                .view("cfixed[3] * float32")).as<float>());
   af = nd::make_apply_arrfunc(&func2);
-  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})
+                                .view("cfixed[3] * float32")).as<float>());
 
   af = nd::make_apply_arrfunc<decltype(&func3), &func3>();
   EXPECT_EQ(12U, af().as<unsigned int>());
@@ -82,13 +84,17 @@ TEST(Apply, Function)
   EXPECT_EQ(12U, af().as<unsigned int>());
 
   af = nd::make_apply_arrfunc<decltype(&func4), &func4>();
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}),
-                               nd::array({0.0, 0.65, 11.0}).view(
-                                   ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(
+      166.765,
+      af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
+         nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>()))
+          .as<double>());
   af = nd::make_apply_arrfunc(&func4);
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}),
-                               nd::array({0.0, 0.65, 11.0}).view(
-                                   ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(
+      166.765,
+      af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
+         nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>()))
+          .as<double>());
 
 #ifndef DYND_NESTED_INIT_LIST_BUG
   af = nd::make_apply_arrfunc<decltype(&func5), &func5>();
@@ -167,6 +173,9 @@ TEST(Apply, FunctionWithKeywords)
   EXPECT_EQ(36.3, af(kwds("x", 38, "y", 5, "z", 12.1)).as<double>());
 }
 
+#if !defined(_MSC_VER) || _MSC_VER > 1800
+// MSVC 2013 has a bug that prevents this from working, reported here:
+// https://connect.microsoft.com/VisualStudio/feedback/details/1034062/compiler-error-in-simple-variadic-function-wrapper
 template <typename func_type, func_type func>
 class func_wrapper;
 
@@ -184,6 +193,36 @@ typedef func_wrapper<decltype(&func4), &func4> func4_as_callable;
 typedef func_wrapper<decltype(&func5), &func5> func5_as_callable;
 typedef func_wrapper<decltype(&func6), &func6> func6_as_callable;
 typedef func_wrapper<decltype(&func7), &func7> func7_as_callable;
+#else
+// Straightforward yet immensely annoying workaround for MSVC bug
+struct func0_as_callable {
+  int operator()(int x, int y) { return func0(x, y); }
+};
+struct func1_as_callable {
+  double operator()(double x, int y) { return func1(x, y); }
+};
+struct func2_as_callable {
+  float operator()(const float (&x)[3]) { return func2(x); }
+};
+struct func3_as_callable {
+  unsigned int operator()() { return func3(); }
+};
+struct func4_as_callable {
+  double operator()(const double (&x)[3], const double (&y)[3])
+  {
+    return func4(x, y);
+  }
+};
+struct func5_as_callable {
+  long operator()(const long (&x)[2][3]) { return func5(x); }
+};
+struct func6_as_callable {
+  int operator()(int x, int y, int z) { return func6(x, y, z); }
+};
+struct func7_as_callable {
+  double operator()(int x, int y, double z) { return func7(x, y, z); }
+};
+#endif
 
 class callable0
 {
@@ -230,9 +269,11 @@ TEST(Apply, Callable)
   EXPECT_EQ(53.15, af(3.75, 19).as<double>());
 
   af = nd::make_apply_arrfunc<func2_as_callable>();
-  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})
+                                .view("cfixed[3] * float32")).as<float>());
   af = nd::make_apply_arrfunc(func2_as_callable());
-  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})
+                                .view("cfixed[3] * float32")).as<float>());
 
   af = nd::make_apply_arrfunc<func3_as_callable>();
   EXPECT_EQ(12U, af().as<unsigned int>());

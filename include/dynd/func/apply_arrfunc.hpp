@@ -78,34 +78,39 @@ struct apply_arrfunc_factory
 template <typename func_type, func_type func, typename... T>
 arrfunc make_apply_arrfunc(T &&... names)
 {
-  return detail::apply_arrfunc_factory<func_type>::template make<func>(std::forward<T>(names)...);
+  return detail::apply_arrfunc_factory<func_type>::template make<func>(
+      std::forward<T>(names)...);
 }
 
 template <typename func_type, typename... T>
-typename std::enable_if<is_function_pointer<func_type>::value, arrfunc>::type 
-  make_apply_arrfunc(func_type func, T &&... names)
+typename std::enable_if<is_function_pointer<func_type>::value, arrfunc>::type
+make_apply_arrfunc(func_type func, T &&... names)
 {
-  return detail::apply_arrfunc_factory<func_type>::make(func, std::forward<T>(names)...);
+  return detail::apply_arrfunc_factory<func_type>::make(
+      func, std::forward<T>(names)...);
 }
 
 template <typename func_type, typename... T>
 typename std::enable_if<std::is_function<func_type>::value, arrfunc>::type
-  make_apply_arrfunc(func_type func, T &&... names)
+make_apply_arrfunc(func_type func, T &&... names)
 {
   return make_apply_arrfunc(&func, std::forward<T>(names)...);
 }
 
 template <bool copy = true, typename func_type, typename... T>
-typename std::enable_if<!std::is_function<func_type>::value && !is_function_pointer<func_type>::value,
-  arrfunc>::type make_apply_arrfunc(const func_type &func, T &&... names)
+typename std::enable_if<!std::is_function<func_type>::value &&
+                            !is_function_pointer<func_type>::value,
+                        arrfunc>::type
+make_apply_arrfunc(const func_type &func, T &&... names)
 {
-  return detail::apply_arrfunc_factory<func_type>::make(func, std::forward<T>(names)...);
+  return detail::apply_arrfunc_factory<func_type>::make(
+      func, std::forward<T>(names)...);
 }
 
 template <typename func_type, typename... K, typename... T>
 arrfunc make_apply_arrfunc(T &&... names)
 {
-  return detail::apply_arrfunc_factory<func_type>::template make<K...>(std::forward<T>(names)...);
+  return detail::apply_arrfunc_factory<func_type>::template make<K...>(
+      std::forward<T>(names)...);
 }
-
 }} // namespace dynd::nd

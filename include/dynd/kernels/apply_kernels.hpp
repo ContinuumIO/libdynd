@@ -248,19 +248,20 @@ struct apply_callable_ck<func_type, R, type_sequence<A...>,
                             index_sequence<I...>, type_sequence<K...>,
                             index_sequence<J...>> self_type;
 
-  func_type func;
+  func_type m_func;
 
   apply_callable_ck(const func_type &func, detail::arg<A, I>... args,
                     detail::kwd<K, J>... kwds)
       : detail::arg_holder<type_sequence<A...>, index_sequence<I...>>(args...),
-        detail::kwd_holder<type_sequence<K...>, index_sequence<J...>>(kwds...)
+        detail::kwd_holder<type_sequence<K...>, index_sequence<J...>>(kwds...),
+        m_func(func)
   {
   }
 
   void single(char *dst, char **DYND_CONDITIONAL_UNUSED(src))
   {
     *reinterpret_cast<R *>(dst) =
-        func(detail::arg<A, I>::get(src[I])..., detail::kwd<K, J>::get()...);
+        m_func(detail::arg<A, I>::get(src[I])..., detail::kwd<K, J>::get()...);
   }
 
     static intptr_t instantiate(const arrfunc_type_data *af_self, const arrfunc_type *af_tp,
@@ -301,15 +302,15 @@ struct construct_then_apply_callable_ck<func_type, R, type_sequence<P...>, index
 {
     typedef construct_then_apply_callable_ck<func_type, R, type_sequence<P...>, index_sequence<I...>, type_sequence<K...>, index_sequence<J...> > self_type;
 
-    func_type func;
+    func_type m_func;
 
     construct_then_apply_callable_ck(detail::arg<P, I>... args, detail::kwd<K, J>... kwds)
-      : detail::arg<P, I>(args)..., func(kwds.get()...)
+      : detail::arg<P, I>(args)..., m_func(kwds.get()...)
     {
     }
 
     void single(char *dst, char **DYND_CONDITIONAL_UNUSED(src)) {
-      *reinterpret_cast<R *>(dst) = func(detail::arg<P, I>::get(src[I])...);
+      *reinterpret_cast<R *>(dst) = m_func(detail::arg<P, I>::get(src[I])...);
     }
 
     static intptr_t instantiate(const arrfunc_type_data *DYND_UNUSED(af_self), const arrfunc_type *af_tp,

@@ -254,6 +254,9 @@ public:
   }
 };
 
+// This test causes rampant memory usage on MSVC 2013
+// https://connect.microsoft.com/VisualStudio/Feedback/details/1034105
+#if !(defined(_MSC_VER) && _MSC_VER == 1800)
 TEST(Apply, Callable)
 {
   nd::arrfunc af;
@@ -320,7 +323,11 @@ TEST(Apply, Callable)
   af = nd::make_apply_arrfunc(callable0(4));
   EXPECT_EQ(8, af(5, 3).as<int>());
 }
+#endif // MSVC 2013
 
+// This test causes rampant memory usage on MSVC 2013
+// https://connect.microsoft.com/VisualStudio/Feedback/details/1034105
+#if !(defined(_MSC_VER) && _MSC_VER == 1800)
 TEST(Apply, CallableWithKeywords)
 {
   nd::arrfunc af;
@@ -375,3 +382,4 @@ TEST(Apply, CallableWithKeywords)
   af = nd::make_apply_arrfunc<callable1, int, int>("x", "y");
   EXPECT_EQ(28, af(2, kwds("x", 1, "y", 7)).as<int>());
 }
+#endif // MSVC 2013

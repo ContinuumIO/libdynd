@@ -538,6 +538,7 @@ TEST(Array, InitFromInitializerLists) {
     EXPECT_EQ(4, ptr_i[3]);
     EXPECT_EQ(5, ptr_i[4]);
 
+#ifndef DYND_NESTED_INIT_LIST_BUG
     nd::array b = {{1., 2., 3.}, {4., 5., 6.25}};
     EXPECT_EQ(ndt::make_type<double>(), b.get_dtype());
     ASSERT_EQ(2, b.get_ndim());
@@ -581,6 +582,7 @@ TEST(Array, InitFromInitializerLists) {
     // If the shape is jagged, should throw an error
     EXPECT_THROW((a = {{1,2,3}, {1,2}}), runtime_error);
     EXPECT_THROW((a = {{{1},{2},{3}}, {{1},{2},{3, 4}}}), runtime_error);
+#endif // DYND_NESTED_INIT_LIST_BUG
 }
 
 TEST(Array, InitFromNestedCArray) {

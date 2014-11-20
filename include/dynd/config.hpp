@@ -23,9 +23,9 @@
 //#  define DYND_RVALUE_REFS
 //#endif
 
-#if __has_feature(cxx_generalized_initializers) && \
-    __has_include(<initializer_list>)
-#  define DYND_INIT_LIST
+#if !(__has_feature(cxx_generalized_initializers) &&                           \
+      __has_include(<initializer_list>))
+#error DyND requires C++11 initializer list support.
 #endif
 
 #if __has_feature(cxx_constexpr)
@@ -76,8 +76,6 @@ inline bool DYND_ISNAN(long double x) {
 
 #define DYND_CONDITIONAL_UNUSED(NAME) NAME  __attribute__((unused))
 
-// Use initializer lists on gcc >= 4.7
-#  define DYND_INIT_LIST
 // Use constexpr on gcc >= 4.7
 #  define DYND_CONSTEXPR constexpr
 // Use rvalue references on gcc >= 4.7
@@ -108,6 +106,10 @@ inline bool DYND_ISNAN(long double x) {
 
 #elif defined(_MSC_VER)
 
+#if _MSC_VER < 1800
+#error DyND requires MSVC 2013 or newer.
+#endif
+
 #include <float.h>
 
 // If set, uses the FP status registers.
@@ -118,72 +120,22 @@ inline bool DYND_ISNAN(long double x) {
 // is #pragma fenv_access(on), which works.
 # define DYND_USE_FPSTATUS
 
-// MSVC 2010 and later
 # define DYND_CXX_TYPE_TRAITS
 # define DYND_USE_TR1_ENABLE_IF
 # define DYND_RVALUE_REFS
 # define DYND_STATIC_ASSERT(value, message) static_assert(value, message)
 # define DYND_CXX_LAMBDAS
-
-#if _MSC_VER < 1700
-// Older than MSVC 2012
-#define DYND_ATOLL(x) (_atoi64(x))
-namespace std {
-    inline bool isfinite(double x) {
-        return _finite(x) != 0;
-    }
-    inline bool isnan(double x) {
-        return _isnan(x) != 0;
-    }
-    inline bool isinf(double x) {
-        return x == std::numeric_limits<double>::infinity() ||
-               x == -std::numeric_limits<double>::infinity();
-    }
-    inline double copysign(double num, double sign) {
-        return _copysign(num, sign);
-    }
-    inline int signbit(double x) {
-        union {
-            double d;
-            uint64_t u;
-        } val;
-        val.d = x;
-        return (val.u & 0x8000000000000000ULL) ? 1 : 0;
-    }
-}
-#endif
-
-#if _MSC_VER == 1700
-// MSVC 2012
-#define DYND_ATOLL(x) (_atoi64(x))
-inline double copysign(double num, double sign) { return _copysign(num, sign); }
-inline int signbit(double x)
-{
-  union {
-    double d;
-    uint64_t u;
-  } val;
-  val.d = x;
-  return (val.u & 0x8000000000000000ULL) ? 1 : 0;
-}
-#endif
-
-#if _MSC_VER >= 1700
-// MSVC 2012 and later
 # define DYND_USE_STD_ATOMIC
-#endif
-
-#if _MSC_VER >= 1800
-// MSVC 2013 and later
 # define DYND_CXX_VARIADIC_TEMPLATES
 
-// MSVC 2013 doesn't appear to support nested initializer lists
+#if _MSC_VER == 1800
+// MSVC 2013 doesn't support nested initializer lists
 // https://stackoverflow.com/questions/23965565/how-to-do-nested-initializer-lists-in-visual-c-2013
-//#define DYND_INIT_LIST
+#define DYND_NESTED_INIT_LIST_BUG
 #endif
 
 // No DYND_CONSTEXPR yet, define it as nothing
-#  define DYND_CONSTEXPR
+# define DYND_CONSTEXPR
 
 #include <stdlib.h>
 // Some C library calls will abort if given bad format strings, etc
@@ -194,7 +146,7 @@ class disable_invalid_parameter_handler {
     disable_invalid_parameter_handler(const disable_invalid_parameter_handler&);
     disable_invalid_parameter_handler& operator=(const disable_invalid_parameter_handler&);
 
-    static void nop_parameter_handler(const wchar_t *, const wchar_t *, const wchar_t *, 
+    static void nop_parameter_handler(const wchar_t *, const wchar_t *, const wchar_t *,
                        unsigned int, uintptr_t) {
     }
 public:
@@ -222,10 +174,7 @@ public:
 #define DYND_ATOLL(x) (atoll(x))
 #endif
 
-// If Initializer Lists are supported
-#ifdef DYND_INIT_LIST
 #include <initializer_list>
-#endif
 
 // If being run from the CLING C++ interpreter
 #ifdef DYND_CLING
@@ -408,40 +357,11 @@ struct flatten<R (A...)> {
   typedef type_sequence<R, A...> type;
 };
 
-template<typename T, T... I>
-struct integer_sequence {
-    static_assert(std::is_integral<T>::value, "Integral type" );
-
-    static const T size = sizeof...(I);
-
-    typedef T type;
-
-//    template<T N>
-  //  using append = integer_sequence<T, I..., N>;
-//        using next = typename append<size>::type;
-
-    template <T J>
-    struct append {
-        typedef integer_sequence<T, I..., J> type;
-    };
-
-    typedef typename append<size>::type next;
-};
-
-/*
-template<std::size_t... I>
-using index_sequence = integer_sequence<std::size_t, I...>;
-*/
-
 template<size_t... I>
 struct index_sequence {
     static const size_t size = sizeof...(I);
 
     typedef size_t type;
-
-//    template<T N>
-  //  using append = integer_sequence<T, I..., N>;
-//        using next = typename append<size>::type;
 
     template <size_t J>
     struct append {
@@ -453,49 +373,24 @@ struct index_sequence {
 
 namespace detail {
 
-template <typename T, T Nt, std::size_t N>
+template <std::size_t Nt, std::size_t N>
 struct iota {
     static_assert( Nt >= 0, "N cannot be negative" );
 
-    typedef typename iota<T, Nt-1, N-1>::type::next type;
+    typedef typename iota<Nt-1, N-1>::type::next type;
 };
 
 template <size_t Nt>
-struct iota<size_t, Nt, 0ul> {
+struct iota<Nt, 0ul> {
     typedef index_sequence<> type;
-};
-
-template <typename T, T Nt>
-struct iota<T, Nt, 0ul> {
-    typedef integer_sequence<T> type;
 };
 
 } // namespace detail
 
-/*
-template <typename T, T N>
-using make_integer_sequence = typename detail::iota<T, N, N>::type;
-*/
-
-template <typename T, T N>
-struct make_integer_sequence {
-    typedef typename detail::iota<T, N, N>::type type;
-};
-
-/*
-template <size_t N>
-using make_index_sequence = make_integer_sequence<size_t, N>;
-*/
-
-template <size_t N>
+template <std::size_t N>
 struct make_index_sequence {
-    typedef typename make_integer_sequence<size_t, N>::type type;
+    typedef typename detail::iota<N, N>::type type;
 };
-
-/*
-template <typename... T>
-using index_sequence_for = make_index_sequence<sizeof...(T)>;
-*/
 
 } // namespace dynd
 
@@ -510,7 +405,7 @@ namespace dynd {
 namespace dynd {
 	template<bool B, class T = void>
 	struct enable_if {};
- 
+
 	template<class T>
 	struct enable_if<true, T> { typedef T type; };
 }

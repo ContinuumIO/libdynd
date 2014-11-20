@@ -59,22 +59,22 @@ double func7(int x, int y, double z)
 
 TEST(Apply, Function)
 {
-	nd::arrfunc af;
+  nd::arrfunc af;
 
-	af = nd::make_apply_arrfunc<decltype(&func0), &func0>();
-	EXPECT_EQ(4, af(5, 3).as<int>());
-	af = nd::make_apply_arrfunc(&func0);
-	EXPECT_EQ(4, af(5, 3).as<int>());
+  af = nd::make_apply_arrfunc<decltype(&func0), &func0>();
+  EXPECT_EQ(4, af(5, 3).as<int>());
+  af = nd::make_apply_arrfunc(&func0);
+  EXPECT_EQ(4, af(5, 3).as<int>());
 
-	af = nd::make_apply_arrfunc<decltype(&func1), &func1>();
-	EXPECT_EQ(53.15, af(3.75, 19).as<double>());
-	af = nd::make_apply_arrfunc(&func1);
-	EXPECT_EQ(53.15, af(3.75, 19).as<double>());
+  af = nd::make_apply_arrfunc<decltype(&func1), &func1>();
+  EXPECT_EQ(53.15, af(3.75, 19).as<double>());
+  af = nd::make_apply_arrfunc(&func1);
+  EXPECT_EQ(53.15, af(3.75, 19).as<double>());
 
   af = nd::make_apply_arrfunc<decltype(&func2), &func2>();
-  EXPECT_FLOAT_EQ(13.2, af(nd::array({3.9f, -7.0f, 16.3f}).view(ndt::make_type<float[3]>())).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
   af = nd::make_apply_arrfunc(&func2);
-  EXPECT_FLOAT_EQ(13.2, af(nd::array({3.9f, -7.0f, 16.3f}).view(ndt::make_type<float[3]>())).as<float>());  
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
 
   af = nd::make_apply_arrfunc<decltype(&func3), &func3>();
   EXPECT_EQ(12U, af().as<unsigned int>());
@@ -82,16 +82,22 @@ TEST(Apply, Function)
   EXPECT_EQ(12U, af().as<unsigned int>());
 
   af = nd::make_apply_arrfunc<decltype(&func4), &func4>();
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
-    nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}),
+                               nd::array({0.0, 0.65, 11.0}).view(
+                                   ndt::make_type<double[3]>())).as<double>());
   af = nd::make_apply_arrfunc(&func4);
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
-    nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}),
+                               nd::array({0.0, 0.65, 11.0}).view(
+                                   ndt::make_type<double[3]>())).as<double>());
 
+#ifndef DYND_NESTED_INIT_LIST_BUG
   af = nd::make_apply_arrfunc<decltype(&func5), &func5>();
-  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}}).view(ndt::make_type<long[2][3]>())).as<long>());
+  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}})
+                          .view(ndt::make_type<long[2][3]>())).as<long>());
   af = nd::make_apply_arrfunc(&func5);
-  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}}).view(ndt::make_type<long[2][3]>())).as<long>());
+  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}})
+                          .view(ndt::make_type<long[2][3]>())).as<long>());
+#endif // DYND_NESTED_INIT_LIST_BUG
 
   af = nd::make_apply_arrfunc<decltype(&func6), &func6>();
   EXPECT_EQ(8, af(3, 5, 7).as<int>());
@@ -165,12 +171,9 @@ template <typename func_type, func_type func>
 class func_wrapper;
 
 template <typename R, typename... A, R (*func)(A...)>
-class func_wrapper<R (*)(A...), func>
-{
+class func_wrapper<R (*)(A...), func> {
 public:
-  R operator ()(A... a) const {
-    return (*func)(a...);
-  }
+  R operator()(A... a) const { return (*func)(a...); }
 };
 
 typedef func_wrapper<decltype(&func0), &func0> func0_as_callable;
@@ -227,9 +230,9 @@ TEST(Apply, Callable)
   EXPECT_EQ(53.15, af(3.75, 19).as<double>());
 
   af = nd::make_apply_arrfunc<func2_as_callable>();
-  EXPECT_FLOAT_EQ(13.2, af(nd::array({3.9f, -7.0f, 16.3f}).view(ndt::make_type<float[3]>())).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
   af = nd::make_apply_arrfunc(func2_as_callable());
-  EXPECT_FLOAT_EQ(13.2, af(nd::array({3.9f, -7.0f, 16.3f}).view(ndt::make_type<float[3]>())).as<float>());
+  EXPECT_FLOAT_EQ(13.2f, af(nd::array({3.9f, -7.0f, 16.3f})).as<float>());
 
   af = nd::make_apply_arrfunc<func3_as_callable>();
   EXPECT_EQ(12U, af().as<unsigned int>());
@@ -237,16 +240,26 @@ TEST(Apply, Callable)
   EXPECT_EQ(12U, af().as<unsigned int>());
 
   af = nd::make_apply_arrfunc<func4_as_callable>();
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
-    nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(
+      166.765,
+      af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
+         nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>()))
+          .as<double>());
   af = nd::make_apply_arrfunc(func4_as_callable());
-  EXPECT_DOUBLE_EQ(166.765, af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
-    nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>())).as<double>());
+  EXPECT_DOUBLE_EQ(
+      166.765,
+      af(nd::array({9.14, -2.7, 15.32}).view(ndt::make_type<double[3]>()),
+         nd::array({0.0, 0.65, 11.0}).view(ndt::make_type<double[3]>()))
+          .as<double>());
 
+#ifndef DYND_NESTED_INIT_LIST_BUG
   af = nd::make_apply_arrfunc<func5_as_callable>();
-  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}}).view(ndt::make_type<long[2][3]>())).as<long>());
+  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}})
+                          .view(ndt::make_type<long[2][3]>())).as<long>());
   af = nd::make_apply_arrfunc(func5_as_callable());
-  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}}).view(ndt::make_type<long[2][3]>())).as<long>());
+  EXPECT_EQ(1251L, af(nd::array({{1242L, 23L, -5L}, {925L, -836L, -14L}})
+                          .view(ndt::make_type<long[2][3]>())).as<long>());
+#endif // DYND_NESTED_INIT_LIST_BUG
 
   af = nd::make_apply_arrfunc<func6_as_callable>();
   EXPECT_EQ(8, af(3, 5, 7).as<int>());

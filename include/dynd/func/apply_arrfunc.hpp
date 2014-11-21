@@ -55,12 +55,6 @@ struct apply_arrfunc_factory
     return make<K...>(&func_type::operator (), std::forward<T>(names)...);
   }
 
-  template <typename... T>
-  static nd::arrfunc make(const func_type &func, T &&... names)
-  {
-    return make(func, &func_type::operator (), std::forward<T>(names)...);
-  }
-
   template <typename R, typename... A, typename... T>
   static nd::arrfunc make(const func_type &func, R (func_type::*)(A...) const, T &&... names)
   {
@@ -70,6 +64,12 @@ struct apply_arrfunc_factory
     out_af->instantiate = &kernels::apply_callable_ck<func_type, sizeof...(A) - sizeof...(T), R, A...>::instantiate;
     af.flag_as_immutable();
     return af;
+  }
+
+  template <typename... T>
+  static nd::arrfunc make(const func_type &func, T &&... names)
+  {
+    return make(func, &func_type::operator(), std::forward<T>(names)...);
   }
 };
 

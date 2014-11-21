@@ -196,31 +196,31 @@ typedef func_wrapper<decltype(&func7), &func7> func7_as_callable;
 #else
 // Straightforward yet immensely annoying workaround for MSVC bug
 struct func0_as_callable {
-  int operator()(int x, int y) { return func0(x, y); }
+  int operator()(int x, int y) const { return func0(x, y); }
 };
 struct func1_as_callable {
-  double operator()(double x, int y) { return func1(x, y); }
+  double operator()(double x, int y) const { return func1(x, y); }
 };
 struct func2_as_callable {
-  float operator()(const float (&x)[3]) { return func2(x); }
+  float operator()(const float (&x)[3]) const { return func2(x); }
 };
 struct func3_as_callable {
-  unsigned int operator()() { return func3(); }
+  unsigned int operator()() const { return func3(); }
 };
 struct func4_as_callable {
-  double operator()(const double (&x)[3], const double (&y)[3])
+  double operator()(const double (&x)[3], const double (&y)[3]) const
   {
     return func4(x, y);
   }
 };
 struct func5_as_callable {
-  long operator()(const long (&x)[2][3]) { return func5(x); }
+  long operator()(const long (&x)[2][3]) const { return func5(x); }
 };
 struct func6_as_callable {
-  int operator()(int x, int y, int z) { return func6(x, y, z); }
+  int operator()(int x, int y, int z) const { return func6(x, y, z); }
 };
 struct func7_as_callable {
-  double operator()(int x, int y, double z) { return func7(x, y, z); }
+  double operator()(int x, int y, double z) const { return func7(x, y, z); }
 };
 #endif
 
@@ -254,9 +254,6 @@ public:
   }
 };
 
-// This test causes rampant memory usage on MSVC 2013
-// https://connect.microsoft.com/VisualStudio/Feedback/details/1034105
-#if !(defined(_MSC_VER) && _MSC_VER == 1800)
 TEST(Apply, Callable)
 {
   nd::arrfunc af;
@@ -323,11 +320,7 @@ TEST(Apply, Callable)
   af = nd::make_apply_arrfunc(callable0(4));
   EXPECT_EQ(8, af(5, 3).as<int>());
 }
-#endif // MSVC 2013
 
-// This test causes rampant memory usage on MSVC 2013
-// https://connect.microsoft.com/VisualStudio/Feedback/details/1034105
-#if !(defined(_MSC_VER) && _MSC_VER == 1800)
 TEST(Apply, CallableWithKeywords)
 {
   nd::arrfunc af;
@@ -382,4 +375,3 @@ TEST(Apply, CallableWithKeywords)
   af = nd::make_apply_arrfunc<callable1, int, int>("x", "y");
   EXPECT_EQ(28, af(2, kwds("x", 1, "y", 7)).as<int>());
 }
-#endif // MSVC 2013

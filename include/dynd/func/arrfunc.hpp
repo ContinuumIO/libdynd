@@ -67,9 +67,6 @@ typedef intptr_t (*arrfunc_instantiate_t)(
  * \param af_tp  The function prototype of the arrfunc.
  * \param nsrc  The number of source parameters.
  * \param src_tp  An array of the source types.
- * \param dyn_params  Dynamic parameters, generally a struct of parameters
- *                    whose full values are passed to all phases of
- *                    arrfunc execution.
  * \param throw_on_error  If true, should throw when there's an error, if
  *                        false, should return 0 when there's an error.
  * \param out_dst_tp  To be filled with the destination type.
@@ -169,9 +166,9 @@ struct arrfunc_type_data {
       return result;
     }
     else {
-      if (nsrc != af_tp->get_nsrc()) {
+      if (nsrc != af_tp->get_npos()) {
         std::stringstream ss;
-        ss << "arrfunc expected " << af_tp->get_nsrc()
+        ss << "arrfunc expected " << af_tp->get_npos()
            << " parameters, but received " << nsrc;
         throw std::invalid_argument(ss.str());
       }
@@ -290,9 +287,9 @@ public:
   }
 
   /** Convenience call operators */
-  nd::array operator()() const
+  nd::array operator()(const kwds &kwds = dynd::kwds()) const
   {
-    return call(0, NULL, &eval::default_eval_context);
+    return call(0, NULL, kwds, &eval::default_eval_context);
   }
   nd::array operator()(const nd::array &a0,
                        const kwds &kwds = dynd::kwds()) const
@@ -392,6 +389,28 @@ struct pod_arrfunc {
     }
   }
 };
+
+inline arrfunc make_arrfunc(ndt::type af_tp, arrfunc_instantiate_t instantiate)
+{
+  array af = empty(af_tp);
+  arrfunc_type_data *out_af = reinterpret_cast<arrfunc_type_data *>(af.get_readwrite_originptr());
+  out_af->instantiate = instantiate;
+  af.flag_as_immutable();
+
+  return af;
+}
+
+template <typename T>
+arrfunc make_arrfunc(ndt::type af_tp, arrfunc_instantiate_t instantiate, T &&data)
+{
+  array af = empty(af_tp);
+  arrfunc_type_data *out_af = reinterpret_cast<arrfunc_type_data *>(af.get_readwrite_originptr());
+  out_af->instantiate = instantiate;
+  *out_af->get_data_as<T>() = data;
+  af.flag_as_immutable();
+
+  return af;
+}
 
 } // namespace nd
 

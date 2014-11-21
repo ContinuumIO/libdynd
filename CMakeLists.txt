@@ -85,6 +85,7 @@ include_directories(thirdparty/datetime/include)
 
 set(DYND_LINK_LIBS cephes datetime)
 
+MESSAGE(${CMAKE_VERSION})
 if(WIN32)
     # Treat warnings as errors (-WX does this)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -WX -EHsc")
@@ -94,33 +95,14 @@ if(WIN32)
         endif ()
     endif()
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fomit-frame-pointer -fstrict-aliasing -fPIC -Wall -Wextra -Werror -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -fomit-frame-pointer -fstrict-aliasing -fPIC -Wall -Wextra -Werror -Wno-missing-field-initializers")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        # The '-fmax-errors' flag was first supported in gcc 4.6
-        if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.6")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20")
+        if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 4.7)
+            message(FATAL_ERROR "Only GCC 4.7 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
         endif()
-        # Enable C++11 features for gcc >= 4.7
-        if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.7")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-        endif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
-        # Apple has done this weird thing where its Clang reports a different
-        # version than the official Clang.
-        # TODO: someone more OS X-savvy will have to fine-tune this.
-        if (APPLE OR "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "3.2")
-            # Enable C++11 features when CUDA support is disabled
-            if (NOT ${DYND_CUDA})
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-            endif()
-        else()
-            # Enable C++11 features when CUDA support is disabled
-            if (NOT ${DYND_CUDA})
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            endif()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdocumentation")
-        endif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20 -Wdocumentation")
     endif()
 endif()
 
@@ -340,8 +322,7 @@ set(libdynd_SRC
     include/dynd/func/elwise.hpp
     include/dynd/func/elwise_gfunc.hpp
     include/dynd/func/elwise_reduce_gfunc.hpp
-    include/dynd/func/functor_arrfunc.hpp
-    include/dynd/func/funcproto.hpp
+    include/dynd/func/apply_arrfunc.hpp
     include/dynd/func/make_callable.hpp
     include/dynd/func/lift_arrfunc.hpp
     include/dynd/func/lift_reduction_arrfunc.hpp
@@ -392,6 +373,7 @@ set(libdynd_SRC
     src/dynd/kernels/single_assigner_builtin_float16.hpp
     src/dynd/kernels/single_assigner_builtin_float128.hpp
     src/dynd/kernels/single_comparer_builtin.hpp
+    include/dynd/kernels/apply_kernels.hpp
     include/dynd/kernels/assignment_kernels.hpp
     include/dynd/kernels/var_dim_assignment_kernels.hpp
     include/dynd/kernels/buffered_kernels.hpp
@@ -411,7 +393,6 @@ set(libdynd_SRC
     include/dynd/kernels/expr_kernel_generator.hpp
     include/dynd/kernels/expression_assignment_kernels.hpp
     include/dynd/kernels/expression_comparison_kernels.hpp
-    include/dynd/kernels/functor_kernels.hpp
     include/dynd/kernels/make_lifted_ckernel.hpp
     include/dynd/kernels/make_lifted_reduction_ckernel.hpp
     include/dynd/kernels/option_assignment_kernels.hpp

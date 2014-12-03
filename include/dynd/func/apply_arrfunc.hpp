@@ -16,10 +16,10 @@ namespace nd {
    * parameter names. This function takes ``func`` as a template
    * parameter, so can call it efficiently.
    */
-  template <typename func_type, func_type func, typename... T>
+  template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
   arrfunc make_apply_arrfunc(T &&... names)
   {
-    typedef kernels::apply_function_ck<kernel_request_host, func_type, func,
+    typedef kernels::apply_function_ck<kernreq, func_type, func,
                                        arity_of<func_type>::value -
                                            sizeof...(T)> ck_type;
 
@@ -27,6 +27,13 @@ namespace nd {
         ndt::make_funcproto<typename funcproto_of<func_type>::type>(
             std::forward<T>(names)...),
         &ck_type::instantiate);
+  }
+
+  template <typename func_type, func_type func, typename... T>
+  arrfunc make_apply_arrfunc(T &&... names)
+  {
+    return make_apply_arrfunc<kernel_request_host, func_type, func>(
+        std::forward<T>(names)...);
   }
 
   /**
@@ -57,17 +64,23 @@ namespace nd {
    * keyword parameter names. This version makes a copy of provided ``func``
    * object.
    */
-  template <typename func_type, typename... T>
+  template <kernel_request_t kernreq, typename func_type, typename... T>
   arrfunc make_apply_arrfunc(const func_type &func, T &&... names)
   {
-    typedef kernels::apply_callable_ck<kernel_request_host, func_type,
+    typedef kernels::apply_callable_ck<kernreq, func_type,
                                        arity_of<func_type>::value -
                                            sizeof...(T)> ck_type;
 
     return make_arrfunc(
-        ndt::make_funcproto<typename funcproto_of<func_type>::type>(
+        ndt::make_funcproto<kernreq, typename funcproto_of<func_type>::type>(
             std::forward<T>(names)...),
         &ck_type::instantiate, func);
+  }
+
+  template <typename func_type, typename... T>
+  arrfunc make_apply_arrfunc(const func_type &func, T &&... names)
+  {
+    return make_apply_arrfunc<kernel_request_host>(func, std::forward<T>(names)...);
   }
 
   /**

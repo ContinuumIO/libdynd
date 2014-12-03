@@ -159,14 +159,20 @@ FUNC_WRAPPER(kernel_request_cuda_device, __device__);
 int func0(int x, int y) { return 2 * (x - y); }
 
 GET_HOST_FUNC(func0)
-FUNC_AS_CALLABLE(func0);
+
+template <kernel_request_t kernreq>
+struct func0_as_callable : func_wrapper<kernreq, decltype(&func0), &func0> {
+};
 
 #ifdef __CUDACC__
 
 __device__ double func1(double x, int y) { return x + 2.6 * y; }
 
 GET_CUDA_DEVICE_FUNC(func1)
-FUNC_AS_CALLABLE(func1);
+
+template <kernel_request_t kernreq>
+struct func1_as_callable : func_wrapper<kernreq, decltype(&func1), &func1> {
+};
 
 #endif
 
@@ -176,12 +182,18 @@ DYND_CUDA_HOST_DEVICE float func2(const float (&x)[3])
 }
 
 GET_CUDA_HOST_DEVICE_FUNC(func2)
-FUNC_AS_CALLABLE(func2);
+
+template <kernel_request_t kernreq>
+struct func2_as_callable : func_wrapper<kernreq, decltype(&func2), &func2> {
+};
 
 DYND_CUDA_HOST_DEVICE unsigned int func3() { return 12U; }
 
 GET_CUDA_HOST_DEVICE_FUNC(func3)
-FUNC_AS_CALLABLE(func3);
+
+template <kernel_request_t kernreq>
+struct func3_as_callable : func_wrapper<kernreq, decltype(&func3), &func3> {
+};
 
 DYND_CUDA_HOST_DEVICE double func4(const double (&x)[3], const double (&y)[3])
 {
@@ -189,7 +201,10 @@ DYND_CUDA_HOST_DEVICE double func4(const double (&x)[3], const double (&y)[3])
 }
 
 GET_CUDA_HOST_DEVICE_FUNC(func4)
-FUNC_AS_CALLABLE(func4);
+
+template <kernel_request_t kernreq>
+struct func4_as_callable : func_wrapper<kernreq, decltype(&func4), &func4> {
+};
 
 DYND_CUDA_HOST_DEVICE long func5(const long (&x)[2][3])
 {
@@ -197,12 +212,18 @@ DYND_CUDA_HOST_DEVICE long func5(const long (&x)[2][3])
 }
 
 GET_CUDA_HOST_DEVICE_FUNC(func5)
-FUNC_AS_CALLABLE(func5);
+
+template <kernel_request_t kernreq>
+struct func5_as_callable : func_wrapper<kernreq, decltype(&func5), &func5> {
+};
 
 DYND_CUDA_HOST_DEVICE int func6(int x, int y, int z) { return x * y - z; }
 
 GET_CUDA_HOST_DEVICE_FUNC(func6)
-FUNC_AS_CALLABLE(func6);
+
+template <kernel_request_t kernreq>
+struct func6_as_callable : func_wrapper<kernreq, decltype(&func6), &func6> {
+};
 
 DYND_CUDA_HOST_DEVICE double func7(int x, int y, double z)
 {
@@ -210,7 +231,10 @@ DYND_CUDA_HOST_DEVICE double func7(int x, int y, double z)
 }
 
 GET_CUDA_HOST_DEVICE_FUNC(func7)
-FUNC_AS_CALLABLE(func7);
+
+template <kernel_request_t kernreq>
+struct func7_as_callable : func_wrapper<kernreq, decltype(&func7), &func7> {
+};
 
 #undef GET_HOST_FUNC
 #undef GET_CUDA_DEVICE_FUNC

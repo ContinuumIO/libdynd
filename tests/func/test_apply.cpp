@@ -143,12 +143,12 @@ FUNC_WRAPPER(kernel_request_cuda_device, __device__);
     return res;                                                                \
   }
 
-#ifdef __CUDACC_
-#define GET_CUDA_HOST_DEVICE_FUNC GET_HOST_FUNC
-#else
+#ifdef __CUDACC__
 #define GET_CUDA_HOST_DEVICE_FUNC(NAME)                                        \
   GET_HOST_FUNC(NAME)                                                          \
   GET_CUDA_DEVICE_FUNC(NAME)
+#else
+#define GET_CUDA_HOST_DEVICE_FUNC GET_HOST_FUNC
 #endif
 
 #define FUNC_AS_CALLABLE(NAME)                                                 \

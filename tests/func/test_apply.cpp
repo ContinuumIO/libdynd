@@ -36,11 +36,13 @@ class Apply<integral_constant<kernel_request_t, kernel_request_host>>
 public:
   static const kernel_request_t KernelRequest = kernel_request_host;
 
-  template <typename A>
-  static nd::array To(const A &a)
+  template <typename T>
+  static nd::array To(const std::initializer_list<T> &a)
   {
-    return a;
+    return nd::array(a);
   }
+
+  static nd::array To(nd::array a) { return a; }
 };
 
 #ifdef DYND_CUDA
@@ -52,6 +54,12 @@ public:
   static const kernel_request_t KernelRequest = kernel_request_cuda_device;
 
   static nd::array To(const nd::array &a) { return a.to_cuda_device(); }
+
+  template <typename T>
+  static nd::array To(const std::initializer_list<T> &a)
+  {
+    return nd::array(a).to_cuda_device();
+  }
 };
 
 #endif
@@ -250,6 +258,11 @@ TEST(Apply, Function)
   af = nd::make_apply_arrfunc<kernel_request_host, decltype(&func0), &func0>();
   EXPECT_ARR_EQ(TestFixture::To(4), af(TestFixture::To(5), TestFixture::To(3)));
 
+  af = nd::make_apply_arrfunc<kernel_request_host, decltype(&func2), &func2>();
+  EXPECT_ARR_EQ(TestFixture::To(13.6f),
+                af(TestFixture::To({3.9f, -7.0f, 16.7f})
+                       .view(ndt::make_type<float[3]>())));
+
   af = nd::make_apply_arrfunc<kernel_request_host, decltype(&func3), &func3>();
   EXPECT_ARR_EQ(TestFixture::To(12U), TestFixture::To(af()));
 
@@ -366,6 +379,15 @@ TYPED_TEST_P(Apply, Callable)
   }
 
 #endif
+
+//  af = nd::make_apply_arrfunc<TestFixture::KernelRequest>(
+  //    get_func2<TestFixture::KernelRequest>());
+//  EXPECT_ARR_EQ(TestFixture::To(13.6f),
+  //              af(TestFixture::To({3.9f, -7.0f, 16.7f})
+    //                   .view(ndt::make_type<float[3]>())));
+
+//  af = nd::make_apply_arrfunc<TestFixture::KernelRequest,
+  //                            func2_as_callable<TestFixture::KernelRequest>>();
 
   af = nd::make_apply_arrfunc<TestFixture::KernelRequest>(
       get_func3<TestFixture::KernelRequest>());

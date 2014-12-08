@@ -288,45 +288,6 @@ static expr_strided_t assign_table_strided_cuda_device_to_device_kernel[builtin_
 #undef STRIDED_OPERATION_PAIR_LEVEL
 };
 
-
-namespace {
-template <typename dst_type, typename src_type, assign_error_mode errmode>
-struct multiple_assignment_builtin {
-  static void strided_assign(char *dst, intptr_t dst_stride, char *const *src,
-                             const intptr_t *src_stride, size_t count,
-                             ckernel_prefix *DYND_UNUSED(self))
-  {
-    char *src0 = src[0];
-    intptr_t src0_stride = src_stride[0];
-    for (size_t i = 0; i != count; ++i) {
-      single_assigner_builtin<dst_type, src_type, errmode>::assign(
-          reinterpret_cast<dst_type *>(dst),
-          reinterpret_cast<src_type *>(src0));
-      dst += dst_stride;
-      src0 += src0_stride;
-    }
-  }
-};
-template <typename dst_type, typename src_type>
-struct multiple_assignment_builtin<dst_type, src_type, assign_error_nocheck> {
-  DYND_CUDA_HOST_DEVICE static void
-  strided_assign(char *dst, intptr_t dst_stride, char *const *src,
-                 const intptr_t *src_stride, size_t count,
-                 ckernel_prefix *DYND_UNUSED(self))
-  {
-    char *src0 = src[0];
-    intptr_t src0_stride = src_stride[0];
-    for (size_t i = 0; i != count; ++i) {
-      single_assigner_builtin<dst_type, src_type, assign_error_nocheck>::assign(
-          reinterpret_cast<dst_type *>(dst),
-          reinterpret_cast<src_type *>(src0));
-      dst += dst_stride;
-      src0 += src0_stride;
-    }
-  }
-};
-} // anonymous namespace
-
 static expr_strided_t assign_table_strided_kernel[builtin_type_id_count -
                                                   2][builtin_type_id_count -
                                                      2][4] = {

@@ -1096,6 +1096,7 @@ bool nd::array::operator==(const array& rhs) const
                     rhs.get_type(), rhs.get_arrmeta(),
                     comparison_type_equal,
                     &eval::default_eval_context);
+
     return k(get_readonly_originptr(), rhs.get_readonly_originptr());
 }
 
@@ -1131,6 +1132,12 @@ bool nd::array::operator>(const array& rhs) const
 
 bool nd::array::equals_exact(const array& rhs) const
 {
+  // Temporary fix to make CUDA device arrays compare each other
+  if (get_dtype().get_type_id() == cuda_device_type_id &&
+      rhs.get_dtype().get_type_id() == cuda_device_type_id) {
+    return this->to_host().equals_exact(rhs.to_host());
+  }
+
     if (get_ndo() == rhs.get_ndo()) {
         return true;
     } else if (get_type() != rhs.get_type()) {

@@ -16,7 +16,8 @@ namespace nd {
    * parameter names. This function takes ``func`` as a template
    * parameter, so can call it efficiently.
    */
-  template <typename func_type, func_type func, typename... T>
+  template <kernel_request_t kernreq, typename func_type, func_type func,
+            typename... T>
   arrfunc make_apply_arrfunc(T &&... names)
   {
     typedef kernels::apply_function_ck<kernel_request_host, func_type, func,
@@ -27,6 +28,13 @@ namespace nd {
         ndt::make_funcproto<typename funcproto_of<func_type>::type>(
             std::forward<T>(names)...),
         &ck_type::instantiate);
+  }
+
+  template <typename func_type, func_type func, typename... T>
+  arrfunc make_apply_arrfunc(T &&... names)
+  {
+    return make_apply_arrfunc<kernel_request_host, func_type, func>(
+        std::forward<T>(names)...);
   }
 
   /**

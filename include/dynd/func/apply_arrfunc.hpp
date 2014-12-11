@@ -65,17 +65,25 @@ namespace nd {
    * keyword parameter names. This version makes a copy of provided ``func``
    * object.
    */
-  template <typename func_type, typename... T>
-  arrfunc make_apply_arrfunc(const func_type &func, T &&... names)
+  template <kernel_request_t kernreq, typename func_type, typename... T>
+  typename std::enable_if<!is_function_pointer<func_type>::value, arrfunc>::type
+  make_apply_arrfunc(const func_type &func, T &&... names)
   {
-    typedef kernels::apply_callable_ck<kernel_request_host, func_type,
-                                       arity_of<func_type>::value -
-                                           sizeof...(T)> ck_type;
+    typedef kernels::apply_callable_ck<
+        kernreq, func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
     return make_arrfunc(
-        ndt::make_funcproto<typename funcproto_of<func_type>::type>(
+        ndt::make_funcproto<kernreq, typename funcproto_of<func_type>::type>(
             std::forward<T>(names)...),
         &ck_type::instantiate, func);
+  }
+
+  template <typename func_type, typename... T>
+  typename std::enable_if<!is_function_pointer<func_type>::value, arrfunc>::type
+  make_apply_arrfunc(const func_type &func, T &&... names)
+  {
+    return make_apply_arrfunc<kernel_request_host>(func,
+                                                   std::forward<T>(names)...);
   }
 
   /**

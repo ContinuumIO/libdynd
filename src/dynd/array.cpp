@@ -2257,6 +2257,9 @@ nd::array nd::combine_into_tuple(size_t field_count, const array *field_values)
 void nd::forward_as_array(const ndt::type &tp, char *arrmeta, char *data,
                           const nd::array &val)
 {
+  std::cout << tp << std::endl;
+  std::cout << tp.is_builtin() << std::endl;
+
   if (tp.is_builtin()) {
     memcpy(data, val.get_readonly_originptr(), tp.get_data_size());
   } else {

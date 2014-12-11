@@ -62,13 +62,17 @@ public:
 
 TYPED_TEST_CASE_P(Apply);
 
-template <kernel_request_t kernreq, typename func_type, func_type func>
+template <kernel_request_t kernreq, typename func_type>
 struct func_wrapper;
 
 #if !(defined(_MSC_VER) && _MSC_VER == 1800)
 #define FUNC_WRAPPER(KERNREQ, ...)                                             \
-  template <typename R, typename... A, R (*func)(A...)>                        \
-  struct func_wrapper<KERNREQ, R (*)(A...), func> {                            \
+  template <typename R, typename... A>                                         \
+  struct func_wrapper<KERNREQ, R (*)(A...)> {                                  \
+    R (*func)(A...);                                                           \
+                                                                               \
+    DYND_CUDA_HOST_DEVICE func_wrapper(R (*func)(A...)) : func(func) {}        \
+                                                                               \
     __VA_ARGS__ R operator()(A... a) const { return (*func)(a...); }           \
   };
 #else
@@ -76,20 +80,39 @@ struct func_wrapper;
 // https://connect.microsoft.com/VisualStudio/Feedback/Details/1034062
 #define FUNC_WRAPPER(KERNREQ, ...)                                             \
   template <typename R, R (*func)()>                                           \
-  struct func_wrapper<KERNREQ, R (*)(), func> {                                \
+  struct func_wrapper<KERNREQ, R (*)()> {                                      \
+    R (*func)();                                                               \
+                                                                               \
+    func_wrapper(R (*func)()) : func(func) {}                                  \
+                                                                               \
     __VA_ARGS__ R operator()() const { return (*func)(); }                     \
   };                                                                           \
+                                                                               \
   template <typename R, typename A0, R (*func)(A0)>                            \
-  struct func_wrapper<KERNREQ, R (*)(A0), func> {                              \
+  struct func_wrapper<KERNREQ, R (*)(A0)> {                                    \
+    R (*func)(A0);                                                             \
+                                                                               \
+    func_wrapper(R (*func)(A0)) : func(func) {}                                \
+                                                                               \
     __VA_ARGS__ R operator()(A0 a0) const { return (*func)(a0); }              \
   };                                                                           \
+                                                                               \
   template <typename R, typename A0, typename A1, R (*func)(A0, A1)>           \
-  struct func_wrapper<KERNREQ, R (*)(A0, A1), func> {                          \
+  struct func_wrapper<KERNREQ, R (*)(A0, A1)> {                                \
+    R (*func)(A0, A1);                                                         \
+                                                                               \
+    func_wrapper(R (*func)(A0, A1)) : func(func) {}                            \
+                                                                               \
     __VA_ARGS__ R operator()(A0 a0, A1 a1) const { return (*func)(a0, a1); }   \
   };                                                                           \
+                                                                               \
   template <typename R, typename A0, typename A1, typename A2,                 \
             R (*func)(A0, A1, A2)>                                             \
-  struct func_wrapper<KERNREQ, R (*)(A0, A1, A2), func> {                      \
+  struct func_wrapper<KERNREQ, R (*)(A0, A1, A2)> {                            \
+    R (*func)(A0, A1, A2);                                                     \
+                                                                               \
+    func_wrapper(R (*func)(A0, A1, A2)) : func(func) {}                        \
+                                                                               \
     __VA_ARGS__ R operator()(A0 a0, A1 a1, A2 a2) const                        \
     {                                                                          \
       return (*func)(a0, a1, a2);                                              \
@@ -98,6 +121,7 @@ struct func_wrapper;
 #endif
 
 FUNC_WRAPPER(kernel_request_host);
+FUNC_WRAPPER(kernel_request_cuda_device, __device__);
 
 #undef FUNC_WRAPPER
 
@@ -115,23 +139,88 @@ FUNC_WRAPPER(kernel_request_host);
                                                                                \
   template <>                                                                  \
   struct NAME##_as_callable<kernel_request_host>                               \
-      : func_wrapper<kernel_request_host, decltype(&NAME), &NAME> {            \
+      : func_wrapper<kernel_request_host, decltype(&NAME)> {                   \
+    NAME##_as_callable()                                                       \
+        : func_wrapper<kernel_request_host, decltype(&NAME)>(                  \
+              get_##NAME<kernel_request_host>())                               \
+    {                                                                          \
+    }                                                                          \
   }
 
-#define GET_CUDA_DEVICE_FUNC(NAME)
+#ifdef __CUDA_ARCH__
+#define GET_CUDA_DEVICE_FUNC_BODY(NAME) return &NAME;
+#else
+#define GET_CUDA_DEVICE_FUNC_BODY(NAME)                                        \
+  decltype(&NAME) res;                                                         \
+  decltype(&NAME) *func, *cuda_device_func;                                    \
+  throw_if_not_cuda_success(                                                   \
+      cudaHostAlloc(&func, sizeof(decltype(&NAME)), cudaHostAllocMapped));     \
+  throw_if_not_cuda_success(                                                   \
+      cudaHostGetDevicePointer(&cuda_device_func, func, 0));                   \
+  get_cuda_device_##NAME << <1, 1>>> (cuda_device_func);                       \
+  throw_if_not_cuda_success(cudaDeviceSynchronize());                          \
+  res = *func;                                                                 \
+  throw_if_not_cuda_success(cudaFreeHost(func));                               \
+                                                                               \
+  return res;
 
-#define CUDA_DEVICE_FUNC_AS_CALLABLE(NAME)
+#endif
+
+#ifdef __CUDACC__
+
+#define GET_CUDA_DEVICE_FUNC(NAME)                                             \
+  __global__ void get_cuda_device_##NAME(void *res)                            \
+  {                                                                            \
+    *reinterpret_cast<decltype(&NAME) *>(res) = &NAME;                         \
+  }                                                                            \
+                                                                               \
+  template <kernel_request_t kernreq>                                          \
+  DYND_CUDA_HOST_DEVICE typename std::enable_if<                               \
+      kernreq == kernel_request_cuda_device, decltype(&NAME)>::type            \
+      get_##NAME()                                                             \
+  {                                                                            \
+    GET_CUDA_DEVICE_FUNC_BODY(NAME)                                            \
+  }
+
+#define CUDA_DEVICE_FUNC_AS_CALLABLE(NAME)                                     \
+  template <kernel_request_t kernreq>                                          \
+  struct NAME##_as_callable;                                                   \
+                                                                               \
+  template <>                                                                  \
+  struct NAME##_as_callable<kernel_request_cuda_device>                        \
+      : func_wrapper<kernel_request_cuda_device, decltype(&NAME)> {            \
+    DYND_CUDA_HOST_DEVICE NAME##_as_callable()                                 \
+        : func_wrapper<kernel_request_cuda_device, decltype(&NAME)>(           \
+              get_##NAME<kernel_request_cuda_device>())                        \
+    {                                                                          \
+    }                                                                          \
+  }
+
+#endif
 
 int func0(int x, int y) { return 2 * (x - y); }
 
 GET_HOST_FUNC(func0)
 HOST_FUNC_AS_CALLABLE(func0);
 
+#ifdef __CUDACC__
+
+__device__ double func1(double x, int y) { return x + 2.75 * y; }
+
+GET_CUDA_DEVICE_FUNC(func1)
+CUDA_DEVICE_FUNC_AS_CALLABLE(func1);
+
+#endif
+
 #undef GET_HOST_FUNC
 #undef HOST_FUNC_AS_CALLABLE
 
+#ifdef __CUDACC__
+
 #undef GET_CUDA_DEVICE_FUNC
 #undef CUDA_DEVICE_FUNC_AS_CALLABLE
+
+#endif
 
 TEST(Apply, Function)
 {
@@ -168,7 +257,8 @@ TYPED_TEST_P(Apply, Callable)
     EXPECT_ARR_EQ(TestFixture::To(4),
                   af(TestFixture::To(5), TestFixture::To(3)));
 
-    af = nd::make_apply_arrfunc(func0_as_callable<kernel_request_host>());
+    af = nd::make_apply_arrfunc<kernel_request_host>(
+        func0_as_callable<kernel_request_host>());
     EXPECT_ARR_EQ(TestFixture::To(4),
                   af(TestFixture::To(5), TestFixture::To(3)));
 
@@ -177,6 +267,26 @@ TYPED_TEST_P(Apply, Callable)
     EXPECT_ARR_EQ(TestFixture::To(4),
                   af(TestFixture::To(5), TestFixture::To(3)));
   }
+
+#ifdef __CUDACC__
+  if (TestFixture::KernelRequest == kernel_request_cuda_device) {
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        get_func1<kernel_request_cuda_device>());
+    EXPECT_ARR_EQ(TestFixture::To(58.25),
+                  af(TestFixture::To(3.25), TestFixture::To(20)));
+
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        func1_as_callable<kernel_request_cuda_device>());
+    EXPECT_ARR_EQ(TestFixture::To(58.25),
+                  af(TestFixture::To(3.25), TestFixture::To(20)));
+
+    af =
+        nd::make_apply_arrfunc<kernel_request_cuda_device,
+                               func1_as_callable<kernel_request_cuda_device>>();
+    EXPECT_ARR_EQ(TestFixture::To(58.25),
+                  af(TestFixture::To(3.25), TestFixture::To(20)));
+  }
+#endif
 }
 
 TYPED_TEST_P(Apply, CallableWithKeywords)
@@ -202,12 +312,38 @@ TYPED_TEST_P(Apply, CallableWithKeywords)
     EXPECT_ARR_EQ(TestFixture::To(4),
                   af(kwds("x", TestFixture::To(5), "y", TestFixture::To(3))));
   }
+
+#ifdef __CUDACC__
+  if (TestFixture::KernelRequest == kernel_request_cuda_device) {
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        get_func1<kernel_request_cuda_device>(), "y");
+    EXPECT_ARR_EQ(TestFixture::To(58.25),
+                  af(TestFixture::To(3.25), kwds("y", TestFixture::To(20))));
+
+/*
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        get_func1<kernel_request_cuda_device>(), "x", "y");
+    EXPECT_ARR_EQ(TestFixture::To(58.25), af(kwds("x", TestFixture::To(3.25),
+                                                  "y", TestFixture::To(20))));
+
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        func1_as_callable<kernel_request_cuda_device>(), "y");
+    EXPECT_ARR_EQ(TestFixture::To(58.25),
+                  af(TestFixture::To(3.25), kwds("y", TestFixture::To(20))));
+
+    af = nd::make_apply_arrfunc<kernel_request_cuda_device>(
+        func1_as_callable<kernel_request_cuda_device>(), "x", "y");
+    EXPECT_ARR_EQ(TestFixture::To(58.25), af(kwds("x", TestFixture::To(3.25),
+                                                  "y", TestFixture::To(20))));
+*/
+  }
+#endif
 }
 
 REGISTER_TYPED_TEST_CASE_P(Apply, Callable, CallableWithKeywords);
 
 INSTANTIATE_TYPED_TEST_CASE_P(HostMemory, Apply, KernelRequestHost);
 
-#ifdef DYND_CUDA
+#ifdef __CUDACC__
 INSTANTIATE_TYPED_TEST_CASE_P(CUDADeviceMemory, Apply, KernelRequestCUDADevice);
 #endif

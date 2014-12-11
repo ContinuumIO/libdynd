@@ -113,8 +113,18 @@ int func0(int x, int y) { return 2 * (x - y); }
 
 GET_HOST_FUNC(func0)
 
+// This would be nicer below:
+// template<kernel_request_t kernreq>
+// using func0_as_callable = func_wrapper<kernel_request_host, decltype(&func0),
+//                                        &func0>;
+// but produces a compile error in MSVC 2013. Bug reported here:
+// https://connect.microsoft.com/VisualStudio/feedback/details/1051758/error-when-passing-function-pointer-as-template-argument-in-some-contexts
+// Workaround is to use partial specializations for all the cases we need.
 template <kernel_request_t kernreq>
-struct func0_as_callable : func_wrapper<kernreq, decltype(&func0), &func0> {
+struct func0_as_callable;
+template <>
+struct func0_as_callable<kernel_request_host>
+    : func_wrapper<kernel_request_host, decltype(&func0), &func0> {
 };
 
 TEST(Apply, Function)

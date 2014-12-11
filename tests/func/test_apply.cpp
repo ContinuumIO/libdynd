@@ -62,14 +62,6 @@ public:
 
 TYPED_TEST_CASE_P(Apply);
 
-#define GET_HOST_FUNC(NAME)                                                    \
-  template <kernel_request_t kernreq>                                          \
-  typename std::enable_if<kernreq == kernel_request_host,                      \
-                          decltype(&NAME)>::type get_##NAME()                  \
-  {                                                                            \
-    return &NAME;                                                              \
-  }
-
 template <kernel_request_t kernreq, typename func_type, func_type func>
 struct func_wrapper;
 
@@ -109,13 +101,37 @@ FUNC_WRAPPER(kernel_request_host);
 
 #undef FUNC_WRAPPER
 
+#define GET_HOST_FUNC(NAME)                                                    \
+  template <kernel_request_t kernreq>                                          \
+  typename std::enable_if<kernreq == kernel_request_host,                      \
+                          decltype(&NAME)>::type get_##NAME()                  \
+  {                                                                            \
+    return &NAME;                                                              \
+  }
+
+#define HOST_FUNC_AS_CALLABLE(NAME)                                            \
+  template <kernel_request_t kernreq>                                          \
+  struct NAME##_as_callable;                                                   \
+                                                                               \
+  template <>                                                                  \
+  struct NAME##_as_callable<kernel_request_host>                               \
+      : func_wrapper<kernel_request_host, decltype(&NAME), &NAME> {            \
+  }
+
+#define GET_CUDA_DEVICE_FUNC(NAME)
+
+#define CUDA_DEVICE_FUNC_AS_CALLABLE(NAME)
+
 int func0(int x, int y) { return 2 * (x - y); }
 
 GET_HOST_FUNC(func0)
+HOST_FUNC_AS_CALLABLE(func0);
 
-template <kernel_request_t kernreq>
-struct func0_as_callable : func_wrapper<kernreq, decltype(&func0), &func0> {
-};
+#undef GET_HOST_FUNC
+#undef HOST_FUNC_AS_CALLABLE
+
+#undef GET_CUDA_DEVICE_FUNC
+#undef CUDA_DEVICE_FUNC_AS_CALLABLE
 
 TEST(Apply, Function)
 {

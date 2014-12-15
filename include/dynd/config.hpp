@@ -93,9 +93,9 @@ inline bool DYND_ISNAN(long double x) {
 // Update 2014-11-29: Found on 32-bit Windows, MSVC 2013 does not respect
 //                    pragma fenv_access(on), and reorders incorrectly, so
 //                    disabling this on 32-bit.
-# ifdef _WIN64
+//# ifdef _WIN64
 #  define DYND_USE_FPSTATUS
-# endif
+//# endif
 
 # define DYND_CXX_TYPE_TRAITS
 # define DYND_USE_TR1_ENABLE_IF

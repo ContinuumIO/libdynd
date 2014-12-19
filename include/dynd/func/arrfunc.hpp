@@ -415,30 +415,41 @@ namespace nd {
       const std::tuple<T...> &get_vals() const { return m_vals; }
     };
 
-    /*
-        template <typename... T>
-        using kwds_for = typename instantiate<
-            detail::kwds,
-            typename take<typename make_index_sequence<1, sizeof...(T),
-       2>::type,
-                          type_sequence<T...>>::type>::type;
-    */
+    struct builtin_or_array {
+      template <size_t I, typename T>
+      static typename std::enable_if<I % 2 == 0, T>::type transform(T &&val)
+      {
+        return val;
+      }
+
+      template <size_t I, typename T>
+      static typename std::enable_if<I % 2 != 0 && is_dynd_scalar<T>::value,
+                                     T>::type
+      transform(T &&val)
+      {
+        return val;
+      }
+
+      template <size_t I, typename T>
+      static typename std::enable_if<I % 2 != 0 && !is_dynd_scalar<T>::value,
+                                     nd::array>::type
+      transform(T &&val)
+      {
+        return nd::array(val);
+      }
+    };
   }
 } // namespace nd
-
-
-template <typename T>
-struct builtin_or_array {
-  typedef nd::array type;
-};
 
 inline nd::detail::kwds<> kwds() { return nd::detail::kwds<>(); }
 
 template <typename... T>
 typename instantiate<
     nd::detail::kwds,
-    typename take<typename make_index_sequence<1, sizeof...(T), 2>::type,
-                  type_sequence<T...>>::type>::type
+    typename take<
+        typename make_index_sequence<1, sizeof...(T), 2>::type,
+        type_sequence<typename std::conditional<
+            is_dynd_scalar<T>::value, T, nd::array>::type...>>::type>::type
 kwds(T &&... args)
 {
   // Sequence of even integers, for extracting the keyword names
@@ -447,12 +458,10 @@ kwds(T &&... args)
   typedef typename make_index_sequence<1, sizeof...(T), 2>::type J;
   // Sequence of evens followed by odds
   typedef typename concatenate<I, J>::type IJ;
-  // Type sequence of the values' types
-  typedef typename take<J, type_sequence<T...>>::type ValuesTypes;
-  // The kwds<...> type instantiated with the values' types
-  typedef typename instantiate<nd::detail::kwds, ValuesTypes>::type KwdsType;
 
-  return index_proxy<IJ>::template make<KwdsType>(std::forward<T>(args)...);
+  return index_proxy<IJ>::template make<
+      typename std::result_of<decltype (&kwds<T...>)(T &&...)>::type,
+      nd::detail::builtin_or_array>(std::forward<T>(args)...);
 }
 
 namespace nd {
@@ -529,9 +538,9 @@ namespace nd {
       *this = arrfunc(&self, self_tp);
     }
 
-    std::vector<intptr_t> resolve_missing_types(
-        ndt::type *kwd_tp,
-        std::map<nd::string, ndt::type> &typevars) const
+    std::vector<intptr_t>
+    resolve_missing_types(ndt::type *kwd_tp,
+                          std::map<nd::string, ndt::type> &typevars) const
     {
       std::vector<intptr_t> missing;
 
@@ -607,7 +616,7 @@ namespace nd {
             forward_as_array(self_tp->get_arg_names(), kwd_tp, kwds.get_vals(),
                              available.empty() ? NULL : available.data(),
                              missing.empty() ? NULL : missing.data());
-        
+
         if (self->resolve_option_values != NULL) {
           self->resolve_option_values(self, self_tp, nsrc, src_tp,
                                       kwds_as_array);
@@ -879,13 +888,13 @@ namespace decl {
       }
 
     public:
-
       operator const dynd::nd::arrfunc &() { return get(); }
       const ndt::type &get_funcproto() { return get().get_array_type(); }
 
       template <typename... K>
-      dynd::nd::array operator()(const dynd::nd::array &a0,
-                                 const dynd::nd::detail::kwds<K...> &kwds = dynd::kwds())
+      dynd::nd::array
+      operator()(const dynd::nd::array &a0,
+                 const dynd::nd::detail::kwds<K...> &kwds = dynd::kwds())
       {
         return get()(a0, kwds);
       }

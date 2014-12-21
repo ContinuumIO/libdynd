@@ -426,7 +426,6 @@ namespace nd {
   }
 } // namespace nd
 
-
 template <typename T>
 struct builtin_or_array {
   typedef nd::array type;
@@ -454,6 +453,24 @@ kwds(T &&... args)
 
   return index_proxy<IJ>::template make<KwdsType>(std::forward<T>(args)...);
 }
+
+struct partial_arrfunc_data {
+  nd::array child;
+  intptr_t i;
+  nd::array val;
+
+  partial_arrfunc_data(nd::array child, intptr_t i, nd::array val)
+      : child(child), i(i), val(val)
+  {
+  }
+};
+
+intptr_t bound_arrfunc_instantiate(
+    const arrfunc_type_data *self, const arrfunc_type *self_tp, void *ckb,
+    intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
+    const ndt::type *src_tp, const char *const *src_arrmeta,
+    kernel_request_t kernreq, const eval::eval_context *ectx,
+    const nd::array &kwds);
 
 namespace nd {
   /**
@@ -504,6 +521,24 @@ namespace nd {
 
     const ndt::type &get_array_type() const { return m_value.get_type(); }
 
+    arrfunc bind(intptr_t i, nd::array val) const
+    {
+      nd::array arg_tp =
+          nd::empty(get_type()->get_narg() - 1, ndt::make_type());
+      for (intptr_t j = 0; j < i; ++j) {
+        arg_tp(j).val_assign(get_type()->get_arg_type(j));
+      }
+      for (intptr_t j = i + 1; j < get_type()->get_narg(); ++j) {
+        arg_tp(j - 1).val_assign(get_type()->get_arg_type(j));
+      }
+
+      arrfunc_type_data self(partial_arrfunc_data(*this, i, val),
+          &bound_arrfunc_instantiate, NULL, NULL, NULL);
+
+      return arrfunc(
+          &self, ndt::make_funcproto(arg_tp, get_type()->get_return_type()));
+    }
+
     operator nd::array() const { return m_value; }
 
     void swap(nd::arrfunc &rhs) { m_value.swap(rhs.m_value); }
@@ -529,9 +564,9 @@ namespace nd {
       *this = arrfunc(&self, self_tp);
     }
 
-    std::vector<intptr_t> resolve_missing_types(
-        ndt::type *kwd_tp,
-        std::map<nd::string, ndt::type> &typevars) const
+    std::vector<intptr_t>
+    resolve_missing_types(ndt::type *kwd_tp,
+                          std::map<nd::string, ndt::type> &typevars) const
     {
       std::vector<intptr_t> missing;
 
@@ -543,7 +578,8 @@ namespace nd {
 
         ndt::type &actual_tp = kwd_tp[j - self_tp->get_npos()];
         if (actual_tp.is_null()) {
-          actual_tp = ndt::substitute(self_tp->get_arg_type(j), typevars, false);
+          actual_tp =
+              ndt::substitute(self_tp->get_arg_type(j), typevars, false);
           if (actual_tp.is_symbolic()) {
             actual_tp = ndt::make_option(ndt::make_type<void>());
           }
@@ -610,7 +646,7 @@ namespace nd {
             forward_as_array(self_tp->get_arg_names(), kwd_tp, kwds.get_vals(),
                              available.empty() ? NULL : available.data(),
                              missing.empty() ? NULL : missing.data());
-        
+
         if (self->resolve_option_values != NULL) {
           self->resolve_option_values(self, self_tp, nsrc, src_tp,
                                       kwds_as_array);
@@ -882,13 +918,13 @@ namespace decl {
       }
 
     public:
-
       operator const dynd::nd::arrfunc &() { return get(); }
       const ndt::type &get_funcproto() { return get().get_array_type(); }
 
       template <typename... K>
-      dynd::nd::array operator()(const dynd::nd::array &a0,
-                                 const dynd::nd::detail::kwds<K...> &kwds = dynd::kwds())
+      dynd::nd::array
+      operator()(const dynd::nd::array &a0,
+                 const dynd::nd::detail::kwds<K...> &kwds = dynd::kwds())
       {
         return get()(a0, kwds);
       }

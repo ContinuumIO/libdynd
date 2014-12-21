@@ -33,14 +33,15 @@ static intptr_t instantiate_assignment_ckernel(
     if (dst_tp == af_tp->get_return_type() &&
         src_tp[0] == af_tp->get_arg_type(0)) {
       if (errmode == ectx->errmode) {
-        return make_assignment_kernel(self, af_tp, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                      src_tp[0], src_arrmeta[0], kernreq, ectx, kwds);
+        return make_assignment_kernel(self, af_tp, ckb, ckb_offset, dst_tp,
+                                      dst_arrmeta, src_tp[0], src_arrmeta[0],
+                                      kernreq, ectx, kwds);
       } else {
         eval::eval_context ectx_tmp(*ectx);
         ectx_tmp.errmode = errmode;
-        return make_assignment_kernel(self, af_tp, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                      src_tp[0], src_arrmeta[0], kernreq,
-                                      &ectx_tmp, kwds);
+        return make_assignment_kernel(self, af_tp, ckb, ckb_offset, dst_tp,
+                                      dst_arrmeta, src_tp[0], src_arrmeta[0],
+                                      kernreq, &ectx_tmp, kwds);
       }
     } else {
       stringstream ss;
@@ -76,8 +77,9 @@ static intptr_t instantiate_property_ckernel(
 
   if (dst_tp.value_type() == prop_src_tp.value_type()) {
     if (src_tp[0] == prop_src_tp.operand_type()) {
-      return make_assignment_kernel(NULL, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                    prop_src_tp, src_arrmeta[0], kernreq, ectx, kwds);
+      return make_assignment_kernel(NULL, NULL, ckb, ckb_offset, dst_tp,
+                                    dst_arrmeta, prop_src_tp, src_arrmeta[0],
+                                    kernreq, ectx, kwds);
     } else if (src_tp[0].value_type() == prop_src_tp.operand_type()) {
       return make_assignment_kernel(
           NULL, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta,
@@ -96,6 +98,107 @@ static intptr_t instantiate_property_ckernel(
 }
 
 } // anonymous namespace
+
+struct insert_ck : kernels::general_ck<insert_ck, kernel_request_host> {
+  typedef kernels::general_ck<insert_ck, kernel_request_host> parent_type;
+
+  char *data;
+  size_t size;
+
+  insert_ck(char *data, size_t size) : data(data), size(size) {}
+
+  void single(char *dst, char *const *src) {
+    std::vector<char *> data(size);
+    data[0] = this->data;
+    data[1] = src[0];
+
+
+    ckernel_prefix *child = get_child_ckernel();
+    expr_single_t single = child->get_function<expr_single_t>();
+    single(dst, data.data(), child);
+  }
+
+  void strided(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride),
+               char *const *DYND_UNUSED(src),
+               const intptr_t *DYND_UNUSED(src_stride),
+               size_t DYND_UNUSED(count))
+  {
+  }
+
+  static void single_wrapper(char *dst, char *const *src,
+                             ckernel_prefix *rawself)
+  {
+    return parent_type::get_self(rawself)->single(dst, src);
+  }
+
+  static void strided_wrapper(char *dst, intptr_t dst_stride, char *const *src,
+                              const intptr_t *src_stride, size_t count,
+                              ckernel_prefix *rawself)
+  {
+    return parent_type::get_self(rawself)
+        ->strided(dst, dst_stride, src, src_stride, count);
+  }
+
+  void init_kernfunc(kernel_request_t kernreq)
+  {
+    switch (kernreq) {
+    case kernel_request_single:
+      this->base.set_function<expr_single_t>(
+          &self_type::single_wrapper);
+      break;
+    case kernel_request_strided:
+      this->base.set_function<expr_strided_t>(
+          &self_type::strided_wrapper);
+      break;
+    default:
+      DYND_HOST_THROW(std::invalid_argument,
+                      "expr ckernel init: unrecognized ckernel request " +
+                          std::to_string(kernreq));
+    }
+  }
+};
+
+intptr_t dynd::bound_arrfunc_instantiate(
+    const arrfunc_type_data *self, const arrfunc_type *DYND_UNUSED(self_tp),
+    void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
+    const char *dst_arrmeta, const ndt::type *src_tp,
+    const char *const *src_arrmeta, kernel_request_t kernreq,
+    const eval::eval_context *ectx, const nd::array &kwds)
+{
+  const partial_arrfunc_data *self_data =
+      self->get_data_as<partial_arrfunc_data>();
+
+  const arrfunc_type_data *child = reinterpret_cast<const arrfunc_type_data *>(
+      self_data->child.get_readonly_originptr());
+  const arrfunc_type *child_tp =
+      self_data->child.get_type().extended<arrfunc_type>();
+
+  intptr_t i = self_data->i;
+  nd::array val = self_data->val;
+
+  std::vector<ndt::type> child_src_tp(child_tp->get_npos());
+  for (intptr_t j = 0; j < i; ++j) {
+    child_src_tp[j] = src_tp[j];
+  }
+  child_src_tp[i] = val.get_type();
+  for (size_t j = i + 1; j < child_src_tp.size(); ++j) {
+    child_src_tp[j] = src_tp[j - 1];
+  }
+
+  std::vector<const char *> child_src_arrmeta(child_tp->get_npos());
+  for (intptr_t j = 0; j < i; ++j) {
+    child_src_arrmeta[j] = src_arrmeta[j];
+  }
+  child_src_arrmeta[i] = val.get_arrmeta();
+  for (size_t j = i + 1; j < child_src_arrmeta.size(); ++j) {
+    child_src_arrmeta[j] = src_arrmeta[j - 1];
+  }
+
+  insert_ck::create(ckb, kernreq, ckb_offset, const_cast<char *>(val.get_readonly_originptr()), child_tp->get_npos());
+  return child->instantiate(child, child_tp, ckb, ckb_offset, dst_tp,
+                            dst_arrmeta, child_src_tp.data(),
+                            child_src_arrmeta.data(), kernreq, ectx, kwds);
+}
 
 nd::arrfunc dynd::make_arrfunc_from_assignment(const ndt::type &dst_tp,
                                                const ndt::type &src_tp,

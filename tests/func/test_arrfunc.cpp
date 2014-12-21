@@ -96,6 +96,15 @@ TEST(ArrFunc, KeywordParsing)
   EXPECT_THROW(af0(1, kwds("y", 4, "y", 2.5)).as<int>(), std::invalid_argument);
 }
 
+TEST(ArrFunc, Bind)
+{
+  nd::arrfunc af = nd::apply::make([](int x, int y) { return x + y; });
+
+  nd::arrfunc baf = af.bind(0, 1);
+  // check the array type here
+  EXPECT_EQ(3, baf(2).as<int>());
+}
+
 TEST(ArrFunc, Option)
 {
   struct callable {

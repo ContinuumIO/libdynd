@@ -26,7 +26,7 @@ namespace decl {
 
       /**
        * Lifts the provided ckernel, broadcasting it as necessary to execute
-       * across the additional dimensions in the ``lifted_types`` array.
+       * across the additional dimensions in the ``lifted_types`` array. 
        *
        * This version is for 'expr' ckernels.
        *

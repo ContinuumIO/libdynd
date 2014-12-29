@@ -134,9 +134,9 @@ namespace kernels {
                 const eval::eval_context *ectx, const nd::array &kwds)
     {
       intptr_t dst_ndim = dst_tp.get_ndim();
-      if (!child_tp->get_return_type().is_symbolic()) {
+//      if (!child_tp->get_return_type().is_symbolic()) {
         dst_ndim -= child_tp->get_return_type().get_ndim();
-      }
+  //    }
 
       const char *child_dst_arrmeta;
       const char *child_src_arrmeta[N];
@@ -297,9 +297,9 @@ namespace kernels {
                 const eval::eval_context *ectx, const nd::array &kwds)
     {
       intptr_t dst_ndim = dst_tp.get_ndim();
-      if (!child_tp->get_return_type().is_symbolic()) {
+//      if (!child_tp->get_return_type().is_symbolic()) {
         dst_ndim -= child_tp->get_return_type().get_ndim();
-      }
+  //    }
 
       const char *child_dst_arrmeta;
       const char *child_src_arrmeta[N];
@@ -538,9 +538,9 @@ namespace kernels {
                 const eval::eval_context *ectx, const nd::array &kwds)
     {
       intptr_t dst_ndim = dst_tp.get_ndim();
-      if (!child_tp->get_return_type().is_symbolic()) {
+//      if (!child_tp->get_return_type().is_symbolic()) {
         dst_ndim -= child_tp->get_return_type().get_ndim();
-      }
+  //    }
 
       const char *child_dst_arrmeta;
       const char *child_src_arrmeta[N];

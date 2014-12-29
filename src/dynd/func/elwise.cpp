@@ -160,9 +160,9 @@ intptr_t decl::nd::elwise::instantiate(
 
   // Check if no lifting is required
   intptr_t dst_ndim = dst_tp.get_ndim();
-  if (!child_tp->get_return_type().is_symbolic()) {
+//  if (!child_tp->get_return_type().is_symbolic()) {
     dst_ndim -= child_tp->get_return_type().get_ndim();
-  }
+  //}
   if (dst_ndim == 0) {
     intptr_t i = 0;
     for (; i < src_count; ++i) {

@@ -95,7 +95,6 @@ if(WIN32)
         if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 16)
             message(FATAL_ERROR "Only MSVC 2010 (Version 16.0) and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
         endif ()
-        set(DYND_BUILD_BENCHMARKS OFF)
     endif()
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -fomit-frame-pointer -fstrict-aliasing -fPIC -Wall -Wextra -Werror -Wno-missing-field-initializers")
@@ -569,7 +568,7 @@ if ((NOT DYND_SHARED_LIB) AND (DYND_INSTALL_LIB))
     # If we're making an installable static library,
     # include the sublibraries source directly because
     # including static libraries in other static libraries
-    # is a hassle 
+    # is a hassle
     get_directory_property(cephes_SRC
                            DIRECTORY "thirdparty/cephes"
                            DEFINITION cephes_SRC)

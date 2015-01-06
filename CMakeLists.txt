@@ -569,7 +569,7 @@ if ((NOT DYND_SHARED_LIB) AND (DYND_INSTALL_LIB))
     # If we're making an installable static library,
     # include the sublibraries source directly because
     # including static libraries in other static libraries
-    # is a hassle
+    # is a hassle 
     get_directory_property(cephes_SRC
                            DIRECTORY "thirdparty/cephes"
                            DEFINITION cephes_SRC)

@@ -4,6 +4,8 @@ set(SOURCE_FILES "benchmark.cc" "colorprint.cc" "commandlineflags.cc" "sleep.cc"
 # Determine the correct regular expression engine to use
 if(HAVE_STD_REGEX)
   set(RE_FILES "re_std.cc")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(RE_FILES "re_std.cc")
 elseif(HAVE_GNU_POSIX_REGEX)
   set(RE_FILES "re_posix.cc")
 elseif(HAVE_POSIX_REGEX)

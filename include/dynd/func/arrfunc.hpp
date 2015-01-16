@@ -479,9 +479,8 @@ namespace nd {
         {
         }
 
-        void resolve_dst_tp(
-            const arrfunc_type *self_tp, const ndt::type &value,
-            std::map<nd::string, ndt::type> &typevars) const
+        void resolve_dst_tp(const arrfunc_type *self_tp, const ndt::type &value,
+                            std::map<nd::string, ndt::type> &typevars) const
         {
           const ndt::type &expected_tp = self_tp->get_return_type();
 
@@ -836,8 +835,8 @@ namespace nd {
 
     /** Implements the general call operator */
     template <typename A, typename K>
-    array call(const A &args, const K &kwds,
-               const eval::eval_context *ectx) const
+    typename std::enable_if<!std::is_integral<A>::value, array>::type
+    call(const A &args, const K &kwds, const eval::eval_context *ectx) const
     {
       const arrfunc_type_data *self = get();
       const arrfunc_type *self_tp = m_value.get_type().extended<arrfunc_type>();

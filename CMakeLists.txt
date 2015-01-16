@@ -98,7 +98,7 @@ if(WIN32)
         set(DYND_BUILD_BENCHMARKS OFF)
     endif()
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -fomit-frame-pointer -fstrict-aliasing -Wall -Werror -Wextra -Wno-missing-field-initializers")
     if (DYND_CUDA)
 	    # This is a workaround for a FindCUDA bug, which will be fixed in an upcoming version
         if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
@@ -113,9 +113,13 @@ else()
         if ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.7)
             message(FATAL_ERROR "Only GCC 4.7 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
         endif()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fmax-errors=20")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20 -Wdocumentation")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
+        # This is a workaround for a CUDA bug with Clang, where it is unable to handle "-std=c++11"
+        if (DYND_CUDA)
+            set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+        endif()
     endif()
 endif()
 
@@ -548,7 +552,7 @@ if (DYND_CUDA)
     # Make some warnings into errors and inhibit other warnings
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Werror=cross-execution-space-call;
         -Xcudafe;--diag_suppress=boolean_controlling_expr_is_constant;
-        -Xcudafe;--diag_suppress=cc_clobber_ignored)
+        -Xcudafe;--diag_suppress=cc_clobber_ignored;-Xcompiler;-Wno-unused;-Xcompiler;-Wno-unused-parameter)
 endif()
 
 source_group("Main Source" REGULAR_EXPRESSION "src/dynd/.*cpp")

@@ -16,6 +16,7 @@
 using namespace std;
 using namespace dynd;
 
+/*
 TEST(SubstituteTypeVars, SimpleNoSubstitutions)
 {
   map<nd::string, ndt::type> typevars;
@@ -134,6 +135,7 @@ TEST(SubstituteTypeVars, SimpleSubstitution)
       ndt::substitute(ndt::type("Mfixed_sym**N * Tint"), typevars, true),
       invalid_argument);
 }
+*/
 
 TEST(SubstituteTypeVars, Tuple)
 {

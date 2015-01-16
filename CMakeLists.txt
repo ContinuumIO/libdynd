@@ -365,7 +365,6 @@ set(libdynd_SRC
     src/dynd/kernels/byteswap_kernels.cpp
     src/dynd/kernels/ckernel_common_functions.cpp
     src/dynd/kernels/comparison_kernels.cpp
-    src/dynd/kernels/cuda_kernels.cpp
     src/dynd/kernels/date_assignment_kernels.cpp
     src/dynd/kernels/date_adapter_kernels.cpp
     src/dynd/kernels/datetime_assignment_kernels.cpp
@@ -528,16 +527,14 @@ if (DYND_CUDA)
         src/dynd/types/dynd_int128.cpp
         src/dynd/types/dynd_uint128.cpp
         src/dynd/kernels/assignment_kernels.cpp
-        src/dynd/kernels/cuda_kernels.cpp
         src/dynd/func/arithmetic.cpp
         src/dynd/func/elwise.cpp
         )
-    list(APPEND libdynd_SRC
+    list(APPEND libdynddev_SRC
         src/dynd/kernels/assignment_kernels.cu
         src/dynd/func/arithmetic.cu
         src/dynd/func/elwise.cu
         src/dynd/kernels/ckernel_builder.cu
-        src/dynd/kernels/cuda_kernels.cu
         src/dynd/types/dynd_complex.cu
         src/dynd/types/dynd_float16.cu
         src/dynd/types/dynd_float128.cu
@@ -602,11 +599,13 @@ endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
+add_library(libdynd_OBJ OBJECT ${libdynd_SRC})
+
 if (DYND_SHARED_LIB)
     if (DYND_CUDA)
-        cuda_add_library(libdynd SHARED ${libdynd_SRC})
+        cuda_add_library(libdynd SHARED ${libdynddev_SRC} $<TARGET_OBJECTS:libdynd_OBJ>)
     else()
-        add_library(libdynd SHARED ${libdynd_SRC})
+        add_library(libdynd SHARED $<TARGET_OBJECTS:libdynd_OBJ>)
     endif()
     set_target_properties(libdynd
         PROPERTIES
@@ -615,13 +614,23 @@ if (DYND_SHARED_LIB)
         )
 else()
     if (DYND_CUDA)
-        cuda_add_library(libdynd STATIC ${libdynd_SRC})
+        cuda_add_library(libdynd STATIC ${libdynddev_SRC} $<TARGET_OBJECTS:libdynd_OBJ>)
     else()
-        add_library(libdynd STATIC ${libdynd_SRC})
+        add_library(libdynd STATIC $<TARGET_OBJECTS:libdynd_OBJ>)
     endif()
     set_target_properties(libdynd
         PROPERTIES
         OUTPUT_NAME "dynd"
+        PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}"
+        )
+endif()
+
+if (DYND_CUDA)
+    add_library(libdynddev STATIC $<TARGET_OBJECTS:libdynd_OBJ> ${libdynd_SEPARABLE_COMPILATION_OBJECTS})
+    set_target_properties(libdynddev PROPERTIES LINKER_LANGUAGE CXX)
+    set_target_properties(libdynddev
+        PROPERTIES
+        OUTPUT_NAME "dynddev"
         PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}"
         )
 endif()

@@ -95,6 +95,16 @@ struct is_eval_context<const eval_context *&> {
   static const bool value = true;
 };
 
+template <>
+struct is_eval_context<eval_context *&&> {
+  static const bool value = true;
+};
+
+template <>
+struct is_eval_context<const eval_context *&&> {
+  static const bool value = true;
+};
+
 extern eval_context default_eval_context;
 
 }} // namespace dynd::eval

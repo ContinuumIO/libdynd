@@ -21,11 +21,9 @@
 using namespace std;
 using namespace dynd;
 
-namespace {
 struct callable0 {
   DYND_CUDA_HOST_DEVICE int operator()(int x, int y) { return x + y; }
 };
-} // unnamed namespace
 
 int main()
 {

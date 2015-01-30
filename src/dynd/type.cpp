@@ -8,6 +8,7 @@
 #include <dynd/types/base_memory_type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
 #include <dynd/types/var_dim_type.hpp>
+#include <dynd/types/type_pattern_match.hpp>
 #include <dynd/exceptions.hpp>
 #include <dynd/typed_data_assign.hpp>
 #include <dynd/buffer_storage.hpp>
@@ -98,6 +99,11 @@ ndt::type ndt::type::at_array(int nindices, const irange *indices) const
     } else {
         return m_extended->apply_linear_index(nindices, indices, 0, *this, true);
     }
+}
+
+bool ndt::type::matches(const ndt::type &pattern)
+{
+  return pattern_match(*this, pattern);
 }
 
 nd::array ndt::type::p(const char *property_name) const

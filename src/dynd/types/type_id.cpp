@@ -163,6 +163,8 @@ std::ostream &dynd::operator<<(std::ostream &o, type_id_t tid)
     return (o << "typevar");
   case typevar_dim_type_id:
     return (o << "typevar_dim");
+  case typevar_constructed_type_id:
+    return (o << "typevar_constructed");
   case ellipsis_dim_type_id:
     return (o << "ellipsis_dim");
   default:

@@ -97,9 +97,34 @@ ndt::type ndt::type::at_array(int nindices, const irange *indices) const
   }
 }
 
-bool ndt::type::matches(const ndt::type &pattern) const
+bool ndt::type::matches(const char *arrmeta, const ndt::type &other,
+                        std::map<nd::string, ndt::type> &tp_vars) const
 {
-  return pattern_match(*this, pattern);
+  // dispatch to patterns first
+  // then categories
+  // then concrete
+
+  if (other.is_symbolic()) {
+    return other.extended()->matches(arrmeta, *this, tp_vars);
+  } else if (is_builtin()) {
+    if (other.is_builtin()) {
+      return get_type_id() == other.get_type_id();
+    } else {
+      return other.extended()->matches(arrmeta, *this, tp_vars);
+    }
+  }
+
+  return extended()->matches(arrmeta, other, tp_vars);
+}
+
+bool ndt::type::matches(const ndt::type &other) const
+{
+  if (extended() == other.extended()) {
+    return true;
+  } else {
+    std::map<nd::string, ndt::type> tp_vars;
+    return matches(NULL, other, tp_vars);
+  }
 }
 
 nd::array ndt::type::p(const char *property_name) const

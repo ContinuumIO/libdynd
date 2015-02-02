@@ -13,3 +13,14 @@ using namespace dynd;
 
 base_dim_type::~base_dim_type() {
 }
+
+bool base_dim_type::matches(const char *arrmeta, const ndt::type &other,
+                            std::map<nd::string, ndt::type> &tp_vars) const
+{
+  if (other.get_kind() != dim_kind) {
+    return false;
+  }
+
+  return m_element_tp.matches(arrmeta, other.extended<base_dim_type>()->m_element_tp,
+    tp_vars);
+}

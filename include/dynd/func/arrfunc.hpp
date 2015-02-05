@@ -348,8 +348,9 @@ namespace nd {
                         std::vector<char *> &src_data) const
         {
           const nd::array &value = std::get<I>(self->m_values);
+          std::cout << value.get_type() << std::endl;
 
-          new (src_tp.data() + I) ndt::type(value.get_type());
+          src_tp.push_back(value.get_type());
           src_arrmeta.push_back(value.get_arrmeta());
           src_data.push_back(
               const_cast<char *>(value.get_readonly_originptr()));

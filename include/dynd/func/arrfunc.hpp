@@ -360,8 +360,6 @@ namespace nd {
                         std::vector<const char *> &src_arrmeta,
                         std::vector<char *> &src_data) const
         {
-          src_tp.resize(sizeof...(A));
-
           typedef make_index_sequence<sizeof...(A)> I;
           index_proxy<I>::for_each(*this, src_tp, src_arrmeta, src_data);
         }

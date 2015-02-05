@@ -349,7 +349,7 @@ namespace nd {
         {
           const nd::array &value = std::get<I>(self->m_values);
 
-          src_tp[I] = value.get_type();
+          new (src_tp.data() + I) ndt::type(value.get_type());
           src_arrmeta.push_back(value.get_arrmeta());
           src_data.push_back(
               const_cast<char *>(value.get_readonly_originptr()));

@@ -118,6 +118,7 @@ public:
     type()
         : m_extended(reinterpret_cast<const base_type *>(uninitialized_type_id))
     {}
+
     /**
      * Constructor from a base_type. This claims ownership of the 'extended'
      * reference if incref is false, be careful!
@@ -129,6 +130,7 @@ public:
             base_type_incref(m_extended);
         }
     }
+
     /** Copy constructor (should be "= default" in C++11) */
     type(const type& rhs)
         : m_extended(rhs.m_extended)
@@ -137,6 +139,7 @@ public:
             base_type_incref(m_extended);
         }
     }
+
     /** Assignment operator (should be "= default" in C++11) */
     type& operator=(const type& rhs) {
         if (!is_builtin_type(m_extended)) {
@@ -148,13 +151,16 @@ public:
         }
         return *this;
     }
+
 #ifdef DYND_RVALUE_REFS
+
     /** Move constructor */
     type(type&& rhs)
         : m_extended(rhs.m_extended)
     {
         rhs.m_extended = reinterpret_cast<const base_type *>(uninitialized_type_id);
     }
+
     /** Move assignment operator */
     type& operator=(type&& rhs) {
         if (!is_builtin_type(m_extended)) {
@@ -164,7 +170,8 @@ public:
         rhs.m_extended = reinterpret_cast<const base_type *>(uninitialized_type_id);
         return *this;
     }
-#endif // DYND_RVALUE_REFS
+
+#endif
 
     /** Construct from a builtin type ID */
     explicit type(type_id_t type_id)

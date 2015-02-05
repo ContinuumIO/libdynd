@@ -349,7 +349,7 @@ namespace nd {
         {
           const nd::array &value = std::get<I>(self->m_values);
 
-          src_tp.push_back(ndt::as_type(value));
+          src_tp.push_back(value.get_type());
           src_arrmeta.push_back(value.get_arrmeta());
           src_data.push_back(
               const_cast<char *>(value.get_readonly_originptr()));
@@ -941,8 +941,10 @@ namespace nd {
       // Resolve the destination type
       nd::array kwds_as_array;
       std::map<nd::string, ndt::type> tp_vars;
-      ndt::type dst_tp = resolve(args.size(), src_tp.data(), src_arrmeta.data(), kwds,
-                                 kwds_as_array, ectx, tp_vars);
+      ndt::type dst_tp =
+          resolve(args.size(), src_tp.empty() ? NULL : src_tp.data(),
+                  src_arrmeta.empty() ? NULL : src_arrmeta.data(), kwds,
+                  kwds_as_array, ectx, tp_vars);
 
       if (ectx == NULL) {
         ectx = &eval::default_eval_context;
@@ -954,10 +956,12 @@ namespace nd {
       // Generate and evaluate the ckernel
       ckernel_builder<kernel_request_host> ckb;
       self->instantiate(self, self_tp, &ckb, 0, dst_tp, res.get_arrmeta(),
-                        src_tp.data(), src_arrmeta.data(), kernel_request_single, ectx,
-                        kwds_as_array, tp_vars);
+                        src_tp.empty() ? NULL : src_tp.data(),
+                        src_arrmeta.empty() ? NULL : src_arrmeta.data(),
+                        kernel_request_single, ectx, kwds_as_array, tp_vars);
       expr_single_t fn = ckb.get()->get_function<expr_single_t>();
-      fn(res.get_readwrite_originptr(), src_data.data(), ckb.get());
+      fn(res.get_readwrite_originptr(),
+         src_data.empty() ? NULL : src_data.data(), ckb.get());
 
       return res;
     }

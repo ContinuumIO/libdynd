@@ -340,7 +340,7 @@ namespace nd {
       size_t size() const { return sizeof...(A); }
 
       struct {
-        const args *self;
+        args *self;
 
         template <size_t I>
         void operator()(std::vector<ndt::type> &src_tp,

@@ -349,7 +349,7 @@ namespace nd {
         {
           const nd::array &value = std::get<I>(self->m_values);
 
-          src_tp.push_back(value.get_type());
+          src_tp[I] = value.get_type();
           src_arrmeta.push_back(value.get_arrmeta());
           src_data.push_back(
               const_cast<char *>(value.get_readonly_originptr()));
@@ -359,6 +359,8 @@ namespace nd {
                         std::vector<const char *> &src_arrmeta,
                         std::vector<char *> &src_data) const
         {
+          src_tp.resize(sizeof...(A));
+
           typedef make_index_sequence<sizeof...(A)> I;
           index_proxy<I>::for_each(*this, src_tp, src_arrmeta, src_data);
         }

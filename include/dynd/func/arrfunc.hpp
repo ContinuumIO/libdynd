@@ -330,29 +330,39 @@ namespace nd {
     template <typename... A>
     class args {
       std::tuple<A...> m_values;
-      ndt::type m_types[sizeof...(A)];
-      char *m_data[sizeof...(A)];
-      const char *m_arrmeta[sizeof...(A)];
 
     public:
       args(A &&... a) : m_values(std::forward<A>(a)...)
       {
-        typedef make_index_sequence<sizeof...(A)> I;
-
-        ndt::index_proxy<I>::template get_types(m_types, get_vals());
-        nd::index_proxy<I>::template get_arrmeta(m_arrmeta, get_vals());
-        nd::index_proxy<I>::template get_data(m_data, get_vals());
+        resolve.self = this;
       }
 
       size_t size() const { return sizeof...(A); }
 
-      const std::tuple<A...> &get_vals() const { return m_values; }
+      struct {
+        const args *self;
 
-      std::vector<ndt::type> get_types() const { return std::vector<ndt::type>(m_types, m_types + sizeof...(A)); }
+        template <size_t I>
+        void operator()(std::vector<ndt::type> &src_tp,
+                        std::vector<const char *> &src_arrmeta,
+                        std::vector<char *> &src_data) const
+        {
+          const nd::array &value = std::get<I>(self->m_values);
 
-      std::vector<char *> get_data() const {return std::vector<char *>(m_data, m_data + sizeof...(A)); }
+          src_tp.push_back(ndt::as_type(value));
+          src_arrmeta.push_back(value.get_arrmeta());
+          src_data.push_back(
+              const_cast<char *>(value.get_readonly_originptr()));
+        }
 
-      std::vector<const char *> get_arrmeta() const { return std::vector<const char *>(m_arrmeta, m_arrmeta + sizeof...(A)); }
+        void operator()(std::vector<ndt::type> &src_tp,
+                        std::vector<const char *> &src_arrmeta,
+                        std::vector<char *> &src_data) const
+        {
+          typedef make_index_sequence<sizeof...(A)> I;
+          index_proxy<I>::for_each(*this, src_tp, src_arrmeta, src_data);
+        }
+      } resolve;
     };
 
     template <>
@@ -365,30 +375,16 @@ namespace nd {
 
       size_t size() const { return m_narg; }
 
-      std::vector<ndt::type> get_types() const
+      void resolve(std::vector<ndt::type> &src_tp,
+                   std::vector<const char *> &src_arrmeta,
+                   std::vector<char *> &src_data) const
       {
-        std::vector<ndt::type> src_tp(m_narg);
         for (intptr_t i = 0; i < m_narg; ++i) {
-          src_tp[i] = m_args[i].get_type();
+          src_tp.push_back(m_args[i].get_type());
+          src_arrmeta.push_back(m_args[i].get_arrmeta());
+          src_data.push_back(
+              const_cast<char *>(m_args[i].get_readonly_originptr()));
         }
-        return src_tp;
-      }
-
-      std::vector<char *> get_data() const
-      {
-        std::vector<char *> src_data(m_narg);
-        for (intptr_t i = 0; i < m_narg; ++i) {
-          src_data[i] = const_cast<char *>(m_args[i].get_readonly_originptr());
-        }
-        return src_data;
-      }
-
-      std::vector<const char *> get_arrmeta() const {
-        std::vector<const char *> src_arrmeta(m_narg);
-        for (intptr_t i = 0; i < m_narg; ++i) {
-          src_arrmeta[i] = m_args[i].get_arrmeta();
-        }
-        return src_arrmeta;
       }
     };
 
@@ -397,11 +393,11 @@ namespace nd {
     public:
       size_t size() const { return 0; }
 
-      std::vector<ndt::type> get_types() const { return std::vector<ndt::type>(); }
-
-      std::vector<char *> get_data() const { return std::vector<char *>(); }
-
-      std::vector<const char *> get_arrmeta() const { return std::vector<const char *>(); }
+      void resolve(std::vector<ndt::type> &DYND_UNUSED(src_tp),
+                   std::vector<const char *> &DYND_UNUSED(src_arrmeta),
+                   std::vector<char *> &DYND_UNUSED(src_data)) const
+      {
+      }
     };
 
     template <typename... T>
@@ -518,7 +514,7 @@ namespace nd {
           : m_values(std::forward<K>(values)...)
       {
         typedef make_index_sequence<sizeof...(K)> I;
-        dynd::index_proxy<I>::for_each(set_names, this, names...);
+        index_proxy<I>::for_each(set_names, this, names...);
       }
 
       static intptr_t get_size() { return sizeof...(K); }
@@ -566,7 +562,7 @@ namespace nd {
 
         std::vector<intptr_t> permutation;
         nkwd = 0;
-        dynd::index_proxy<I>::for_each(is_permutation_ex, this, nkwd, af_tp, permutation, ectx, tp_vars);
+        index_proxy<I>::for_each(is_permutation_ex, this, nkwd, af_tp, permutation, ectx, tp_vars);
         return permutation;
       }
 
@@ -576,7 +572,7 @@ namespace nd {
       {
         typedef make_index_sequence<sizeof...(K)> I;
 
-        dynd::index_proxy<I>::for_each(resolve_available_type, this, available,
+        index_proxy<I>::for_each(resolve_available_type, this, available,
                                        self_tp, kwd_tp_data, typevars);
       }
 
@@ -614,7 +610,7 @@ namespace nd {
                                  const std::vector<intptr_t> &missing) const
       {
         typedef make_index_sequence<sizeof...(K)> I;
-        dynd::index_proxy<I>::for_each(
+        index_proxy<I>::for_each(
             get_forward_types_ex,
             reinterpret_cast<ndt::type *>(types.get_readwrite_originptr()),
             m_values, available);
@@ -634,7 +630,7 @@ namespace nd {
         const uintptr_t *data_offsets = res.get_type().extended<base_struct_type>()->get_data_offsets(
                 res.get_arrmeta());
 
-        dynd::index_proxy<I>::for_each(
+        index_proxy<I>::for_each(
             forward_as_array_ex, tp, arrmeta, arrmeta_offsets, data,
             data_offsets, m_values,
             available.empty() ? NULL : available.data());
@@ -936,11 +932,13 @@ namespace nd {
       const arrfunc_type_data *self = get();
       const arrfunc_type *self_tp = m_value.get_type().extended<arrfunc_type>();
 
-      // Resolve the destination type
-      std::vector<ndt::type> src_tp = args.get_types();
-      std::vector<char *> src_data = args.get_data();
-      std::vector<const char *> src_arrmeta = args.get_arrmeta();
+      // Resolve the positional arguments
+      std::vector<ndt::type> src_tp;
+      std::vector<const char *> src_arrmeta;
+      std::vector<char *> src_data;
+      args.resolve(src_tp, src_arrmeta, src_data);
 
+      // Resolve the destination type
       nd::array kwds_as_array;
       std::map<nd::string, ndt::type> tp_vars;
       ndt::type dst_tp = resolve(args.size(), src_tp.data(), src_arrmeta.data(), kwds,
@@ -988,7 +986,7 @@ namespace nd {
                       sizeof...(T)-1>::type>::type args_type;
 
       args_type arr =
-          dynd::index_proxy<I>::template make<args_type>(std::forward<T>(a)...);
+          index_proxy<I>::template make<args_type>(std::forward<T>(a)...);
       return call(arr, dynd::get<sizeof...(T)-1>(std::forward<T>(a)...));
     }
 
@@ -997,10 +995,8 @@ namespace nd {
      */
     template <typename... T>
     typename std::enable_if<
-        !detail::is_kwds<typename back<type_sequence<T...>>::type>::value &&
-            !eval::is_eval_context<
-                typename back<type_sequence<T...>>::type>::value,
-        nd::array>::type
+        !detail::is_kwds<typename back<type_sequence<T...>>::type>::value,
+        array>::type
     operator()(T &&... a) const
     {
       detail::args<typename as_array<T>::type...> arr(std::forward<T>(a)...);

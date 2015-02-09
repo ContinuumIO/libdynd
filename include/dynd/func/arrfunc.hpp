@@ -384,7 +384,7 @@ namespace nd {
     template <typename... A>
     class args {
       std::tuple<A...> m_values;
-      const char *m_arrmeta[sizeof...(A)];
+//      const char *m_arrmeta[sizeof...(A)];
 
     public:
       args(A &&... a) : m_values(std::forward<A>(a)...)
@@ -392,8 +392,14 @@ namespace nd {
         validate_types.self = this;
 
         // Todo: This should be removed, but it seems to trigger an error on travis if it is
-        typedef make_index_sequence<sizeof...(A)> I;
-        old_index_proxy<I>::template get_arrmeta(m_arrmeta, m_values);
+  //      typedef make_index_sequence<sizeof...(A)> I;
+    //    old_index_proxy<I>::template get_arrmeta(m_arrmeta, m_values);
+      }
+
+      args(const args &other) = delete;
+
+      args(args &&other) : m_values(std::move(other.m_values)) {
+      //  memcpy(m_arrmeta, other.m_arrmeta, sizeof(m_arrmeta));
       }
 
       struct {
@@ -408,7 +414,8 @@ namespace nd {
         {
           auto &value = std::get<I>(self->m_values);
           const ndt::type &tp = ndt::type_of(value);
-          const char *arrmeta = self->m_arrmeta[I];
+          const char *arrmeta = value.get_arrmeta();
+//          const char *arrmeta = self->m_arrmeta[I];
 
           check_arg(af_tp, I, tp, arrmeta, tp_vars);
 
@@ -1066,9 +1073,9 @@ namespace nd {
           typename to<type_sequence<typename as_array<T>::type...>,
                       sizeof...(T)-1>::type>::type args_type;
 
-      args_type arr =
-          index_proxy<I>::template make<args_type>(std::forward<T>(a)...);
-      return call(arr, dynd::get<sizeof...(T)-1>(std::forward<T>(a)...));
+      return call(
+          index_proxy<I>::template make<args_type>(std::forward<T>(a)...),
+          dynd::get<sizeof...(T)-1>(std::forward<T>(a)...));
     }
 
     template <typename A0, typename A1, typename... K>

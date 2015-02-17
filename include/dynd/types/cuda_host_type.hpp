@@ -10,7 +10,7 @@
 
 namespace dynd {
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 class cuda_host_type : public base_memory_type {
   unsigned int m_cuda_host_flags;

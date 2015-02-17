@@ -27,7 +27,7 @@ nd::decl::random::uniform::as_arrfunc()
           new std::default_random_engine(random_device())));
 }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 template <kernel_request_t kernreq>
 typename std::enable_if<kernreq == kernel_request_cuda_device,
@@ -50,7 +50,7 @@ nd::decl::random::uniform::as_arrfunc()
 
 nd::arrfunc nd::decl::random::uniform::as_arrfunc()
 {
-#ifdef DYND_CUDA
+#if DYND_CUDA
   return nd::functional::elwise(nd::functional::multidispatch(
       ndt::type("(a: ?R, b: ?R) -> M[R]"),
       {as_arrfunc<kernel_request_host>(),

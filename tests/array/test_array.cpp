@@ -659,6 +659,6 @@ TEST(Array, PrintBoolVector) {
 REGISTER_TYPED_TEST_CASE_P(Array, ScalarConstructor, OneDimConstructor, TwoDimConstructor, ThreeDimConstructor, AsScalar);
 
 INSTANTIATE_TYPED_TEST_CASE_P(Default, Array, DefaultMemory);
-#ifdef DYND_CUDA
+#if DYND_CUDA
 INSTANTIATE_TYPED_TEST_CASE_P(CUDA, Array, CUDAMemory);
 #endif // DYND_CUDA

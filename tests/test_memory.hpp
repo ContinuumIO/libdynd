@@ -72,7 +72,7 @@ public:
     }
 
     static inline nd::array To(const nd::array& a) {
-#ifdef DYND_CUDA
+#if DYND_CUDA
         return a.to_host();
 #else
         return a;
@@ -83,7 +83,7 @@ public:
 typedef ::testing::Types<None> DefaultMemory;
 typedef ::testing::Types< ::testing::Types2<None, None> > DefaultMemoryPairs;
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 template <>
 class Memory<cuda_host_type> : public ::testing::Test {

@@ -46,7 +46,7 @@ TYPED_TEST_P(Random, Uniform)
   EXPECT_EQ_RELERR(static_cast<double>(a + b) / 2, mean, 0.1);
 }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 TEST(Random, CUDAUniform)
 {
   nd::arrfunc af = static_cast<nd::arrfunc>(nd::random::uniform);

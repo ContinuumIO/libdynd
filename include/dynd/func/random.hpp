@@ -4,7 +4,7 @@
 #include <memory>
 #include <random>
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 #include <curand_kernel.h>
 #endif
 

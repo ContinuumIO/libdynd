@@ -55,7 +55,7 @@ ndt::type ndt::detail::internal_substitute(
   // This function assumes that ``pattern`` is symbolic, so does not
   // have to check types that are always concrete
   switch (pattern.get_type_id()) {
-#ifdef DYND_CUDA
+#if DYND_CUDA
     case cuda_device_type_id:
       return ndt::make_cuda_device(ndt::substitute(pattern.extended<base_memory_type>()->get_element_type(),
         typevars, concrete));
@@ -127,7 +127,7 @@ ndt::type ndt::detail::internal_substitute(
         if (it->second.get_type_id() == void_type_id) {
           return substitute(pattern.extended<typevar_constructed_type>()->get_arg(), typevars, concrete);
         }
-#ifdef DYND_CUDA
+#if DYND_CUDA
         if (it->second.get_type_id() == cuda_device_type_id) {
           return ndt::make_cuda_device(substitute(pattern.extended<typevar_constructed_type>()->get_arg(), typevars, concrete));
         }

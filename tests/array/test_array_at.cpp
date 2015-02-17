@@ -216,6 +216,6 @@ REGISTER_TYPED_TEST_CASE_P(ArrayIndex, BasicInteger, SimpleOneDimensionalRange,
     SteppedOneDimensionalRange, ExceptionsOneDimensionalRange);
 
 INSTANTIATE_TYPED_TEST_CASE_P(Default, ArrayIndex, DefaultMemory);
-#ifdef DYND_CUDA
+#if DYND_CUDA
 INSTANTIATE_TYPED_TEST_CASE_P(CUDA, ArrayIndex, CUDAMemory);
 #endif // DYND_CUDA

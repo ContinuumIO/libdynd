@@ -353,7 +353,7 @@ not_comparable_error::not_comparable_error(const ndt::type& lhs, const ndt::type
 {
 }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 inline string cuda_runtime_error_message(cudaError_t error)
 {

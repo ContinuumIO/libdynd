@@ -10,7 +10,7 @@
 using namespace std;
 using namespace dynd;
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 cuda_device_type::cuda_device_type(const ndt::type &element_tp)
     : base_memory_type(cuda_device_type_id, element_tp,

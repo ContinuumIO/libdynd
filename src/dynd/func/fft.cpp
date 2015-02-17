@@ -17,7 +17,7 @@ nd::arrfunc nd::decl::fft::as_arrfunc()
   children.push_back(nd::as_arrfunc<CKT>());
 #endif
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
   children.push_back(nd::as_arrfunc<
       cufft_ck<cufftDoubleComplex, cufftDoubleComplex, CUFFT_FORWARD>>());
 #endif
@@ -42,7 +42,7 @@ nd::arrfunc nd::decl::ifft::as_arrfunc()
       kernels::fftw_ck<fftw_complex, fftw_complex, FFTW_BACKWARD>>());
 #endif
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
   children.push_back(nd::as_arrfunc<
       cufft_ck<cufftDoubleComplex, cufftDoubleComplex, CUFFT_INVERSE>>());
 #endif

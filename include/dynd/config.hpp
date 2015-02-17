@@ -13,7 +13,7 @@
 
 #include <dynd/cmake_config.hpp>
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 #include <cuda_runtime.h>
 #endif
 

@@ -34,7 +34,7 @@ public:
   static nd::array To(const nd::array &a) { return a; }
 };
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 typedef integral_constant<kernel_request_t, kernel_request_cuda_device>
     CUDADeviceKernelRequest;

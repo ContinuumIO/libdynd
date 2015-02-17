@@ -9,7 +9,7 @@
 using namespace std;
 using namespace dynd;
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 cuda_host_type::cuda_host_type(const ndt::type &element_tp,
                                unsigned int cuda_host_flags)

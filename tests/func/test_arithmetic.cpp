@@ -259,7 +259,7 @@ REGISTER_TYPED_TEST_CASE_P(Arithmetic, SimpleBroadcast, StridedScalarBroadcast,
                            ScalarOnTheRight, ScalarOnTheLeft, ComplexScalar);
 
 INSTANTIATE_TYPED_TEST_CASE_P(HostMemory, Arithmetic, HostKernelRequest);
-#ifdef DYND_CUDA
+#if DYND_CUDA
 INSTANTIATE_TYPED_TEST_CASE_P(CUDADeviceMemory, Arithmetic,
                               CUDADeviceKernelRequest);
 #endif

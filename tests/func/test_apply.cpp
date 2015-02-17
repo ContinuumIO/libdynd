@@ -85,7 +85,7 @@ struct func_wrapper;
 
 FUNC_WRAPPER(kernel_request_host);
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 FUNC_WRAPPER(kernel_request_cuda_device, __device__);
 #endif
 
@@ -649,6 +649,6 @@ TYPED_TEST_P(Apply, CallableWithKeywords)
 REGISTER_TYPED_TEST_CASE_P(Apply, Callable, CallableWithKeywords);
 
 INSTANTIATE_TYPED_TEST_CASE_P(HostMemory, Apply, HostKernelRequest);
-#ifdef DYND_CUDA
+#if DYND_CUDA
 INSTANTIATE_TYPED_TEST_CASE_P(CUDADeviceMemory, Apply, CUDADeviceKernelRequest);
 #endif

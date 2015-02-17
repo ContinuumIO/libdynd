@@ -387,7 +387,7 @@ size_t dynd::make_kernreq_to_single_kernel_adapter(void *ckb,
   }
 }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 intptr_t dynd::make_cuda_device_builtin_type_assignment_kernel(
     const arrfunc_type_data *DYND_UNUSED(self),

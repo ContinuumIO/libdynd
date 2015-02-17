@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 #include <cuda_runtime.h>
 #endif // DYND_CUDA
 
@@ -230,7 +230,7 @@ public:
     }
 };
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 /**
  * An exception for errors from the CUDA runtime.

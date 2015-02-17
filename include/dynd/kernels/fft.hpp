@@ -12,7 +12,7 @@
 #include <map>
 #include <dynd/func/call_callable.hpp>
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 #include <cufft.h>
 #endif
 

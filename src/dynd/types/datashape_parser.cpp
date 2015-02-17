@@ -640,7 +640,7 @@ static ndt::type parse_cuda_host_parameters(const char *&rbegin,
 {
   const char *begin = rbegin;
   if (parse_token_ds(begin, end, '[')) {
-#ifdef DYND_CUDA
+#if DYND_CUDA
     ndt::type tp = parse_datashape(begin, end, symtable);
     if (tp.is_null()) {
       throw datashape_parse_error(begin, "expected a type parameter");
@@ -669,7 +669,7 @@ static ndt::type parse_cuda_device_parameters(const char *&rbegin,
 {
   const char *begin = rbegin;
   if (parse_token_ds(begin, end, '[')) {
-#ifdef DYND_CUDA
+#if DYND_CUDA
     ndt::type tp = parse_datashape(begin, end, symtable);
     if (tp.is_null()) {
       throw datashape_parse_error(begin, "expected a type parameter");

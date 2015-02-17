@@ -161,7 +161,7 @@ namespace kernels {
     }
   };
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
   struct cuda_host_to_device_assign_ck
       : expr_ck<cuda_host_to_device_assign_ck, kernel_request_host, 1> {
@@ -380,7 +380,7 @@ namespace kernels {
 
 } // namespace kernels
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 /**
  * Creates an assignment kernel when the src and the dst are the same, but
  * can be in a CUDA memory space, and are POD (plain old data).

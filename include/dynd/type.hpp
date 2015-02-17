@@ -481,7 +481,7 @@ public:
         return is_builtin() || m_extended->is_scalar();
     }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
     bool is_cuda_device_readable() const
     {

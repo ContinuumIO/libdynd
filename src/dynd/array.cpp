@@ -1036,7 +1036,7 @@ nd::array nd::array::to_host() const
   return result;
 }
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
 
 nd::array nd::array::to_cuda_host(unsigned int cuda_host_flags) const
 {

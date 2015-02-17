@@ -671,6 +671,6 @@ REGISTER_TYPED_TEST_CASE_P(ArrayAssign, ScalarAssignment_Bool,
 #endif
 
 INSTANTIATE_TYPED_TEST_CASE_P(Default, ArrayAssign, DefaultMemoryPairs);
-#ifdef DYND_CUDA
+#if DYND_CUDA
 INSTANTIATE_TYPED_TEST_CASE_P(CUDA, ArrayAssign, CUDAMemoryPairs);
 #endif // DYND_CUDA

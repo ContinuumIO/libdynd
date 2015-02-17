@@ -37,7 +37,7 @@ int main()
   a = {1, 2, 3};
   b = {3, 5, 2};
 
-#ifdef DYND_CUDA
+#if DYND_CUDA
   cout << "moving to CUDA device..." << endl;
 
   nd::arrfunc af = nd::functional::apply<kernel_request_cuda_device, callable0>();

@@ -656,6 +656,20 @@ TEST(Array, PrintBoolVector) {
   EXPECT_EQ("array([True, True, True],\n      type=\"3 * bool\")", ss.str());
 }
 
+TEST(Array, AsTuple)
+{
+  nd::array a = nd::as_tuple(5, 4.5);
+  EXPECT_EQ(a(0).as<int>(), 5);
+  EXPECT_EQ(a(1).as<double>(), 4.5);
+}
+
+TEST(Array, AsStruct)
+{
+  nd::array a = nd::as_struct("x", 5, "y", 4.5);
+  EXPECT_EQ(a.p("x").as<int>(), 5);
+  EXPECT_EQ(a.p("y").as<double>(), 4.5);
+}
+
 REGISTER_TYPED_TEST_CASE_P(Array, ScalarConstructor, OneDimConstructor, TwoDimConstructor, ThreeDimConstructor, AsScalar);
 
 INSTANTIATE_TYPED_TEST_CASE_P(Default, Array, DefaultMemory);

@@ -235,15 +235,6 @@ enum axis_order_classification_t {
   axis_order_c
 };
 
-enum copy_request_t {
-  // A copy is never made
-  copy_never,
-  // A copy is made only if the object is 'small'
-  copy_if_small,
-  // A copy is always made
-  copy_always
-};
-
 enum {
   // These are the flags expression types should inherit
   // from their operand type

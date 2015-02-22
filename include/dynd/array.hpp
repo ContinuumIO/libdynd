@@ -1855,8 +1855,8 @@ namespace nd {
   namespace detail {
 
     template <typename T>
-    void fill_value(const ndt::type &DYND_UNUSED(tp),
-                    char *DYND_UNUSED(arrmeta), char *data, const T &value)
+    void fill_value(const ndt::type &DYND_UNUSED(tp), char *DYND_UNUSED(arrmeta),
+               char *data, const T &value)
     {
       *reinterpret_cast<T *>(data) = value;
     }

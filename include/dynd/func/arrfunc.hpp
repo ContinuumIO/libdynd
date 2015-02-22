@@ -13,6 +13,8 @@
 #include <dynd/types/struct_type.hpp>
 #include <dynd/types/substitute_typevars.hpp>
 #include <dynd/types/type_type.hpp>
+#include <dynd/pp/list.hpp>
+#include <dynd/pp/meta.hpp>
 
 #define DYND_HAS_MEM_FUNC(NAME)                                                \
   template <typename T, typename S>                                            \

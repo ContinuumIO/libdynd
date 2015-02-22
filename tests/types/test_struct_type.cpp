@@ -484,17 +484,17 @@ TEST(StructType, Pack)
 {
   nd::array a, b;
 
-  a = pack("val", 5);
+  a = nd::as_struct("val", 5);
   EXPECT_EQ(a.get_type(), ndt::make_struct(ndt::make_type<int>(), "val"));
   EXPECT_EQ(a.p("val").as<int>(), 5);
 
-  a = pack("val0", -3, "val1", 7.5);
+  a = nd::as_struct("val0", -3, "val1", 7.5);
   EXPECT_EQ(a.get_type(), ndt::make_struct(ndt::make_type<int>(), "val0",
                                            ndt::make_type<double>(), "val1"));
   EXPECT_EQ(a.p("val0").as<int>(), -3);
   EXPECT_EQ(a.p("val1").as<double>(), 7.5);
 
-  a = struct_concat(a, pack("val2", 10));
+  a = struct_concat(a, nd::as_struct("val2", 10));
   EXPECT_EQ(a.get_type(), ndt::make_struct(ndt::make_type<int>(), "val0",
                                            ndt::make_type<double>(), "val1",
                                            ndt::make_type<int>(), "val2"));
@@ -502,7 +502,7 @@ TEST(StructType, Pack)
   EXPECT_EQ(a.p("val1").as<double>(), 7.5);
   EXPECT_EQ(a.p("val2").as<int>(), 10);
 
-  a = pack("val0", 2.3, "val1", 7.5f, "val2", std::complex<double>(0.0, 1.0));
+  a = nd::as_struct("val0", 2.3, "val1", 7.5f, "val2", std::complex<double>(0.0, 1.0));
   EXPECT_EQ(a.get_type(),
             ndt::make_struct(ndt::make_type<double>(), "val0",
                              ndt::make_type<float>(), "val1",
@@ -514,7 +514,7 @@ TEST(StructType, Pack)
 
   b = parse_json("4 * int", "[0, 1, 2, 3]");
 
-  a = pack("val0", 5, "val1", b);
+  a = nd::as_struct("val0", 5, "val1", b);
   EXPECT_EQ(a.get_type(),
             ndt::make_struct(ndt::make_type<int>(), "val0",
                              ndt::make_pointer(b.get_type()), "val1"));

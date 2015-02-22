@@ -91,10 +91,7 @@ namespace ndt {
     return ndt::make_tuple(field_types);
   }
 
-  inline ndt::type make_tuple()
-  {
-    return make_empty_tuple();
-  }
+  inline ndt::type make_tuple() { return make_empty_tuple(); }
 
   /** Makes a tuple type with the specified types */
   inline ndt::type make_tuple(const ndt::type &tp0)
@@ -192,4 +189,27 @@ namespace ndt {
 
 nd::array pack(intptr_t field_count, const nd::array *field_vals);
 
+namespace nd {
+
+  template <typename... T>
+  array as_tuple(T &&... values)
+  {
+    ndt::type tuple_tp = ndt::make_tuple({ndt::forward_type_of(values)...});
+
+    array res = empty_shell(tuple_tp);
+    tuple_type::fill_default_data_offsets(
+        sizeof...(T), tuple_tp.extended<tuple_type>()->get_field_types_raw(),
+        reinterpret_cast<uintptr_t *>(res.get_arrmeta()));
+    tuple_type::fill_forward_values(
+        tuple_tp.extended<tuple_type>()->get_field_types_raw(),
+        res.get_arrmeta(),
+        tuple_tp.extended<tuple_type>()->get_arrmeta_offsets_raw(),
+        res.get_readwrite_originptr(),
+        tuple_tp.extended<tuple_type>()->get_data_offsets(res.get_arrmeta()),
+        std::forward<T>(values)...);
+
+    return res;
+  }
+
+} // namespace dynd::nd
 } // namespace dynd

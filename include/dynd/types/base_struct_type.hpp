@@ -20,6 +20,18 @@ namespace dynd {
  * of the field types, and adds field names to that.
  */
 class base_struct_type : public base_tuple_type {
+  struct fill_forward_value {
+    template <size_t I, typename... T>
+    void operator()(const ndt::type *tp, char *arrmeta,
+                    const uintptr_t *arrmeta_offsets, char *data,
+                    const uintptr_t *data_offsets, T &&... values) const
+    {
+      nd::detail::fill_forward_value(
+          tp[I], arrmeta + arrmeta_offsets[I], data + data_offsets[I],
+          get<2 * I + 1>(std::forward<T>(values)...));
+    }
+  };
+
 protected:
   nd::array m_field_names;
 
@@ -85,6 +97,18 @@ public:
       void *ckb, intptr_t ckb_offset, const char *dst_arrmeta,
       size_t dst_elwise_property_index, const char *src_arrmeta,
       kernel_request_t kernreq, const eval::eval_context *ectx) const;
+
+  template <typename... T>
+  static void fill_forward_values(const ndt::type *tp, char *arrmeta,
+                                  const uintptr_t *arrmeta_offsets, char *data,
+                                  const uintptr_t *data_offsets, T &&... names_and_values)
+  {
+    typedef make_index_sequence<sizeof...(T) / 2> I;
+
+    index_proxy<I>::for_each(fill_forward_value(), tp, arrmeta,
+                             arrmeta_offsets, data, data_offsets,
+                             std::forward<T>(names_and_values)...);
+  }
 };
 
 } // namespace dynd

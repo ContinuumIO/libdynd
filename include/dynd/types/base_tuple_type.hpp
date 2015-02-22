@@ -17,6 +17,18 @@ namespace dynd {
  * struct_kind, it must be a subclass of base_tuple_type.
  */
 class base_tuple_type : public base_type {
+  struct fill_forward_value {
+    template <size_t I, typename... T>
+    void operator()(const ndt::type *tp, char *arrmeta,
+                    const uintptr_t *arrmeta_offsets, char *data,
+                    const uintptr_t *data_offsets, T &&... values) const
+    {
+      nd::detail::fill_forward_value(tp[I], arrmeta + arrmeta_offsets[I],
+                                     data + data_offsets[I],
+                                     get<I>(std::forward<T>(values)...));
+    }
+  };
+
 protected:
   /**
    * The number of values in m_field_types and m_arrmeta_offsets.
@@ -27,7 +39,8 @@ protected:
    */
   nd::array m_field_types;
   /**
-   * Immutable contiguous array of arrmeta offsets. Always has type "N * intptr".
+   * Immutable contiguous array of arrmeta offsets. Always has type "N *
+   * intptr".
    */
   nd::array m_arrmeta_offsets;
   /**
@@ -130,14 +143,25 @@ public:
         const ndt::type &tp = tps[i - 1];
         if (!tp.is_builtin()) {
           offs += tp.extended()->get_default_data_size();
-        }
-        else {
+        } else {
           offs += tp.get_data_size();
         }
         offs = inc_to_alignment(offs, tps[i].get_data_alignment());
         out_data_offsets[i] = offs;
       }
     }
+  }
+
+  template <typename... T>
+  static void fill_forward_values(const ndt::type *tp, char *arrmeta,
+                                  const uintptr_t *arrmeta_offsets, char *data,
+                                  const uintptr_t *data_offsets, T &&... values)
+  {
+    typedef make_index_sequence<sizeof...(T)> I;
+
+    index_proxy<I>::for_each(fill_forward_value(), tp, arrmeta,
+                             arrmeta_offsets, data, data_offsets,
+                             std::forward<T>(values)...);
   }
 };
 

@@ -13,6 +13,8 @@
 #include <dynd/types/struct_type.hpp>
 #include <dynd/types/substitute_typevars.hpp>
 #include <dynd/types/type_type.hpp>
+#include <dynd/pp/list.hpp>
+#include <dynd/pp/meta.hpp>
 
 #define DYND_HAS_MEM_FUNC(NAME)                                                \
   template <typename T, typename S>                                            \
@@ -384,9 +386,9 @@ namespace nd {
         {
           intptr_t j = available[I];
           if (j != -1) {
-            nd::forward_as_array(tp[j], arrmeta + arrmeta_offsets[j],
-                                 data + data_offsets[j],
-                                 std::get<I>(self->m_values));
+            nd::detail::fill_forward_value(tp[j], arrmeta + arrmeta_offsets[j],
+                                           data + data_offsets[j],
+                                           std::get<I>(self->m_values));
           }
         }
 
@@ -502,8 +504,9 @@ namespace nd {
         for (intptr_t i = 0; i < m_size; ++i) {
           intptr_t j = available[i];
           if (j != -1) {
-            nd::forward_as_array(tp[j], arrmeta + arrmeta_offsets[j],
-                                 data + data_offsets[j], this->m_values[i]);
+            nd::detail::fill_forward_value(tp[j], arrmeta + arrmeta_offsets[j],
+                                           data + data_offsets[j],
+                                           this->m_values[i]);
           }
         }
       }

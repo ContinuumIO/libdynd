@@ -172,7 +172,7 @@ static intptr_t instantiate_neighborhood(
       nh_op.get(), nh_op.get_type(), ckb, ckb_offset, nh_dst_tp, nh_dst_arrmeta,
       nsrc, nh_src_tp, nh_src_arrmeta, kernel_request_single, ectx,
       struct_concat(
-          kwds, pack("start_stop", reinterpret_cast<intptr_t>(nh->start_stop))),
+          kwds, nd::as_struct("start_stop", reinterpret_cast<intptr_t>(nh->start_stop))),
       tp_vars);
 
   return ckb_offset;

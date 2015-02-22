@@ -24,6 +24,7 @@ namespace dynd {
 namespace ndt {
   type make_var_dim(const type &element_tp);
   type make_fixed_dim(size_t dim_size, const type &element_tp);
+  ndt::type make_tuple(const nd::array &field_types, bool variadic);
 
   template <class T>
   struct fixed_dim_from_array {
@@ -47,7 +48,8 @@ namespace nd {
     enum { size = index_sequence<I...>::size };
 
     template <typename... T>
-    static void get_arrmeta(const char **arrmeta, const std::tuple<T...> &values);
+    static void get_arrmeta(const char **arrmeta,
+                            const std::tuple<T...> &values);
   };
 
   class array;
@@ -96,7 +98,7 @@ namespace nd {
      * Move constructs an array (should be "= default", but MSVC 2013 does not
      * support that)
      */
-    array(array &&rhs) : m_memblock(std::move(rhs.m_memblock)) {};
+    array(array &&rhs) : m_memblock(std::move(rhs.m_memblock)){};
 
     /**
      * Constructs a zero-dimensional scalar from a C++ scalar.
@@ -1104,7 +1106,8 @@ namespace nd {
    *
    * \returns  An array of type "N * string".
    */
-  array make_strided_string_array(const char *const*cstr_array, size_t array_size);
+  array make_strided_string_array(const char *const *cstr_array,
+                                  size_t array_size);
   array make_strided_string_array(const std::string **str_array,
                                   size_t array_size);
 
@@ -1548,7 +1551,8 @@ namespace nd {
     DYND_MEMCPY(get_ndo()->m_data_pointer, il.begin(), sizeof(T) * dim0);
   }
   template <class T>
-  dynd::nd::array::array(const std::initializer_list<std::initializer_list<T>> &il)
+  dynd::nd::array::array(
+      const std::initializer_list<std::initializer_list<T>> &il)
       : m_memblock()
   {
     typedef std::initializer_list<std::initializer_list<T>> S;
@@ -1562,8 +1566,8 @@ namespace nd {
     detail::initializer_list_shape<S>::copy_data(&dataptr, il);
   }
   template <class T>
-  dynd::nd::array::array(
-      const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &il)
+  dynd::nd::array::array(const std::initializer_list<
+      std::initializer_list<std::initializer_list<T>>> &il)
       : m_memblock()
   {
     typedef std::initializer_list<
@@ -1681,7 +1685,8 @@ namespace nd {
   namespace detail {
     template <class T>
     struct make_from_vec {
-      inline static typename std::enable_if<is_dynd_scalar<T>::value, array>::type
+      inline static typename std::enable_if<is_dynd_scalar<T>::value,
+                                            array>::type
       make(const std::vector<T> &vec)
       {
         array result = nd::empty(vec.size(), ndt::make_exact_type<T>());
@@ -1847,52 +1852,74 @@ namespace nd {
    * call. Because the destination arrmeta is guaranteed to be for only one
    * data element
    */
-  template <typename T>
-  void forward_as_array(const ndt::type &DYND_UNUSED(tp),
-                        char *DYND_UNUSED(arrmeta), char *data, const T &val)
-  {
-    *reinterpret_cast<T *>(data) = val;
-  }
+  namespace detail {
 
-  void forward_as_array(const ndt::type &tp, char *arrmeta,
-                        char *out_data, const nd::array &val);
+    template <typename T>
+    void fill_value(const ndt::type &DYND_UNUSED(tp), char *DYND_UNUSED(arrmeta),
+               char *data, const T &value)
+    {
+      *reinterpret_cast<T *>(data) = value;
+    }
 
-  void forward_as_array(const ndt::type &tp, char *arrmeta,
-                        char *out_data, const nd::arrfunc &val);
+    void fill_value(const ndt::type &tp, char *arrmeta, char *data,
+                    const array &value);
 
-  template <typename T>
-  void forward_as_array(const ndt::type &tp, char *arrmeta, char *data,
-                        const std::vector<T> &val)
-  {
-    if (tp.get_type_id() == pointer_type_id) {
-      forward_as_array(tp, arrmeta, data, array(val));
-    } else {
-      if (!tp.is_builtin()) {
-        tp.extended()->arrmeta_default_construct(arrmeta, true);
-      }
-      if (!val.empty()) {
-        memcpy(data, &val[0], sizeof(T) * val.size());
+    void fill_value(const ndt::type &tp, char *arrmeta, char *data,
+                    const arrfunc &value);
+
+    template <typename T>
+    void fill_value(const ndt::type &tp, char *arrmeta, char *data,
+                    const std::initializer_list<T> &value)
+    {
+      tp.extended()->arrmeta_default_construct(arrmeta, true);
+      if (value.size() != 0) {
+        memcpy(data, value.begin(), sizeof(T) * value.size());
       }
     }
-  }
 
-  inline void get_arrmeta(const char **arrmeta, nd::array &a) {
+    template <typename T>
+    void fill_value(const ndt::type &tp, char *arrmeta, char *data,
+                    const std::vector<T> &value)
+    {
+      tp.extended()->arrmeta_default_construct(arrmeta, true);
+      if (!value.empty()) {
+        memcpy(data, value.data(), sizeof(T) * value.size());
+      }
+    }
+
+    template <typename T>
+    void fill_forward_value(const ndt::type &tp, char *arrmeta, char *data,
+                            const T &value)
+    {
+      fill_value(tp, arrmeta, data, value);
+    }
+
+    void fill_forward_value(const ndt::type &tp, char *arrmeta, char *data,
+                            const array &value);
+
+  } // namespace dynd::nd::detail
+
+  inline void get_arrmeta(const char **arrmeta, nd::array &a)
+  {
     *arrmeta = a.get_arrmeta();
   }
 
-  inline void get_arrmeta(const char ** arrmeta, const nd::array &a) {
+  inline void get_arrmeta(const char **arrmeta, const nd::array &a)
+  {
     *arrmeta = a.get_arrmeta();
   }
 
   template <typename A0, typename... A>
-  void get_arrmeta(const char **arrmeta, A0 &&a0, A &&... a) {
+  void get_arrmeta(const char **arrmeta, A0 &&a0, A &&... a)
+  {
     get_arrmeta(arrmeta, a0);
     get_arrmeta(arrmeta + 1, std::forward<A>(a)...);
   }
 
   template <size_t... I>
   template <typename... T>
-  void old_index_proxy<index_sequence<I...>>::get_arrmeta(const char **arrmeta, const std::tuple<T...> &values)
+  void old_index_proxy<index_sequence<I...>>::get_arrmeta(
+      const char **arrmeta, const std::tuple<T...> &values)
   {
     nd::get_arrmeta(arrmeta, std::get<I>(values)...);
   }

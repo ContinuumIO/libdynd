@@ -2279,33 +2279,42 @@ nd::array nd::combine_into_tuple(size_t field_count, const array *field_values)
   return result;
 }
 
-void nd::forward_as_array(const ndt::type &tp, char *arrmeta, char *data,
-                          const nd::array &val)
+void nd::detail::fill_value(const ndt::type &tp, char *DYND_UNUSED(arrmeta), char *data,
+                            const array &value)
 {
+  if (tp.is_builtin()) {
+    memcpy(data, value.get_readonly_originptr(), tp.get_data_size());
+  } else {
+    throw std::runtime_error("fill_value is not yet implemented for non-builtin types");
+  }
+}
 
+void nd::detail::fill_value(const ndt::type &tp, char *arrmeta, char *data,
+                            const arrfunc &value)
+{
+  fill_value(tp, arrmeta, data, static_cast<nd::array>(value));
+}
+
+void nd::detail::fill_forward_value(const ndt::type &tp, char *arrmeta,
+                                    char *data, const array &value)
+{
   if (tp.is_builtin() || tp.get_type_id() == arrfunc_type_id) {
-    memcpy(data, val.get_readonly_originptr(), tp.get_data_size());
+    memcpy(data, value.get_readonly_originptr(), tp.get_data_size());
   } else {
     pointer_type_arrmeta *am =
         reinterpret_cast<pointer_type_arrmeta *>(arrmeta);
     // Insert the reference in the destination pointer's arrmeta
-    am->blockref = val.get_data_memblock().get();
+    am->blockref = value.get_data_memblock().get();
     memory_block_incref(am->blockref);
     // Copy the rest of the arrmeta after the pointer's arrmeta
-    const ndt::type &val_tp = val.get_type();
+    const ndt::type &val_tp = value.get_type();
     if (val_tp.get_arrmeta_size() > 0) {
       val_tp.extended()->arrmeta_copy_construct(
-          arrmeta + sizeof(pointer_type_arrmeta), val.get_arrmeta(),
-          val.get_memblock().get());
+          arrmeta + sizeof(pointer_type_arrmeta), value.get_arrmeta(),
+          value.get_memblock().get());
     }
     // Copy the pointer
     *reinterpret_cast<char **>(data) =
-        const_cast<char *>(val.get_readonly_originptr());
+        const_cast<char *>(value.get_readonly_originptr());
   }
-}
-
-void nd::forward_as_array(const ndt::type &tp, char *arrmeta, char *data,
-                          const nd::arrfunc &value)
-{
-  forward_as_array(tp, arrmeta, data, static_cast<nd::array>(value));
 }

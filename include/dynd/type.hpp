@@ -932,42 +932,40 @@ type type_of(const T &DYND_UNUSED(value))
 }
 
 template <typename T>
+type type_of(const std::initializer_list<T> &value)
+{
+  return make_fixed_dim(value.size(), make_exact_type<T>());
+}
+
+template <typename T>
 type type_of(const std::vector<T> &value)
 {
-  return make_fixed_dim(value.size(), make_type<T>());
+  return make_fixed_dim(value.size(), make_exact_type<T>());
 }
 
-type type_of(const nd::array &val);
+type type_of(const nd::array &value);
 
-type type_of(const nd::arrfunc &val);
-
-/**
- * Returns the type to use for packing this specific value. The value
- * is allowed to affect the type, e.g. for packing a std::vector
- */
-template <typename T>
-type get_forward_type(const T &DYND_UNUSED(val))
-{
-  // Default case is for when T and the ndt::type have identical
-  // memory layout, which is guaranteed by make_exact_type<T>().
-  return make_exact_type<T>();
-}
+type type_of(const nd::arrfunc &value);
 
 template <typename T>
-type get_forward_type(const std::vector<T> &val)
-{
-  // Depending on the data size, store the data by value or as a pointer
-  // to an nd::array
-  if (sizeof(T) * val.size() > 32) {
-    return make_pointer(make_fixed_dim(val.size(), make_exact_type<T>()));
-  } else {
-    return make_fixed_dim(val.size(), make_exact_type<T>());
+type forward_type_of(const T &value) {
+  ndt::type tp = type_of(value);
+  if (tp.is_builtin() || tp.get_type_id() == arrfunc_type_id) {
+    return tp;
   }
+
+  return make_pointer(tp);
 }
 
-type get_forward_type(const nd::array &val);
+template <typename T>
+type forward_type_of(const std::initializer_list<T> &value) {
+  return type_of(value);
+}
 
-type get_forward_type(const nd::arrfunc &val);
+template <typename T>
+type forward_type_of(const std::vector<T> &value) {
+  return type_of(value);
+}
 
 /**
  * A static array of the builtin types and void.

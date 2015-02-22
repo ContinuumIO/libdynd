@@ -13,8 +13,6 @@
 #include <dynd/types/pointer_type.hpp>
 #include <dynd/types/type_type.hpp>
 #include <dynd/memblock/memory_block.hpp>
-#include <dynd/pp/list.hpp>
-#include <dynd/pp/meta.hpp>
 
 namespace dynd {
 
@@ -230,54 +228,47 @@ namespace ndt {
  */
 nd::array struct_concat(nd::array lhs, nd::array rhs);
 
-#define PACK_ARG(N)                                                            \
-  DYND_PP_ELWISE_1(DYND_PP_ID,                                                 \
-                   DYND_PP_MAP_1(DYND_PP_META_DECL_CONST_STR_REF,              \
-                                 DYND_PP_META_NAME_RANGE(name, N)),            \
-                   DYND_PP_ELWISE_1(DYND_PP_META_DECL_CONST_REF,               \
-                                    DYND_PP_META_NAME_RANGE(A, N),             \
-                                    DYND_PP_META_NAME_RANGE(a, N)))
+namespace nd {
+  namespace detail {
 
-#define PACK(N)                                                                \
-  template <DYND_PP_JOIN_MAP_1(DYND_PP_META_TYPENAME, (, ),                    \
-                               DYND_PP_META_NAME_RANGE(A, N))>                 \
-  nd::array pack PACK_ARG(N)                                                   \
-  {                                                                            \
-    const std::string *field_names[N] = {                                      \
-        DYND_PP_JOIN_1((, ), DYND_PP_META_NAME_RANGE(&name, N))};              \
-    const ndt::type field_types[N] = {DYND_PP_JOIN_MAP_1(                      \
-        ndt::get_forward_type, (, ), DYND_PP_META_NAME_RANGE(a, N))};          \
-                                                                               \
-    /* Allocate res with empty_shell, leaves unconstructed arrmeta */          \
-    nd::array res =                                                            \
-        nd::empty_shell(ndt::make_struct(field_names, field_types));           \
-    /* The struct's arrmeta includes data offsets, init them to default */     \
-    struct_type::fill_default_data_offsets(                                    \
-        N, field_types, reinterpret_cast<uintptr_t *>(res.get_arrmeta()));     \
-    const uintptr_t *field_arrmeta_offsets = res.get_type()                    \
-                                                 .extended<base_struct_type>() \
-                                                 ->get_arrmeta_offsets_raw();  \
-    const uintptr_t *field_data_offsets =                                      \
-        res.get_type().extended<base_struct_type>()->get_data_offsets(         \
-            res.get_arrmeta());                                                \
-    char *res_arrmeta = res.get_arrmeta();                                     \
-    char *res_data = res.get_readwrite_originptr();                            \
-    /* Each pack_insert initializes the arrmeta and the data */                \
-    DYND_PP_JOIN_ELWISE_1(                                                     \
-        nd::forward_as_array, (;), DYND_PP_META_AT_RANGE(field_types, N),      \
-        DYND_PP_ELWISE_1(DYND_PP_META_ADD, DYND_PP_REPEAT_1(res_arrmeta, N),   \
-                         DYND_PP_META_AT_RANGE(field_arrmeta_offsets, N)),     \
-        DYND_PP_ELWISE_1(DYND_PP_META_ADD, DYND_PP_REPEAT_1(res_data, N),      \
-                         DYND_PP_META_AT_RANGE(field_data_offsets, N)),        \
-        DYND_PP_META_NAME_RANGE(a, N));                                        \
-                                                                               \
-    return res;                                                                \
+    struct fill_name_and_type {
+      template <size_t I, typename... T>
+      void operator()(const char **nm, ndt::type *tp, T &&... values) const
+      {
+        nm[I] = get<2 * I>(std::forward<T>(values)...);
+        tp[I] =
+            ndt::forward_type_of(get<2 * I + 1>(std::forward<T>(values)...));
+      }
+    };
+
+  } // namespace dynd::nd::detail
+
+  template <typename... T>
+  array as_struct(T &&... names_and_values)
+  {
+    typedef make_index_sequence<sizeof...(T) / 2> I;
+
+    const char *names[I::size];
+    ndt::type types[I::size];
+    index_proxy<I>::for_each(detail::fill_name_and_type(), names, types,
+                             std::forward<T>(names_and_values)...);
+
+    ndt::type struct_tp = ndt::make_struct(names, types);
+    array res = empty(struct_tp);
+    struct_type::fill_default_data_offsets(
+        I::size, struct_tp.extended<base_struct_type>()->get_field_types_raw(),
+        reinterpret_cast<uintptr_t *>(res.get_arrmeta()));
+    struct_type::fill_forward_values(
+        struct_tp.extended<struct_type>()->get_field_types_raw(),
+        res.get_arrmeta(),
+        struct_tp.extended<struct_type>()->get_arrmeta_offsets_raw(),
+        res.get_readwrite_originptr(),
+        struct_tp.extended<struct_type>()->get_data_offsets(
+            res.get_arrmeta()),
+        std::forward<T>(names_and_values)...);
+
+    return res;
   }
 
-DYND_PP_JOIN_MAP(PACK, (), DYND_PP_RANGE(1, DYND_PP_INC(DYND_ARG_MAX)))
-
-#undef PACK
-
-#undef PACK_ARG
-
+} // namespace dynd::nd
 } // namespace dynd

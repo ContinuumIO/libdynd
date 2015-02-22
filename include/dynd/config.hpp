@@ -223,7 +223,7 @@ template <>
 struct index_proxy<index_sequence<>> {
   enum { size = 0 };
 
-  template <typename F, typename... A>
+  template <typename... T, typename F, typename... A>
   static void for_each(F, A &&...)
   {
   }
@@ -239,13 +239,13 @@ template <size_t I0>
 struct index_proxy<index_sequence<I0>> {
   enum { size = 1 };
 
-  template <typename F, typename... A>
+  template <typename... T, typename F, typename... A>
   static void for_each(F f, A &&... a)
   {
 #if defined(_MSC_VER) && (_MSC_VER == 1800) && !defined(__CUDACC__)
-    f.operator()<I0>(std::forward<A>(a)...);
+    f.operator()<I0, T...>(std::forward<A>(a)...);
 #else
-    f.template operator()<I0>(std::forward<A>(a)...);
+    f.template operator()<I0, T...>(std::forward<A>(a)...);
 #endif
   }
 
@@ -337,15 +337,15 @@ struct index_proxy<index_sequence<I0, I...>> {
   }
 #endif
 
-  template <typename F, typename... A>
+  template <typename... T, typename F, typename... A>
   static void for_each(F f, A &&... a)
   {
 #if defined(_MSC_VER) && (_MSC_VER == 1800) && !defined(__CUDACC__)
-    f.operator()<I0>(std::forward<A>(a)...);
+    f.operator()<I0, T...>(std::forward<A>(a)...);
 #else
-    f.template operator()<I0>(std::forward<A>(a)...);
+    f.template operator()<I0, T...>(std::forward<A>(a)...);
 #endif
-    index_proxy<index_sequence<I...>>::for_each(f, std::forward<A>(a)...);
+    index_proxy<index_sequence<I...>>::template for_each<T...>(f, std::forward<A>(a)...);
   }
 };
 

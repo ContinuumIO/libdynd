@@ -245,8 +245,8 @@ nd::array struct_concat(nd::array lhs, nd::array rhs);
   {                                                                            \
     const std::string *field_names[N] = {                                      \
         DYND_PP_JOIN_1((, ), DYND_PP_META_NAME_RANGE(&name, N))};              \
-    const ndt::type field_types[N] = {DYND_PP_JOIN_MAP_1(                      \
-        ndt::get_forward_type, (, ), DYND_PP_META_NAME_RANGE(a, N))};          \
+    ndt::type field_types[N] = {DYND_PP_JOIN_MAP_1(                            \
+        ndt::forward_type_of, (, ), DYND_PP_META_NAME_RANGE(a, N))};           \
                                                                                \
     /* Allocate res with empty_shell, leaves unconstructed arrmeta */          \
     nd::array res =                                                            \
@@ -264,7 +264,8 @@ nd::array struct_concat(nd::array lhs, nd::array rhs);
     char *res_data = res.get_readwrite_originptr();                            \
     /* Each pack_insert initializes the arrmeta and the data */                \
     DYND_PP_JOIN_ELWISE_1(                                                     \
-        nd::forward_as_array, (;), DYND_PP_META_AT_RANGE(field_types, N),      \
+        nd::detail::fill_forward_value, (;),                                   \
+        DYND_PP_META_AT_RANGE(field_types, N),                                 \
         DYND_PP_ELWISE_1(DYND_PP_META_ADD, DYND_PP_REPEAT_1(res_arrmeta, N),   \
                          DYND_PP_META_AT_RANGE(field_arrmeta_offsets, N)),     \
         DYND_PP_ELWISE_1(DYND_PP_META_ADD, DYND_PP_REPEAT_1(res_data, N),      \

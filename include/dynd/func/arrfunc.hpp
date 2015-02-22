@@ -384,9 +384,9 @@ namespace nd {
         {
           intptr_t j = available[I];
           if (j != -1) {
-            nd::forward_as_array(tp[j], arrmeta + arrmeta_offsets[j],
-                                 data + data_offsets[j],
-                                 std::get<I>(self->m_values));
+            nd::detail::fill_forward_value(tp[j], arrmeta + arrmeta_offsets[j],
+                                           data + data_offsets[j],
+                                           std::get<I>(self->m_values));
           }
         }
 
@@ -502,8 +502,9 @@ namespace nd {
         for (intptr_t i = 0; i < m_size; ++i) {
           intptr_t j = available[i];
           if (j != -1) {
-            nd::forward_as_array(tp[j], arrmeta + arrmeta_offsets[j],
-                                 data + data_offsets[j], this->m_values[i]);
+            nd::detail::fill_forward_value(tp[j], arrmeta + arrmeta_offsets[j],
+                                           data + data_offsets[j],
+                                           this->m_values[i]);
           }
         }
       }

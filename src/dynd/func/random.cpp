@@ -61,3 +61,5 @@ nd::arrfunc nd::decl::random::uniform::as_arrfunc()
 }
 
 nd::decl::random::uniform nd::random::uniform;
+
+decltype(nd::random::uniform2) nd::random::uniform2;

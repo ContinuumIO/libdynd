@@ -164,13 +164,16 @@ namespace nd {
       *reinterpret_cast<double *>(dst) = curand_uniform_double(s);
     }
 
-    __device__ void strided(char *dst, intptr_t dst_stride, char *const *DYND_UNUSED(src),
-                            const intptr_t *DYND_UNUSED(src_stride), size_t count)
+    __device__ void strided(char *dst, intptr_t dst_stride,
+                            char *const *DYND_UNUSED(src),
+                            const intptr_t *DYND_UNUSED(src_stride),
+                            size_t count)
     {
       dst += DYND_THREAD_ID(0) * dst_stride;
 
       for (size_t i = DYND_THREAD_ID(0); i < count; i += DYND_THREAD_COUNT(0)) {
-        *reinterpret_cast<double *>(dst) = curand_uniform_double(s + DYND_THREAD_ID(0));
+        *reinterpret_cast<double *>(dst) =
+            curand_uniform_double(s + DYND_THREAD_ID(0));
         dst += DYND_THREAD_COUNT(0) * dst_stride;
       }
     }
@@ -182,7 +185,8 @@ namespace nd {
       std::map<nd::string, ndt::type> tp_vars;
       tp_vars["R"] = ndt::make_type<R>();
 
-      return ndt::substitute(ndt::type("(a: ?R, b: ?R) -> cuda_device[R]"), tp_vars, true);
+      return ndt::substitute(ndt::type("(a: ?R, b: ?R) -> cuda_device[R]"),
+                             tp_vars, true);
     }
 
     static intptr_t instantiate(
@@ -202,8 +206,7 @@ namespace nd {
         ckb_offset = 0;
       }
 
-      self_type::create(ckb, kernreq, ckb_offset,
-                        *self->get_data_as<S *>());
+      self_type::create(ckb, kernreq, ckb_offset, *self->get_data_as<S *>());
       return ckb_offset;
     }
   };
@@ -280,8 +283,9 @@ namespace nd {
 
   template <typename S>
   struct uniform_complex_ck<kernel_request_cuda_device, S, complex<double>>
-      : expr_ck<uniform_complex_ck<kernel_request_cuda_device, S, complex<double>>,
-                kernel_request_cuda_device, 0> {
+      : expr_ck<
+            uniform_complex_ck<kernel_request_cuda_device, S, complex<double>>,
+            kernel_request_cuda_device, 0> {
     typedef uniform_complex_ck self_type;
 
     S *s;
@@ -290,7 +294,8 @@ namespace nd {
 
     __device__ void single(char *dst, char *const *DYND_UNUSED(src))
     {
-      *reinterpret_cast<complex<double> *>(dst) = complex<double>(curand_uniform_double(s), curand_uniform_double(s));
+      *reinterpret_cast<complex<double> *>(dst) =
+          complex<double>(curand_uniform_double(s), curand_uniform_double(s));
     }
 
     static ndt::type make_type()
@@ -300,7 +305,8 @@ namespace nd {
       std::map<nd::string, ndt::type> tp_vars;
       tp_vars["R"] = ndt::make_type<R>();
 
-      return ndt::substitute(ndt::type("(a: ?R, b: ?R) -> cuda_device[R]"), tp_vars, true);
+      return ndt::substitute(ndt::type("(a: ?R, b: ?R) -> cuda_device[R]"),
+                             tp_vars, true);
     }
 
     static intptr_t instantiate(
@@ -320,8 +326,7 @@ namespace nd {
         ckb_offset = 0;
       }
 
-      self_type::create(ckb, kernreq, ckb_offset,
-                        *self->get_data_as<S *>());
+      self_type::create(ckb, kernreq, ckb_offset, *self->get_data_as<S *>());
       return ckb_offset;
     }
   };
@@ -409,6 +414,11 @@ namespace nd {
   namespace random {
 
     extern decl::random::uniform uniform;
+
+    extern struct uniform2 : declfunc
+    {
+      arrfunc as_arrfunc() const { return uniform; }
+    } uniform2;
 
   } // namespace dynd::nd::random
 

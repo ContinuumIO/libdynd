@@ -1038,6 +1038,26 @@ namespace nd {
 
   } // namespace dynd::nd::decl
 
+  struct declfunc {
+    const arrfunc &get_self() const
+    {
+      static arrfunc self = as_arrfunc();
+      return self;
+    }
+
+    const ndt::type &get_type() const { return get_self().get_array_type(); }
+
+    operator const arrfunc &() const { return get_self(); }
+
+    template <typename... A>
+    array operator()(A &&... a) const
+    {
+      return get_self()(std::forward<A>(a)...);
+    }
+
+    virtual arrfunc as_arrfunc() const = 0;
+  };
+
 } // namespace nd
 
 /**

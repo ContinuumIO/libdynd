@@ -8,224 +8,245 @@
 namespace dynd {
 
 struct start_stop_t {
-    intptr_t start;
-    intptr_t stop;
+  intptr_t start;
+  intptr_t stop;
 };
-
-namespace nd {
 
 namespace detail {
 
-template <int N>
-struct strided_utils {
-    static const char *get(const char *pointer, const intptr_t *index, const intptr_t *strides) {
-        return strided_utils<N - 1>::get(pointer, strides, index) + index[N - 1] * strides[N - 1];
+  template <int N>
+  struct strided_utils {
+    static const char *get(const char *pointer, const intptr_t *index,
+                           const intptr_t *strides)
+    {
+      return strided_utils<N - 1>::get(pointer, strides, index) +
+             index[N - 1] * strides[N - 1];
     }
 
-    static bool is_valid(const intptr_t *index, const start_stop_t *start_stop) {
-        return strided_utils<N - 1>::is_valid(index, start_stop) && (index[N - 1] >= start_stop[N - 1].start) && (index[N - 1] < start_stop[N - 1].stop);
+    static bool is_valid(const intptr_t *index, const start_stop_t *start_stop)
+    {
+      return strided_utils<N - 1>::is_valid(index, start_stop) &&
+             (index[N - 1] >= start_stop[N - 1].start) &&
+             (index[N - 1] < start_stop[N - 1].stop);
     }
 
-    static void incr(const char *&pointer, intptr_t *index, const intptr_t *sizes, const intptr_t *strides) {
-        if (++index[N - 1] != sizes[N - 1]) {
-            pointer += strides[N - 1];
-        } else {
-            index[N - 1] = 0;
-            pointer -= (sizes[N - 1] - 1) * strides[N - 1];
-            strided_utils<N - 1>::incr(pointer, index, sizes, strides);
-        }
+    static void incr(const char *&pointer, intptr_t *index,
+                     const intptr_t *sizes, const intptr_t *strides)
+    {
+      if (++index[N - 1] != sizes[N - 1]) {
+        pointer += strides[N - 1];
+      } else {
+        index[N - 1] = 0;
+        pointer -= (sizes[N - 1] - 1) * strides[N - 1];
+        strided_utils<N - 1>::incr(pointer, index, sizes, strides);
+      }
     }
-};
+  };
 
-template <>
-struct strided_utils<1> {
-    static const char *get(const char *pointer, const intptr_t *index, const intptr_t *strides) {
-        return pointer + index[0] * strides[0];
-    }
-
-    static bool is_valid(const intptr_t *index, const start_stop_t *start_stop) {
-        return (index[0] >= start_stop[0].start) && (index[0] < start_stop[0].stop);
-    }
-
-    static void incr(const char *&pointer, intptr_t *index, const intptr_t *DYND_UNUSED(sizes), const intptr_t *strides) {
-        ++index[0];
-        pointer += strides[0];
-    }
-};
-
-template <typename T, int N>
-class strided_vals {
-    struct {
-        const char *pointer;
-        intptr_t strides[N];
-    } m_data;
-    struct {
-        const char *pointer;
-        intptr_t strides[N];
-    } m_mask;
-    intptr_t m_sizes[N];
-    const start_stop_t *m_start_stop;
-    intptr_t m_center_index[N];
-
-public:
-    const char *get_data() const {
-        return m_data.pointer;
+  template <>
+  struct strided_utils<1> {
+    static const char *get(const char *pointer, const intptr_t *index,
+                           const intptr_t *strides)
+    {
+      return pointer + index[0] * strides[0];
     }
 
-    const char *get_mask() const {
-        return m_mask.pointer;
+    static bool is_valid(const intptr_t *index, const start_stop_t *start_stop)
+    {
+      return (index[0] >= start_stop[0].start) &&
+             (index[0] < start_stop[0].stop);
     }
 
-    intptr_t get_ndim() const {
-        return N;
+    static void incr(const char *&pointer, intptr_t *index,
+                     const intptr_t *DYND_UNUSED(sizes),
+                     const intptr_t *strides)
+    {
+      ++index[0];
+      pointer += strides[0];
     }
+  };
 
-    intptr_t get_size(intptr_t i) const {
-        return m_sizes[i];
-    }
+} // namespace detail
 
-    const intptr_t *get_sizes() const {
-        return m_sizes;
-    }
+// return child.at(m_data + index[0] * m_stride, index + 1);
 
-    intptr_t get_stride(intptr_t i) const {
-        return m_data.strides[i];
-    }
+// fixed_dim_type
+// fixed_dim_data
+// fixed_dim_accessor
 
-    const intptr_t *get_strides() const {
-        return m_data.strides;
-    }
+// fixed_dim
+// fixed_dim_iterator
 
-    const intptr_t *get_center_index() const {
-        return m_center_index;
-    }
+namespace detail {
 
-    void set_data(const char *data) {
-        m_data.pointer = data;
-    }
-
-    void set_data(const char *data, const size_stride_t *size_stride, const start_stop_t *start_stop = NULL) {
-        m_data.pointer = data;
-        for (intptr_t i = 0; i < N; ++i) {
-            m_data.strides[i] = size_stride[i].stride;
-            m_sizes[i] = size_stride[i].dim_size;
-            m_center_index[i] = (m_sizes[i] - 1) / 2;
-        }
-        m_start_stop = start_stop;
-    }
-
-    void set_mask(const char *mask) {
-        m_mask.pointer = mask;
-    }
-
-    void set_mask(const char *mask, const size_stride_t *size_stride) {
-        m_mask.pointer = mask;
-        for (intptr_t i = 0; i < N; ++i) {
-            m_mask.strides[i] = size_stride[i].stride;
-        }
-    }
-
-    const T &operator ()(const intptr_t *index) const {
-        return *reinterpret_cast<const T *>(detail::strided_utils<N>::get(m_data.pointer, index, m_data.strides));
-    }
-
-    bool is_masked(const intptr_t *index) const {
-        return m_mask.pointer == NULL
-            || *reinterpret_cast<const dynd_bool *>(detail::strided_utils<N>::get(m_mask.pointer, index, m_mask.strides));
-    }
-
-    bool is_valid(const intptr_t *index) const {
-        return strided_utils<N>::is_valid(index, m_start_stop);
-    }
-
-    class iterator {
-        const strided_vals<T, N> &m_vals;
-        const char *m_data;
-        intptr_t m_index[N];
-
-    public:
-        iterator(const strided_vals<T, N> &vals, intptr_t offset = 0) : m_vals(vals), m_data(vals.get_data() + offset) {
-            memset(m_index, 0, N * sizeof(intptr_t));
-        }
-
-        const intptr_t *get_index() const {
-            return m_index;
-        }
-
-        iterator& operator++() {
-            do {
-                strided_utils<N>::incr(m_data, m_index, m_vals.get_sizes(), m_vals.get_strides());
-            } while (*this != m_vals.end() && !(m_vals.is_masked(m_index) && m_vals.is_valid(m_index)));
-            return *this;
-        }
-
-        iterator operator++(int) {
-            iterator tmp(*this);
-            operator++();
-            return tmp;
-        }
-
-        bool operator==(const iterator &other) const {
-            return &m_vals == &other.m_vals && m_data == other.m_data;
-        }
-
-        bool operator!=(const iterator &other) const {
-            return !(*this == other);
-        }
-
-        const T &operator *() const {
-            return *reinterpret_cast<const T *>(m_data);
-        }
+  /*
+    template <typename T>
+    struct is_dim_type {
+      static const bool value = false;
     };
 
-    iterator begin() const {
+    template <typename T>
+    struct is_dim_type<fixed_dim<T>> {
+      static const bool value = true;
+    };
+
+    template <typename T>
+    class fixed_dim {
+      const char *m_data;
+      intptr_t m_size;
+      intptr_t m_stride;
+      const start_stop_t *m_start_stop;
+
+    public:
+      const char *get_data() const { return m_data; }
+
+      intptr_t get_ndim() const { return 1; }
+
+      intptr_t get_size(intptr_t DYND_UNUSED(i)) const { return m_size; }
+
+      const intptr_t *get_sizes() const { return &m_size; }
+
+      intptr_t get_stride(intptr_t DYND_UNUSED(i)) const { return m_stride; }
+
+      const intptr_t *get_strides() const { return &m_stride; }
+
+      void set_data(const char *data) { m_data = data; }
+
+      void set_data(const char *data, const size_stride_t *size_stride,
+                    const start_stop_t *start_stop = NULL)
+      {
+        m_data = data;
+        for (intptr_t i = 0; i < 1; ++i) {
+          m_stride = size_stride[i].stride;
+          m_size = size_stride[i].dim_size;
+        }
+        m_start_stop = start_stop;
+      }
+
+      const int &operator()(const intptr_t *index) const
+      {
+        return *reinterpret_cast<const int *>(m_data + index[0] * m_stride);
+      }
+
+      const int &operator()(intptr_t i) const { return (*this)(&i); }
+
+      bool is_valid(const intptr_t *index) const
+      {
+        return detail::strided_utils<1>::is_valid(index, m_start_stop);
+      }
+
+      class iterator {
+        const fixed_dim<T> &m_vals;
+        const char *m_data;
+        intptr_t m_index[1];
+
+      public:
+        iterator(const fixed_dim<T> &vals, intptr_t offset = 0)
+            : m_vals(vals), m_data(vals.get_data() + offset)
+        {
+          memset(m_index, 0, 1 * sizeof(intptr_t));
+        }
+
+        const intptr_t *get_index() const { return m_index; }
+
+        iterator &operator++()
+        {
+          do {
+            detail::strided_utils<1>::incr(m_data, m_index, m_vals.get_sizes(),
+                                           m_vals.get_strides());
+          } while (*this != m_vals.end() && !(m_vals.is_valid(m_index)));
+          return *this;
+        }
+
+        iterator operator++(int)
+        {
+          iterator tmp(*this);
+          operator++();
+          return tmp;
+        }
+
+        bool operator==(const iterator &other) const
+        {
+          return &m_vals == &other.m_vals && m_data == other.m_data;
+        }
+
+        bool operator!=(const iterator &other) const { return !(*this == other);
+    }
+
+        const T &operator*() const
+        {
+          return *reinterpret_cast<const T *>(m_data);
+        }
+      };
+
+      iterator begin() const
+      {
         iterator it(*this);
-        if (is_masked(it.get_index()) && is_valid(it.get_index())) {
-            return it;
+        if (is_valid(it.get_index())) {
+          return it;
         }
 
         return ++it;
-    }
+      }
 
-    iterator end() const {
-        return iterator(*this, m_sizes[0] * m_data.strides[0]);
-    }
+      iterator end() const { return iterator(*this, m_size * m_stride); }
+    };
+  */
+
+} // namespace detail
+
+template <typename T>
+class builtin {
+  const char *m_data;
+
+public:
+  builtin() : m_data(NULL) {}
+
+  void set_data(const char *data) { m_data = data; }
+
+  const T &operator()(const char *data, const intptr_t *DYND_UNUSED(i)) const
+  {
+    return *reinterpret_cast<const T *>(data);
+  }
 };
 
-}
+// wrap_if_scalar
+template <typename T>
+struct wrap_if_builtin : T {
+};
 
-template <typename T, int N>
-class strided_vals : public detail::strided_vals<T, N> {
+template <>
+struct wrap_if_builtin<int> : builtin<int> {
 };
 
 template <typename T>
-class strided_vals<T, 1> : public detail::strided_vals<T, 1> {
+class fixed_dim : public wrap_if_builtin<T> {
+  typedef wrap_if_builtin<T> parent_type;
+
+  size_stride_t m_size_stride;
+  const char *m_data;
+
 public:
-    const T &operator ()(const intptr_t *index) const {
-        return detail::strided_vals<T, 1>::operator ()(index);
-    }
+  fixed_dim(const ndt::type &DYND_UNUSED(tp), const char *arrmeta)
+      : m_data(NULL)
+  {
+    m_size_stride = *reinterpret_cast<const size_stride_t *>(arrmeta);
+  }
 
-    const T &operator ()(intptr_t i0) const {
-        return operator ()(&i0);
-    }
+  void set_data(const char *data) { m_data = data; }
 
-    bool is_masked(const intptr_t *index) const {
-        return detail::strided_vals<T, 1>::is_masked(index);
-    }
+  typename std::result_of<parent_type(const char *, const intptr_t *)>::type
+  operator()(const char *data, const intptr_t *i) const
+  {
+    return parent_type::operator()(data + i[0] * m_size_stride.stride, i + 1);
+  }
 
-    bool is_masked(intptr_t i0) const {
-        return is_masked(&i0);
-    }
+  int operator()(const intptr_t *i) const { return (*this)(m_data, i); }
 
-    bool is_valid(const intptr_t *index) const {
-        return detail::strided_vals<T, 1>::is_valid(index);
-    }
-
-    bool is_valid(intptr_t i0) const {
-        return is_valid(&i0);
-    }
+  int operator()(intptr_t i) const { return (*this)(&i); }
 };
 
+/*
 template <typename T>
 class strided_vals<T, 2> : public detail::strided_vals<T, 2> {
 public:
@@ -287,5 +308,6 @@ public:
         return is_valid(index);
     }
 };
+*/
 
-}} // namespace dynd::nd
+} // namespace dynd

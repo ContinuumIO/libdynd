@@ -13,8 +13,9 @@
 using namespace std;
 using namespace dynd;
 
-pow_dimsym_type::pow_dimsym_type(const ndt::type &base_tp, const nd::string &exponent,
-                                   const ndt::type &element_type)
+pow_dimsym_type::pow_dimsym_type(const ndt::type &base_tp,
+                                 const nd::string &exponent,
+                                 const ndt::type &element_type)
     : base_dim_type(pow_dimsym_type_id, pattern_kind, element_type, 0, 1, 0,
                     type_flag_symbolic, false),
       m_base_tp(base_tp), m_exponent(exponent)
@@ -29,8 +30,7 @@ pow_dimsym_type::pow_dimsym_type(const ndt::type &base_tp, const nd::string &exp
   }
   if (m_exponent.is_null()) {
     throw type_error("dynd typevar name cannot be null");
-  }
-  else if (!is_valid_typevar_name(m_exponent.begin(), m_exponent.end())) {
+  } else if (!is_valid_typevar_name(m_exponent.begin(), m_exponent.end())) {
     stringstream ss;
     ss << "dynd typevar name ";
     print_escaped_utf8_string(ss, m_exponent.begin(), m_exponent.end());
@@ -46,7 +46,7 @@ void pow_dimsym_type::print_data(std::ostream &DYND_UNUSED(o),
   throw type_error("Cannot store data of typevar type");
 }
 
-void pow_dimsym_type::print_type(std::ostream& o) const
+void pow_dimsym_type::print_type(std::ostream &o) const
 {
   switch (m_base_tp.get_type_id()) {
   case fixed_dim_type_id:
@@ -76,7 +76,7 @@ ndt::type pow_dimsym_type::apply_linear_index(
     size_t DYND_UNUSED(current_i), const ndt::type &DYND_UNUSED(root_tp),
     bool DYND_UNUSED(leading_dimension)) const
 {
-    throw type_error("Cannot store data of typevar type");
+  throw type_error("Cannot store data of typevar type");
 }
 
 intptr_t pow_dimsym_type::apply_linear_index(
@@ -104,15 +104,13 @@ bool pow_dimsym_type::is_lossless_assignment(
   return false;
 }
 
-bool pow_dimsym_type::operator==(const base_type& rhs) const
+bool pow_dimsym_type::operator==(const base_type &rhs) const
 {
   if (this == &rhs) {
     return true;
-  }
-  else if (rhs.get_type_id() != pow_dimsym_type_id) {
+  } else if (rhs.get_type_id() != pow_dimsym_type_id) {
     return false;
-  }
-  else {
+  } else {
     const pow_dimsym_type *tvt = static_cast<const pow_dimsym_type *>(&rhs);
     return m_exponent == tvt->m_exponent && m_base_tp == tvt->m_base_tp &&
            m_element_tp == tvt->m_element_tp;
@@ -129,19 +127,19 @@ void pow_dimsym_type::arrmeta_copy_construct(
     char *DYND_UNUSED(dst_arrmeta), const char *DYND_UNUSED(src_arrmeta),
     memory_block_data *DYND_UNUSED(embedded_reference)) const
 {
-    throw type_error("Cannot store data of typevar type");
+  throw type_error("Cannot store data of typevar type");
 }
 
 size_t pow_dimsym_type::arrmeta_copy_construct_onedim(
     char *DYND_UNUSED(dst_arrmeta), const char *DYND_UNUSED(src_arrmeta),
     memory_block_data *DYND_UNUSED(embedded_reference)) const
 {
-    throw type_error("Cannot store data of typevar type");
+  throw type_error("Cannot store data of typevar type");
 }
 
 void pow_dimsym_type::arrmeta_destruct(char *DYND_UNUSED(arrmeta)) const
 {
-    throw type_error("Cannot store data of typevar type");
+  throw type_error("Cannot store data of typevar type");
 }
 
 bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
@@ -166,11 +164,9 @@ bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
       if (tv_type.is_null()) {
         // This typevar hasn't been seen yet
         tv_type = ndt::make_typevar_dim(
-            candidate_tp.extended<pow_dimsym_type>()->get_exponent(),
-            ndt::make_type<void>());
+            candidate_tp.extended<pow_dimsym_type>()->get_exponent());
         return true;
-      }
-      else {
+      } else {
         // Make sure the type matches previous
         // instances of the type var
         return tv_type.get_type_id() == typevar_dim_type_id &&
@@ -178,29 +174,25 @@ bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
                    candidate_tp.extended<pow_dimsym_type>()->get_exponent();
       }
     }
-  }
-  else if (candidate_tp.get_ndim() == 0) {
+  } else if (candidate_tp.get_ndim() == 0) {
     if (get_element_type().get_ndim() == 0) {
       // Look up to see if the exponent typevar is already matched
       ndt::type &tv_type = tp_vars[get_exponent()];
       if (tv_type.is_null()) {
         // Fill in the exponent by the number of dimensions left
-        tv_type = ndt::make_fixed_dim(0, ndt::make_type<void>());
-      }
-      else if (tv_type.get_type_id() == fixed_dim_type_id) {
+        tv_type = ndt::make_fixed_dim(0);
+      } else if (tv_type.get_type_id() == fixed_dim_type_id) {
         // Make sure the exponent already seen matches the number of
         // dimensions left in the concrete type
         if (tv_type.extended<fixed_dim_type>()->get_fixed_dim_size() != 0) {
           return false;
         }
-      }
-      else {
+      } else {
         // The exponent is always the dim_size inside a fixed_dim_type
         return false;
       }
       return m_element_tp.match(arrmeta, candidate_tp, NULL, tp_vars);
-    }
-    else {
+    } else {
       return false;
     }
   }
@@ -211,25 +203,22 @@ bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
   if (tv_type.is_null()) {
     // Fill in the exponent by the number of dimensions left
     exponent = candidate_tp.get_ndim() - get_element_type().get_ndim();
-    tv_type = ndt::make_fixed_dim(exponent, ndt::make_type<void>());
-  }
-  else if (tv_type.get_type_id() == fixed_dim_type_id) {
+    tv_type = ndt::make_fixed_dim(exponent);
+  } else if (tv_type.get_type_id() == fixed_dim_type_id) {
     // Make sure the exponent already seen matches the number of
     // dimensions left in the concrete type
     exponent = tv_type.extended<fixed_dim_type>()->get_fixed_dim_size();
     if (exponent != candidate_tp.get_ndim() - get_element_type().get_ndim()) {
       return false;
     }
-  }
-  else {
+  } else {
     // The exponent is always the dim_size inside a fixed_dim_type
     return false;
   }
   // If the exponent is zero, the base doesn't matter, just match the rest
   if (exponent == 0) {
     return m_element_tp.match(arrmeta, candidate_tp, NULL, tp_vars);
-  }
-  else if (exponent < 0) {
+  } else if (exponent < 0) {
     return false;
   }
   // Get the base type
@@ -242,14 +231,12 @@ bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
       // dimension type
       btv_type = candidate_tp;
       base_tp = candidate_tp;
-    }
-    else if (btv_type.get_ndim() > 0 &&
-             btv_type.get_type_id() != dim_fragment_type_id) {
+    } else if (btv_type.get_ndim() > 0 &&
+               btv_type.get_type_id() != dim_fragment_type_id) {
       // Continue matching after substituting in the typevar for
       // the base type
       base_tp = btv_type;
-    }
-    else {
+    } else {
       // Doesn't match if the typevar has a dim fragment or dtype in it
       return false;
     }
@@ -280,8 +267,7 @@ bool pow_dimsym_type::match(const char *arrmeta, const ndt::type &candidate_tp,
               dim_size) {
         concrete_subtype =
             concrete_subtype.extended<base_dim_type>()->get_element_type();
-      }
-      else {
+      } else {
         return false;
       }
     }

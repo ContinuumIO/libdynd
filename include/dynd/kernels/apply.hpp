@@ -14,8 +14,8 @@ namespace detail {
 
   template <typename func_type, typename... B>
   struct funcproto {
-    typedef
-        typename funcproto<decltype(&func_type::operator()), B...>::type type;
+    typedef typename funcproto<decltype(&func_type::operator()), B...>::type
+        type;
   };
 
   template <typename R, typename... A, typename... B>
@@ -85,9 +85,8 @@ namespace nd {
 
     template <typename A, size_t I>
     struct apply_arg {
-      typedef
-          typename std::remove_cv<typename std::remove_reference<A>::type>::type
-              D;
+      typedef typename std::remove_cv<
+          typename std::remove_reference<A>::type>::type D;
 
       apply_arg(const ndt::type &DYND_UNUSED(tp),
                 const char *DYND_UNUSED(arrmeta),
@@ -105,13 +104,15 @@ namespace nd {
     struct apply_arg<const fixed_dim<T> &, I> {
       fixed_dim<T> m_vals;
 
-      apply_arg(const ndt::type &tp, const char *arrmeta,
-                const nd::array &DYND_UNUSED(kwds)) : m_vals(tp, arrmeta)
+      apply_arg(const ndt::type &tp, const char *arrmeta, const nd::array &kwds)
+          : m_vals(tp, arrmeta, reinterpret_cast<start_stop_t *>(
+                                    kwds.p("start_stop").as<intptr_t>()))
       {
-          m_vals.set_data(NULL);
-//        m_vals.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta),
-  //                      reinterpret_cast<start_stop_t *>(
-    //                        kwds.p("start_stop").as<intptr_t>()));
+        //        m_vals.set_data(
+        //      m_vals.set_data(NULL, reinterpret_cast<const size_stride_t
+        //      *>(arrmeta),
+        //                    reinterpret_cast<start_stop_t *>(
+        //                            kwds.p("start_stop").as<intptr_t>()));
       }
 
       fixed_dim<T> &get(char *data)
@@ -151,8 +152,7 @@ namespace nd {
       {
         if (val.get_type().get_type_id() == pointer_type_id) {
           m_val = val.f("dereference").as<T>();
-        }
-        else {
+        } else {
           m_val = val.as<T>();
         }
       }
@@ -503,10 +503,9 @@ namespace nd {
 
     template <typename T, typename mem_func_type, typename R, typename... A,
               size_t... I, typename... K, size_t... J>
-    intptr_t
-    apply_member_function_ck<kernel_request_host, T *, mem_func_type, R,
-                             type_sequence<A...>, index_sequence<I...>,
-                             type_sequence<K...>, index_sequence<J...>>::
+    intptr_t apply_member_function_ck<
+        kernel_request_host, T *, mem_func_type, R, type_sequence<A...>,
+        index_sequence<I...>, type_sequence<K...>, index_sequence<J...>>::
         instantiate(const arrfunc_type_data *self, const arrfunc_type *self_tp,
                     void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                     const char *dst_arrmeta, intptr_t nsrc,
@@ -522,10 +521,9 @@ namespace nd {
 
     template <typename T, typename mem_func_type, typename... A, size_t... I,
               typename... K, size_t... J>
-    intptr_t
-    apply_member_function_ck<kernel_request_host, T *, mem_func_type, void,
-                             type_sequence<A...>, index_sequence<I...>,
-                             type_sequence<K...>, index_sequence<J...>>::
+    intptr_t apply_member_function_ck<
+        kernel_request_host, T *, mem_func_type, void, type_sequence<A...>,
+        index_sequence<I...>, type_sequence<K...>, index_sequence<J...>>::
         instantiate(const arrfunc_type_data *self, const arrfunc_type *self_tp,
                     void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                     const char *dst_arrmeta, intptr_t nsrc,
@@ -545,10 +543,9 @@ namespace nd {
 
     template <typename T, typename mem_func_type, typename R, typename... A,
               size_t... I, typename... K, size_t... J>
-    intptr_t
-    apply_member_function_ck<kernel_request_cuda_device, T *, mem_func_type, R,
-                             type_sequence<A...>, index_sequence<I...>,
-                             type_sequence<K...>, index_sequence<J...>>::
+    intptr_t apply_member_function_ck<
+        kernel_request_cuda_device, T *, mem_func_type, R, type_sequence<A...>,
+        index_sequence<I...>, type_sequence<K...>, index_sequence<J...>>::
         instantiate(const arrfunc_type_data *self, const arrfunc_type *self_tp,
                     void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                     const char *dst_arrmeta, intptr_t nsrc,

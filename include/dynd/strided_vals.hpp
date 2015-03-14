@@ -200,7 +200,11 @@ class builtin {
   const char *m_data;
 
 public:
-  builtin() : m_data(NULL) {}
+  builtin(const ndt::type &DYND_UNUSED(tp), const char *DYND_UNUSED(arrmeta),
+          const start_stop_t *DYND_UNUSED(start_stop))
+      : m_data(NULL)
+  {
+  }
 
   void set_data(const char *data) { m_data = data; }
 
@@ -208,16 +212,25 @@ public:
   {
     return *reinterpret_cast<const T *>(data);
   }
+
+  typedef T dtype;
+
+  class iterator {
+  public:
+    iterator(const builtin &DYND_UNUSED(values)) {}
+
+    void get_index(intptr_t *DYND_UNUSED(i)) const {}
+
+    bool is_valid() const { return true; }
+
+    void incr(const char *&) {}
+  };
 };
 
 // wrap_if_scalar
 template <typename T>
-struct wrap_if_builtin : T {
-};
-
-template <>
-struct wrap_if_builtin<int> : builtin<int> {
-};
+using wrap_if_builtin =
+    typename std::conditional<std::is_same<T, int>::value, builtin<T>, T>::type;
 
 template <typename T>
 class fixed_dim : public wrap_if_builtin<T> {
@@ -225,25 +238,122 @@ class fixed_dim : public wrap_if_builtin<T> {
 
   size_stride_t m_size_stride;
   const char *m_data;
+  const intptr_t *m_start;
+  const intptr_t *m_stop;
 
 public:
-  fixed_dim(const ndt::type &DYND_UNUSED(tp), const char *arrmeta)
-      : m_data(NULL)
+  typedef typename parent_type::dtype dtype;
+
+
+  fixed_dim(const ndt::type &tp, const char *arrmeta,
+            const start_stop_t *start_stop)
+      : parent_type(tp.extended<fixed_dim_type>()->get_element_type(),
+                    arrmeta + sizeof(size_stride_t), start_stop + 1),
+        m_data(NULL), m_start(&start_stop->start), m_stop(&start_stop->stop)
   {
     m_size_stride = *reinterpret_cast<const size_stride_t *>(arrmeta);
   }
 
+  const char *data() const { return m_data; }
+
+  intptr_t get_size() const { return m_size_stride.dim_size; }
+
+  size_t get_stride() const { return m_size_stride.stride; }
+
   void set_data(const char *data) { m_data = data; }
 
-  typename std::result_of<parent_type(const char *, const intptr_t *)>::type
-  operator()(const char *data, const intptr_t *i) const
+  bool is_valid(intptr_t i) const { return (i >= *m_start) && (i < *m_stop); }
+
+  dtype operator()(const char *data, const intptr_t *i) const
   {
     return parent_type::operator()(data + i[0] * m_size_stride.stride, i + 1);
   }
 
-  int operator()(const intptr_t *i) const { return (*this)(m_data, i); }
+  dtype operator()(const intptr_t *i) const { return (*this)(m_data, i); }
 
-  int operator()(intptr_t i) const { return (*this)(&i); }
+  dtype operator()(const std::initializer_list<intptr_t> &i) const
+  {
+    return (*this)(i.begin());
+  }
+
+
+  class iterator : public parent_type::iterator {
+    const fixed_dim &m_values;
+    const char *m_data;
+    intptr_t m_index;
+
+  public:
+    iterator(const fixed_dim &values, intptr_t offset = 0)
+        : parent_type::iterator(values), m_values(values),
+          m_data(values.data() + offset), m_index(0)
+    {
+    }
+
+    void get_index(intptr_t *i) const
+    {
+      i[0] = m_index;
+      parent_type::iterator::get_index(i + 1);
+    }
+
+    bool is_valid() const
+    {
+      return m_values.is_valid(m_index) && parent_type::iterator::is_valid();
+    }
+
+    iterator &operator++()
+    {
+      do {
+        incr(m_data);
+      } while (*this != m_values.end() && !is_valid());
+
+      return *this;
+    }
+
+    iterator operator++(int)
+    {
+      iterator tmp(*this);
+      operator++();
+      return tmp;
+    }
+
+    const int &operator*() const
+    {
+      return *reinterpret_cast<const int *>(m_data);
+    }
+
+    bool operator==(const iterator &other) const
+    {
+      return m_data == other.m_data;
+    }
+
+    bool operator!=(const iterator &other) const { return !(*this == other); }
+
+    void incr(const char *&data)
+    {
+      if (++m_index != m_values.get_size()) {
+        data += m_values.get_stride();
+      } else if (!std::is_same<T, int>::value) {
+        m_index = 0;
+        data -= (m_values.get_size() - 1) * m_values.get_stride();
+        parent_type::iterator::incr(data);
+      }
+    }
+  };
+
+  iterator begin() const
+  {
+    iterator it(*this);
+    if (it.is_valid()) {
+      return it;
+    }
+
+    return ++it;
+  }
+
+  iterator end() const
+  {
+    return iterator(*this, m_size_stride.dim_size * m_size_stride.stride);
+  }
 };
 
 /*

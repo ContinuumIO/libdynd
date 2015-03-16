@@ -308,7 +308,7 @@ set(libdynd_SRC
     src/dynd/func/lift_reduction_arrfunc.cpp
     src/dynd/func/math.cpp
     src/dynd/func/multidispatch.cpp
-    src/dynd/func/neighborhood_arrfunc.cpp
+    src/dynd/func/neighborhood.cpp
     src/dynd/func/outer.cpp
     src/dynd/func/permute.cpp
     src/dynd/func/random.cpp
@@ -332,7 +332,7 @@ set(libdynd_SRC
     include/dynd/func/make_callable.hpp
     include/dynd/func/math.hpp
     include/dynd/func/multidispatch.hpp
-    include/dynd/func/neighborhood_arrfunc.hpp
+    include/dynd/func/neighborhood.hpp
     include/dynd/func/outer.hpp
     include/dynd/func/permute.hpp
     include/dynd/func/random.hpp
@@ -363,6 +363,7 @@ set(libdynd_SRC
     src/dynd/kernels/expression_comparison_kernels.cpp
     src/dynd/kernels/fft.cpp
     src/dynd/kernels/make_lifted_reduction_ckernel.cpp
+    src/dynd/kernels/multidispatch.cpp
     src/dynd/kernels/option_assignment_kernels.cpp
     src/dynd/kernels/option_kernels.cpp
     src/dynd/kernels/pointer_assignment_kernels.cpp
@@ -401,6 +402,8 @@ set(libdynd_SRC
     include/dynd/kernels/expression_comparison_kernels.hpp
     include/dynd/func/fft.hpp
     include/dynd/kernels/make_lifted_reduction_ckernel.hpp
+    include/dynd/kernels/multidispatch.hpp
+    include/dynd/kernels/neighborhood.hpp
     include/dynd/kernels/option_assignment_kernels.hpp
     include/dynd/kernels/option_kernels.hpp
     include/dynd/kernels/pointer_assignment_kernels.hpp
@@ -418,6 +421,7 @@ set(libdynd_SRC
     include/dynd/kernels/time_assignment_kernels.hpp
     include/dynd/kernels/tuple_assignment_kernels.hpp
     include/dynd/kernels/tuple_comparison_kernels.hpp
+    include/dynd/kernels/virtual.hpp
     # MemBlock
     src/dynd/memblock/memory_block.cpp
     src/dynd/memblock/executable_memory_block_windows_x64.cpp

@@ -12,8 +12,9 @@ set(benchmarks_SRC
     benchmark_libdynd.cpp
 #    array/benchmark_empty.cpp
 #    func/benchmark_apply.cpp
-    func/benchmark_arithmetic.cpp
+#    func/benchmark_arithmetic.cpp
  #   func/benchmark_random.cpp
+    func/benchmark_types.cpp
     )
 
 include_directories(

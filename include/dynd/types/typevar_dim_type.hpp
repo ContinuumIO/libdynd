@@ -68,6 +68,11 @@ namespace ndt {
         return ndt::type(new typevar_dim_type(name, element_type), false);
     }
 
+    inline ndt::type make_typevar_dim(const nd::string &name)
+    {
+        return make_typevar_dim(name, ndt::type());
+    }
+
     inline type make_typevar_dim(const nd::string &name, const type& element_tp, intptr_t ndim) {
         type result = element_tp;
         for (intptr_t i = 0; i < ndim; ++i) {

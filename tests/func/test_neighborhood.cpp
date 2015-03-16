@@ -21,9 +21,9 @@ using namespace std;
 using namespace dynd;
 
 template <typename T>
-typename T::dtype sum(const T &values)
+int sum(const T &values)
 {
-  typename T::dtype res = 0;
+  int res = 0;
   for (typename T::iterator it = values.begin(); it != values.end(); ++it) {
     res += *it;
   }
@@ -35,7 +35,6 @@ TEST(Neighborhood, Sum1D)
 {
   nd::arrfunc af =
       nd::functional::neighborhood(nd::functional::apply(&sum<fixed_dim<int>>));
-
   nd::array a;
 
   a = parse_json("4 * int", "[0, 1, 2, 3]");

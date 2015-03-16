@@ -300,12 +300,16 @@ public:
 
   intptr_t get_size() const
   {
-    return reinterpret_cast<const size_stride_t *>(m_arrmeta)->dim_size;
+    const size_stride_t *size_stride =
+        reinterpret_cast<const size_stride_t *>(m_arrmeta);
+    return size_stride->dim_size;
   }
 
   intptr_t get_stride() const
   {
-    return reinterpret_cast<const fixed_dim_type_arrmeta *>(m_arrmeta)->stride;
+    const size_stride_t *size_stride =
+        reinterpret_cast<const size_stride_t *>(m_arrmeta);
+    return size_stride->stride;
   }
 
   void set_data(const char *data) { m_data = data; }

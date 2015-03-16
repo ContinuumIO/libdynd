@@ -216,15 +216,12 @@ namespace detail {
                          ->stride);
     }
 
-    class iterator {
-    public:
-      static void incr(const char *arrmeta, const char **data, intptr_t *index)
-      {
-        ++index[0];
-        *data +=
-            reinterpret_cast<const fixed_dim_type_arrmeta *>(arrmeta)->stride;
-      }
-    };
+    static void incr(const char *arrmeta, const char **data, intptr_t *index)
+    {
+      ++index[0];
+      *data +=
+          reinterpret_cast<const fixed_dim_type_arrmeta *>(arrmeta)->stride;
+    }
   };
 
   template <typename T>
@@ -243,22 +240,19 @@ namespace detail {
               i[0] * reinterpret_cast<const size_stride_t *>(arrmeta)->stride);
     }
 
-    class iterator {
-    public:
-      static void incr(const char *arrmeta, const char **data, intptr_t *index)
-      {
-        const size_stride_t *size_stride =
-            reinterpret_cast<const size_stride_t *>(arrmeta);
+    static void incr(const char *arrmeta, const char **data, intptr_t *index)
+    {
+      const size_stride_t *size_stride =
+          reinterpret_cast<const size_stride_t *>(arrmeta);
 
-        if (++index[0] != size_stride->dim_size) {
-          *data += size_stride->stride;
-        } else {
-          index[0] = 0;
-          *data -= (size_stride->dim_size - 1) * size_stride->stride;
-          T::iterator::incr(arrmeta + sizeof(size_stride_t), data, index + 1);
-        }
+      if (++index[0] != size_stride->dim_size) {
+        *data += size_stride->stride;
+      } else {
+        index[0] = 0;
+        *data -= (size_stride->dim_size - 1) * size_stride->stride;
+        T::incr(arrmeta + sizeof(size_stride_t), data, index + 1);
       }
-    };
+    }
   };
 
 } // namespace dynd::detail
@@ -318,10 +312,6 @@ public:
 
   bool is_valid(const intptr_t *i) const
   {
-    if (m_start_stop == NULL) {
-      return true;
-    }
-
     for (intptr_t j = 0; j < fixed_dim::ndim; ++j) {
       if ((i[j] < m_start_stop[j].start) || (i[j] >= m_start_stop[j].stop)) {
         return false;
@@ -341,7 +331,7 @@ public:
     return (*this)(i.begin());
   }
 
-  class iterator : public detail::fixed_dim<T, !is_dim<T>::value>::iterator {
+  class iterator {
     const fixed_dim &m_values;
     const char *m_data;
     intptr_t m_index[fixed_dim::ndim];
@@ -360,7 +350,7 @@ public:
     iterator &operator++()
     {
       do {
-        iterator::incr(m_values.get_arrmeta(), &m_data, m_index);
+        fixed_dim::incr(m_values.get_arrmeta(), &m_data, m_index);
       } while (*this != m_values.end() && !is_valid());
 
       return *this;

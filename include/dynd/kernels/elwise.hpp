@@ -91,10 +91,12 @@ namespace nd {
         }
       }
 
+/*
       DYND_CUDA_HOST_DEVICE static void destruct(ckernel_prefix *self)
       {
         self->destroy_child_ckernel(sizeof(self_type));
       }
+*/
 
       static size_t
       instantiate(const arrfunc_type_data *child, const arrfunc_type *child_tp,

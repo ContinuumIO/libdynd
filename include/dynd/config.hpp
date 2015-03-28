@@ -258,7 +258,6 @@ struct integer_proxy<integer_sequence<T, I0>> {
   }
 };
 
-
 template <typename T, T I0, T... I>
 struct integer_proxy<integer_sequence<T, I0, I...>> {
   enum { size = dynd::integer_sequence<T, I0, I...>::size };
@@ -344,7 +343,8 @@ struct integer_proxy<integer_sequence<T, I0, I...>> {
   static void for_each(F f, A &&... a)
   {
     f.template on_each<I0, U...>(std::forward<A>(a)...);
-    integer_proxy<integer_sequence<T, I...>>::template for_each<U...>(f, std::forward<A>(a)...);
+    integer_proxy<integer_sequence<T, I...>>::template for_each<U...>(
+        f, std::forward<A>(a)...);
   }
 };
 
@@ -400,7 +400,8 @@ struct index_proxy<index_sequence<I0, I...>> {
   }
 #else
   // Workaround for MSVC 2013 compiler bug reported here:
-  // https://connect.microsoft.com/VisualStudio/feedback/details/1045260/unpacking-std-forward-a-a-fails-when-nested-with-another-unpacking
+  //
+https://connect.microsoft.com/VisualStudio/feedback/details/1045260/unpacking-std-forward-a-a-fails-when-nested-with-another-unpacking
   template <typename R>
   static R make()
   {
@@ -715,6 +716,15 @@ namespace detail {
 #endif
 
 } // namespace dynd::detail
+
+namespace nd {
+  namespace detail {
+
+    using namespace dynd::detail;
+
+  } // namespace dynd::nd::detail
+} // namespace dynd::nd
+
 } // namespace dynd
 
 #ifdef __CUDA_ARCH__

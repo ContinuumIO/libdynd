@@ -38,24 +38,23 @@ namespace nd {
      * This requires that the child kernel be created with the
      * kernel_request_strided type of kernel.
      */
-    template <type_id_t dst_dim_type_id, type_id_t src_dim_type_id, int N,
-              int I>
+    template <type_id_t dst_type_id, type_id_t src_type_id, int N, int I>
     struct elwise_ck;
 
     template <int N, int I>
     struct elwise_ck<fixed_dim_type_id, fixed_dim_type_id, N, I>
-        : nd::expr_ck<elwise_ck<fixed_dim_type_id, fixed_dim_type_id, N, I>,
-                      kernel_request_cuda_host_device, N> {
+        : expr_ck<elwise_ck<fixed_dim_type_id, fixed_dim_type_id, N, I>,
+                  kernel_request_cuda_host_device, N> {
       typedef elwise_ck self_type;
 
       intptr_t m_size;
-      intptr_t m_dst_stride, m_src_stride[N];
+      intptr_t m_dst_stride;
+      detail::array_wrapper<intptr_t, N> m_src_stride;
 
       DYND_CUDA_HOST_DEVICE elwise_ck(intptr_t size, intptr_t dst_stride,
                                       const intptr_t *src_stride)
-          : m_size(size), m_dst_stride(dst_stride)
+          : m_size(size), m_dst_stride(dst_stride), m_src_stride(src_stride)
       {
-        memcpy(m_src_stride, src_stride, sizeof(m_src_stride));
       }
 
       DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
@@ -63,8 +62,7 @@ namespace nd {
         ckernel_prefix *child = this->get_child_ckernel();
         expr_strided_t opchild = child->get_function<expr_strided_t>();
 
-        opchild(dst, m_dst_stride, src, m_src_stride, m_size,
-                child);
+        opchild(dst, m_dst_stride, src, m_src_stride, m_size, child);
       }
 
       DYND_CUDA_HOST_DEVICE void strided(char *dst, intptr_t dst_stride,
@@ -76,17 +74,16 @@ namespace nd {
 
         ckernel_prefix *child = this->get_child_ckernel();
         expr_strided_t opchild = child->get_function<expr_strided_t>();
+        detail::array_wrapper<char *, N> src_loop;
 
         dst += DYND_THREAD_ID(J) * dst_stride;
-        char *src_loop[N];
         for (int j = 0; j != N; ++j) {
           src_loop[j] = src[j] + DYND_THREAD_ID(J) * src_stride[j];
         }
 
         for (size_t i = DYND_THREAD_ID(J); i < count;
              i += DYND_THREAD_COUNT(J)) {
-          opchild(dst, m_dst_stride, src_loop, m_src_stride, m_size,
-                  child);
+          opchild(dst, m_dst_stride, src_loop, m_src_stride, m_size, child);
           dst += DYND_THREAD_COUNT(J) * dst_stride;
           for (int j = 0; j != N; ++j) {
             src_loop[j] += DYND_THREAD_COUNT(J) * src_stride[j];
@@ -116,11 +113,12 @@ namespace nd {
         }
 
         const char *child_dst_arrmeta;
-        const char *child_src_arrmeta[N];
+        detail::array_wrapper<const char *, N> child_src_arrmeta;
         ndt::type child_dst_tp;
-        ndt::type child_src_tp[N];
+        detail::array_wrapper<ndt::type, N> child_src_tp;
 
-        intptr_t size, dst_stride, src_stride[N];
+        intptr_t size, dst_stride;
+        detail::array_wrapper<intptr_t, N> src_stride;
         if (!dst_tp.get_as_strided(dst_arrmeta, &size, &dst_stride,
                                    &child_dst_tp, &child_dst_arrmeta)) {
           std::stringstream ss;
@@ -158,7 +156,7 @@ namespace nd {
         }
 
         self_type::create(ckb, kernreq, ckb_offset, size, dst_stride,
-                          dynd::detail::make_array_wrapper<N>(src_stride));
+                          src_stride);
         kernreq = (kernreq & kernel_request_memory) | kernel_request_strided;
 
         // If there are still dimensions to broadcast, recursively lift more
@@ -176,101 +174,6 @@ namespace nd {
                                   child_dst_tp, child_dst_arrmeta, nsrc,
                                   child_src_tp, child_src_arrmeta, kernreq,
                                   ectx, kwds, tp_vars);
-      }
-    };
-
-    template <int I>
-    struct elwise_ck<fixed_dim_type_id, fixed_dim_type_id, 0, I>
-        : nd::expr_ck<elwise_ck<fixed_dim_type_id, fixed_dim_type_id, 0, I>,
-                      kernel_request_cuda_host_device, 0> {
-      typedef elwise_ck self_type;
-
-      intptr_t m_size;
-      intptr_t m_dst_stride;
-
-      DYND_CUDA_HOST_DEVICE elwise_ck(intptr_t size, intptr_t dst_stride)
-          : m_size(size), m_dst_stride(dst_stride)
-      {
-      }
-
-      DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-      {
-        ckernel_prefix *child = this->get_child_ckernel();
-        expr_strided_t opchild = child->get_function<expr_strided_t>();
-        opchild(dst, m_dst_stride, src, NULL, m_size, child);
-      }
-
-      DYND_CUDA_HOST_DEVICE void
-      strided(char *dst, intptr_t dst_stride, char *const *DYND_UNUSED(src),
-              const intptr_t *DYND_UNUSED(src_stride), size_t count)
-      {
-        enum { J = (I == -1 || I > 1) ? -1 : (I + 1) };
-
-        ckernel_prefix *child = this->get_child_ckernel();
-        expr_strided_t opchild = child->get_function<expr_strided_t>();
-
-        dst += DYND_THREAD_ID(J) * dst_stride;
-
-        for (size_t i = DYND_THREAD_ID(J); i < count;
-             i += DYND_THREAD_COUNT(J)) {
-          opchild(dst, m_dst_stride, NULL, NULL, m_size, child);
-          dst += DYND_THREAD_COUNT(J) * dst_stride;
-        }
-      }
-
-      DYND_CUDA_HOST_DEVICE static void destruct(ckernel_prefix *self)
-      {
-        self->destroy_child_ckernel(sizeof(self_type));
-      }
-
-      static size_t
-      instantiate(const arrfunc_type_data *child, const arrfunc_type *child_tp,
-                  void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
-                  const char *dst_arrmeta, intptr_t nsrc,
-                  const ndt::type *DYND_UNUSED(src_tp),
-                  const char *const *DYND_UNUSED(src_arrmeta),
-                  kernel_request_t kernreq, const eval::eval_context *ectx,
-                  const nd::array &kwds,
-                  const std::map<dynd::nd::string, ndt::type> &tp_vars)
-      {
-        intptr_t dst_ndim = dst_tp.get_ndim();
-        if (!child_tp->get_return_type().is_symbolic()) {
-          dst_ndim -= child_tp->get_return_type().get_ndim();
-        } else if (child_tp->get_return_type().get_type_id() ==
-                   typevar_constructed_type_id) {
-          dst_ndim -= child_tp->get_return_type().get_ndim();
-        }
-
-        const char *child_dst_arrmeta;
-        ndt::type child_dst_tp;
-
-        intptr_t size, dst_stride;
-        if (!dst_tp.get_as_strided(dst_arrmeta, &size, &dst_stride,
-                                   &child_dst_tp, &child_dst_arrmeta)) {
-          std::stringstream ss;
-          ss << "make_elwise_strided_dimension_expr_kernel: error processing "
-                "type " << dst_tp << " as strided";
-          throw type_error(ss.str());
-        }
-
-        self_type::create(ckb, kernreq, ckb_offset, size, dst_stride);
-        kernreq = (kernreq & kernel_request_memory) | kernel_request_strided;
-
-        bool finished = dst_ndim == 1;
-
-        // If there are still dimensions to broadcast, recursively lift more
-        if (!finished) {
-          return nd::functional::elwise_instantiate_with_child < (I == -1)
-                     ? -1
-                     : (I - 1) > (child, child_tp, ckb, ckb_offset,
-                                  child_dst_tp, child_dst_arrmeta, nsrc, NULL,
-                                  NULL, kernreq, ectx, kwds, tp_vars);
-        }
-
-        // Instantiate the elementwise handler
-        return child->instantiate(child, child_tp, ckb, ckb_offset,
-                                  child_dst_tp, child_dst_arrmeta, nsrc, NULL,
-                                  NULL, kernreq, ectx, kwds, tp_vars);
       }
     };
 
@@ -326,8 +229,8 @@ namespace nd {
             modified_src_stride[i] = m_src_stride[i];
           }
         }
-        opchild(dst, m_dst_stride, modified_src, modified_src_stride,
-                dim_size, child);
+        opchild(dst, m_dst_stride, modified_src, modified_src_stride, dim_size,
+                child);
       }
 
       void strided(char *dst, intptr_t dst_stride, char *const *src,
@@ -547,8 +450,8 @@ namespace nd {
                 const intptr_t *src_stride, const intptr_t *src_offset,
                 const intptr_t *src_size, const bool *is_src_var)
           : m_dst_memblock(dst_memblock),
-            m_dst_target_alignment(dst_target_alignment), m_dst_stride(dst_stride),
-            m_dst_offset(dst_offset)
+            m_dst_target_alignment(dst_target_alignment),
+            m_dst_stride(dst_stride), m_dst_offset(dst_offset)
       {
         memcpy(m_src_stride, src_stride, sizeof(m_src_stride));
         memcpy(m_src_offset, src_offset, sizeof(m_src_offset));
@@ -785,8 +688,8 @@ namespace nd {
       elwise_ck(memory_block_data *dst_memblock, size_t dst_target_alignment,
                 intptr_t dst_stride, intptr_t dst_offset)
           : m_dst_memblock(dst_memblock),
-            m_dst_target_alignment(dst_target_alignment), m_dst_stride(dst_stride),
-            m_dst_offset(dst_offset)
+            m_dst_target_alignment(dst_target_alignment),
+            m_dst_stride(dst_stride), m_dst_offset(dst_offset)
       {
       }
 

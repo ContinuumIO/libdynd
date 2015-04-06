@@ -46,39 +46,6 @@ public:
   }
 };
 
-/**
- * See the ckernel_builder class documentation
- * for details about how ckernels can be built and
- * used.
- *
- * This kernel type is for ckernels which assign a
- * strided sequence of data values from one
- * type/arrmeta source to a different type/arrmeta
- * destination, using the `unary_strided_operation_t`
- * function prototype.
- */
-class assignment_strided_ckernel_builder
-    : public ckernel_builder<kernel_request_host> {
-public:
-  assignment_strided_ckernel_builder() : ckernel_builder<kernel_request_host>()
-  {
-  }
-
-  inline expr_strided_t get_function() const
-  {
-    return get()->get_function<expr_strided_t>();
-  }
-
-  /** Calls the function to do the assignment */
-  inline void operator()(char *dst, intptr_t dst_stride, char *src,
-                         intptr_t src_stride, size_t count) const
-  {
-    ckernel_prefix *kdp = get();
-    expr_strided_t fn = kdp->get_function<expr_strided_t>();
-    fn(dst, dst_stride, &src, &src_stride, count, kdp);
-  }
-};
-
 namespace kernels {
 
   /**
@@ -140,7 +107,7 @@ namespace kernels {
 
   template <class dst_type, class src_type, assign_error_mode errmode>
   struct assign_ck : nd::expr_ck<assign_ck<dst_type, src_type, errmode>,
-                             kernel_request_host, 1> {
+                                 kernel_request_host, 1> {
     void single(char *dst, char *const *src)
     {
       single_assigner_builtin<dst_type, src_type, errmode>::assign(
@@ -152,7 +119,7 @@ namespace kernels {
   template <class dst_type, class src_type>
   struct assign_ck<dst_type, src_type, assign_error_nocheck>
       : nd::expr_ck<assign_ck<dst_type, src_type, assign_error_nocheck>,
-                kernel_request_cuda_host_device, 1> {
+                    kernel_request_cuda_host_device, 1> {
     DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
     {
       single_assigner_builtin<dst_type, src_type, assign_error_nocheck>::assign(
@@ -339,6 +306,39 @@ size_t make_kernreq_to_single_kernel_adapter(void *ckb, intptr_t ckb_offset,
                                              int nsrc,
                                              kernel_request_t kernreq);
 
+/**
+ * See the ckernel_builder class documentation
+ * for details about how ckernels can be built and
+ * used.
+ *
+ * This kernel type is for ckernels which assign a
+ * strided sequence of data values from one
+ * type/arrmeta source to a different type/arrmeta
+ * destination, using the `unary_strided_operation_t`
+ * function prototype.
+ */
+class assignment_strided_ckernel_builder
+    : public ckernel_builder<kernel_request_host> {
+public:
+  assignment_strided_ckernel_builder() : ckernel_builder<kernel_request_host>()
+  {
+  }
+
+  inline expr_strided_t get_function() const
+  {
+    return get()->get_function<expr_strided_t>();
+  }
+
+  /** Calls the function to do the assignment */
+  inline void operator()(char *dst, intptr_t dst_stride, char *src,
+                         intptr_t src_stride, size_t count) const
+  {
+    ckernel_prefix *kdp = get();
+    expr_strided_t fn = kdp->get_function<expr_strided_t>();
+    fn(dst, dst_stride, &src, &src_stride, count, kdp);
+  }
+};
+
 namespace kernels {
   /**
    * Generic assignment kernel + destructor for a strided dimension.
@@ -400,25 +400,28 @@ size_t make_cuda_pod_typed_data_assignment_kernel(
     size_t data_size, size_t data_alignment, kernel_request_t kernreq);
 
 intptr_t make_cuda_device_builtin_type_assignment_kernel(
-    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data, void *ckb,
-    intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-    intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-    kernel_request_t kernreq, const eval::eval_context *ectx,
-    const nd::array &kwds, const std::map<nd::string, ndt::type> &tp_vars);
+    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data,
+    void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
+    const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
+    const char *const *src_arrmeta, kernel_request_t kernreq,
+    const eval::eval_context *ectx, const nd::array &kwds,
+    const std::map<nd::string, ndt::type> &tp_vars);
 
 intptr_t make_cuda_to_device_builtin_type_assignment_kernel(
-    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data, void *ckb,
-    intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-    intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-    kernel_request_t kernreq, const eval::eval_context *ectx,
-    const nd::array &kwds, const std::map<nd::string, ndt::type> &tp_vars);
+    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data,
+    void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
+    const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
+    const char *const *src_arrmeta, kernel_request_t kernreq,
+    const eval::eval_context *ectx, const nd::array &kwds,
+    const std::map<nd::string, ndt::type> &tp_vars);
 
 intptr_t make_cuda_from_device_builtin_type_assignment_kernel(
-    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data, void *ckb,
-    intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-    intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-    kernel_request_t kernreq, const eval::eval_context *ectx,
-    const nd::array &kwds, const std::map<nd::string, ndt::type> &tp_vars);
+    const arrfunc_type_data *self, const arrfunc_type *af_tp, char *data,
+    void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
+    const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
+    const char *const *src_arrmeta, kernel_request_t kernreq,
+    const eval::eval_context *ectx, const nd::array &kwds,
+    const std::map<nd::string, ndt::type> &tp_vars);
 
 #endif // DYND_CUDA
 } // namespace dynd

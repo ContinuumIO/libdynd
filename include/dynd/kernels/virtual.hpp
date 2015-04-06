@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <dynd/types/arrfunc_type.hpp>
 #include <dynd/types/substitute_typevars.hpp>
 
 namespace dynd {

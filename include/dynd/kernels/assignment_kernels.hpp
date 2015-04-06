@@ -46,39 +46,6 @@ public:
   }
 };
 
-/**
- * See the ckernel_builder class documentation
- * for details about how ckernels can be built and
- * used.
- *
- * This kernel type is for ckernels which assign a
- * strided sequence of data values from one
- * type/arrmeta source to a different type/arrmeta
- * destination, using the `unary_strided_operation_t`
- * function prototype.
- */
-class assignment_strided_ckernel_builder
-    : public ckernel_builder<kernel_request_host> {
-public:
-  assignment_strided_ckernel_builder() : ckernel_builder<kernel_request_host>()
-  {
-  }
-
-  inline expr_strided_t get_function() const
-  {
-    return get()->get_function<expr_strided_t>();
-  }
-
-  /** Calls the function to do the assignment */
-  inline void operator()(char *dst, intptr_t dst_stride, char *src,
-                         intptr_t src_stride, size_t count) const
-  {
-    ckernel_prefix *kdp = get();
-    expr_strided_t fn = kdp->get_function<expr_strided_t>();
-    fn(dst, dst_stride, &src, &src_stride, count, kdp);
-  }
-};
-
 namespace kernels {
 
   /**

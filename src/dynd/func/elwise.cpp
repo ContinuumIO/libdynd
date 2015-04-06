@@ -83,18 +83,22 @@ nd::arrfunc nd::functional::elwise(const arrfunc &child)
   const arrfunc_type *child_tp = child.get_type();
 
 /*
+  if (child.get()->resolve_dst_type == NULL) {
+    throw std::runtime_error("elwise child has NULL resolve_dst_type");
+  }
   if (child.get()->resolve_option_values == NULL) {
     throw std::runtime_error("elwise child has NULL resolve_option_values");
   }
 */
 
-  return dynd::nd::arrfunc(
-      elwise_make_type(child.get_type()), child,
-      child.get()->data_size + sizeof(ndt::type),
-      &elwise_virtual_ck::instantiate,
-      (child.get()->resolve_option_values == NULL)
-          ? NULL
-          : &elwise_virtual_ck::resolve_option_values,
-      child_tp->has_kwd("dst_tp") ? NULL : &elwise_virtual_ck::resolve_dst_type,
-      NULL);
+  return dynd::nd::arrfunc(elwise_make_type(child.get_type()), child,
+                           child.get()->data_size + sizeof(ndt::type),
+                           &variadic_ck<elwise_virtual_ck>::instantiate,
+                           (child.get()->resolve_option_values == NULL)
+                               ? NULL
+                               : &variadic_ck<elwise_virtual_ck>::resolve_option_values,
+                           child_tp->has_kwd("dst_tp")
+                               ? NULL
+                               : &variadic_ck<elwise_virtual_ck>::resolve_dst_type,
+                           NULL);
 }

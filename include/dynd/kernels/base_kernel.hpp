@@ -104,6 +104,27 @@ namespace nd {
       }                                                                        \
     }                                                                          \
                                                                                \
+    template <typename CKBT>                                                   \
+    static self_type *reserve(CKBT *ckb, intptr_t ckb_offset,                  \
+                              size_t requested_capacity)                       \
+    {                                                                          \
+      ckb->ensure_capacity(requested_capacity);                                \
+      return get_self(ckb, ckb_offset);                                        \
+    }                                                                          \
+                                                                               \
+    static self_type *reserve(void *ckb, kernel_request_t kernreq,             \
+                              intptr_t ckb_offset, size_t requested_capacity)  \
+    {                                                                          \
+      switch (kernreq & kernel_request_memory) {                               \
+      case kernel_request_host:                                                \
+        return reserve(                                                        \
+            reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),     \
+            ckb_offset, requested_capacity);                                   \
+      default:                                                                 \
+        throw std::invalid_argument("unrecognized ckernel request");           \
+      }                                                                        \
+    }                                                                          \
+                                                                               \
     /** \                                                                      \
      * Initializes an instance of this ckernel in-place according to the \     \
      * kernel request. This calls the constructor in-place, and initializes \  \

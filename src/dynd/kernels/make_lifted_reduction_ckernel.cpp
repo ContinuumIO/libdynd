@@ -96,9 +96,9 @@ struct strided_initial_reduction_kernel_extra
   intptr_t size;
   intptr_t src_stride;
 
-  static void single_first(char *dst, char *const *src, ckernel_prefix *extra)
+  static void single_first(char *dst, char *const *src, ckernel_prefix *rawself)
   {
-    self_type *e = reinterpret_cast<self_type *>(extra);
+    self_type *e = get_self(rawself);
     reduction_ckernel_prefix *echild =
         reinterpret_cast<reduction_ckernel_prefix *>(e->get_child_ckernel());
     // The first call at the "dst" address
@@ -238,9 +238,9 @@ struct strided_initial_broadcast_kernel_extra
   intptr_t size;
   intptr_t dst_stride, src_stride;
 
-  static void single_first(char *dst, char *const *src, ckernel_prefix *extra)
+  static void single_first(char *dst, char *const *src, ckernel_prefix *rawself)
   {
-    self_type *e = reinterpret_cast<self_type *>(extra);
+    self_type *e = get_self(rawself);
     reduction_ckernel_prefix *echild =
         reinterpret_cast<reduction_ckernel_prefix *>(e->get_child_ckernel());
     expr_strided_t opchild_first_call =
@@ -395,9 +395,9 @@ struct strided_inner_reduction_kernel_extra
   const char *ident_data;
   memory_block_data *ident_ref;
 
-  static void single_first(char *dst, char *const *src, ckernel_prefix *extra)
+  static void single_first(char *dst, char *const *src, ckernel_prefix *rawself)
   {
-    self_type *e = reinterpret_cast<self_type *>(extra);
+    self_type *e = get_self(rawself);
     ckernel_prefix *echild_reduce = e->get_child_ckernel();
     ckernel_prefix *echild_dst_init =
         e->get_child_ckernel(e->dst_init_kernel_offset);
@@ -728,11 +728,11 @@ struct strided_inner_broadcast_kernel_extra
   const char *ident_data;
   memory_block_data *ident_ref;
 
-  static void single_first(char *dst, char *const *src, ckernel_prefix *extra)
+  static void single_first(char *dst, char *const *src, ckernel_prefix *rawself)
   {
-    self_type *e = reinterpret_cast<self_type *>(extra);
-    ckernel_prefix *echild_dst_init = reinterpret_cast<ckernel_prefix *>(
-        reinterpret_cast<char *>(extra) + e->dst_init_kernel_offset);
+    self_type *e = get_self(rawself);
+    ckernel_prefix *echild_dst_init =
+        e->get_child_ckernel(e->dst_init_kernel_offset);
     expr_strided_t opchild_dst_init =
         echild_dst_init->get_function<expr_strided_t>();
     // All we do is initialize the dst values

@@ -236,16 +236,21 @@ nd::arrfunc::arrfunc(const nd::array &rhs)
       if (af->instantiate != NULL) {
         // It's valid: arrfunc type, contains instantiate function.
         m_value = rhs;
-      } else {
+      }
+      else {
         throw invalid_argument("Require a non-empty arrfunc, "
                                "provided arrfunc has NULL "
                                "instantiate function");
       }
-    } else {
+    }
+    else {
       stringstream ss;
       ss << "Cannot implicitly convert nd::array of type "
          << rhs.get_type().value_type() << " to  arrfunc";
       throw type_error(ss.str());
     }
+  }
+  else {
+    m_value = nd::array();
   }
 }

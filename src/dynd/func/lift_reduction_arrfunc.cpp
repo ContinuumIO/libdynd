@@ -4,7 +4,7 @@
 //
 
 #include <dynd/func/lift_reduction_arrfunc.hpp>
-#include <dynd/kernels/make_lifted_reduction_ckernel.hpp>
+#include <dynd/kernels/reduce.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
 #include <dynd/types/var_dim_type.hpp>
 

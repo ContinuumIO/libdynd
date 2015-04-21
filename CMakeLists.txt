@@ -368,7 +368,7 @@ set(libdynd_SRC
     src/dynd/kernels/expression_assignment_kernels.cpp
     src/dynd/kernels/expression_comparison_kernels.cpp
     src/dynd/kernels/fft.cpp
-    src/dynd/kernels/make_lifted_reduction_ckernel.cpp
+    src/dynd/kernels/reduce.cpp
     src/dynd/kernels/multidispatch.cpp
     src/dynd/kernels/option_assignment_kernels.cpp
     src/dynd/kernels/option_kernels.cpp
@@ -413,7 +413,7 @@ set(libdynd_SRC
     include/dynd/kernels/expression_assignment_kernels.hpp
     include/dynd/kernels/expression_comparison_kernels.hpp
     include/dynd/func/fft.hpp
-    include/dynd/kernels/make_lifted_reduction_ckernel.hpp
+    include/dynd/kernels/reduce.hpp
     include/dynd/kernels/multidispatch.hpp
     include/dynd/kernels/option_assignment_kernels.hpp
     include/dynd/kernels/option_kernels.hpp

@@ -860,6 +860,18 @@ namespace nd {
                  : NULL;
     }
 
+    const ndt::type &get_return_type() const
+    {
+      return get_type()->get_return_type();
+    }
+
+    intptr_t get_npos() const { return get_type()->get_npos(); }
+
+    const ndt::type &get_pos_type(intptr_t i) const
+    {
+      return get_type()->get_pos_type(i);
+    }
+
     const ndt::type &get_array_type() const { return m_value.get_type(); }
 
     operator nd::array() const { return m_value; }

@@ -265,12 +265,12 @@ namespace ndt {
     std::vector<intptr_t> m_opt_kwd_indices;
 
   public:
-    arrfunc_type(const type &ret_type);
+    arrfunc_type(const ndt::type &ret_type);
 
-    arrfunc_type(const type &pos_types, const type &ret_type);
+    arrfunc_type(const ndt::type &pos_types, const ndt::type &ret_type);
 
-    arrfunc_type(const type &pos_types, const type &kwd_types,
-                 const type &ret_type);
+    arrfunc_type(const ndt::type &pos_types, const ndt::type &kwd_types,
+                 const ndt::type &ret_type);
 
     virtual ~arrfunc_type() {}
 
@@ -279,9 +279,9 @@ namespace ndt {
       return m_kwd_struct.extended<struct_type>()->get_field_name_raw(i);
     }
 
-    const type &get_return_type() const { return m_return_type; }
+    const ndt::type &get_return_type() const { return m_return_type; }
 
-    const type &get_pos_tuple() const { return m_pos_tuple; }
+    const ndt::type &get_pos_tuple() const { return m_pos_tuple; }
 
     const nd::array &get_pos_types() const
     {
@@ -293,7 +293,7 @@ namespace ndt {
       return m_pos_tuple.extended<tuple_type>()->is_variadic();
     }
 
-    const type &get_kwd_struct() const { return m_kwd_struct; }
+    const ndt::type &get_kwd_struct() const { return m_kwd_struct; }
 
     const nd::array &get_kwd_types() const
     {
@@ -310,7 +310,7 @@ namespace ndt {
       return m_pos_tuple.extended<tuple_type>()->get_field_types_raw();
     }
 
-    const type &get_pos_type(intptr_t i) const
+    const ndt::type &get_pos_type(intptr_t i) const
     {
       if (i == -1) {
         return get_return_type();

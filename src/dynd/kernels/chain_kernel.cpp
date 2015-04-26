@@ -42,7 +42,8 @@ intptr_t nd::functional::chain_kernel::instantiate(
                   root_ckb_offset);
   self->second_offset = ckb_offset - root_ckb_offset;
   const char *buffer_arrmeta = self->buffer_arrmeta.get();
-  return second->instantiate(second, second_tp, data + first->data_size, ckb,
+  return second->instantiate(second, second_tp,
+                             data + first->resolution_data_size, ckb,
                              ckb_offset, dst_tp, dst_arrmeta, 1, &buffer_tp,
                              &buffer_arrmeta, kernreq, ectx, kwds, tp_vars);
 }

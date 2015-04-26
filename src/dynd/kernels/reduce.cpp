@@ -11,6 +11,7 @@
 #include <dynd/kernels/expr_kernel_generator.hpp>
 #include <dynd/kernels/ckernel_common_functions.hpp>
 #include <dynd/kernels/base_kernel.hpp>
+#include <dynd/shape_tools.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -1019,15 +1020,14 @@ struct strided_inner_broadcast_kernel_extra
 
 } // anonymous namespace
 
-size_t nd::functional::reduce_virtual_ck::instantiate(
-    const arrfunc_type_data *self, const ndt::arrfunc_type *self_tp, char *data,
-    void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
-    const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
-    const char *const *src_arrmeta, kernel_request_t kernreq,
-    const eval::eval_context *ectx, const nd::array &kwds,
-    const std::map<dynd::nd::string, ndt::type> &tp_vars)
+void nd::functional::reduce_virtual_ck::resolve_option_values(
+    const arrfunc_type_data *self,
+    const ndt::arrfunc_type *DYND_UNUSED(self_tp), char *resolution_data,
+    intptr_t nsrc, const ndt::type *src_tp, nd::array &kwds,
+    const std::map<nd::string, ndt::type> &tp_vars)
 {
-  // Get all the keyword args first
+  // Initialize the resolution data memory
+  auto kw = new (resolution_data) resolution_data_type;
 
   // Axis must be a boolean array with the dimensions being reduced
   nd::array axis = kwds.p("axis");
@@ -1043,6 +1043,63 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
   bool right_associative = kwds.p("right_associative").as<bool>();
   bool associative = kwds.p("associative").as<bool>();
   bool commutative = kwds.p("commutative").as<bool>();
+}
+
+size_t nd::functional::reduce_virtual_ck::instantiate(
+    const arrfunc_type_data *self, const ndt::arrfunc_type *self_tp,
+    char *resolution_data, void *ckb, intptr_t ckb_offset,
+    const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
+    const ndt::type *src_tp, const char *const *src_arrmeta,
+    kernel_request_t kernreq, const eval::eval_context *ectx,
+    const nd::array &DYND_UNUSED(kwds),
+    const std::map<dynd::nd::string, ndt::type> &tp_vars)
+{
+  // Get the kwargs
+  auto kw = reinterpret_cast<const resolution_data_type *>(resolution_data);
+
+  // Convert the `axis` input into an array of booleans
+  intptr_t reduction_ndim = src_tp[0].get_ndim() - dst_tp.get_ndim();
+  shortvector<bool> reduction_dimflags(reduction_ndim);
+  if (kw->axis.is_null) {
+    // No axis specified means reduce all dimensions
+    for (intptr_t i = 0; i < reduction_ndim; ++i) {
+      reduction_dimflags[i] = true;
+    }
+  }
+  else {
+    switch (kw->axis.get_type().get_kind()) {
+      case int_kind:
+      case uint_kind: {
+        // A single axis
+        intptr_t dim = kw->axis.as<intptr_t>();
+        for (intptr_t i = 0; i < reduction_ndim; ++i) {
+          reduction_dimflags[i] = false;
+        }
+        // TODO: Better out-of-bounds error message referencing that it's a
+        //       dimension that is out of bounds
+        dim = apply_single_index(dim, reduction_ndim, NULL);
+        reduction_dimflags[dim] = true;
+      } break;
+      case dim_kind: {
+        static ndt::type int_kind_array_tp("Fixed * Int"),
+            int_array_tp("Fixed * intptr");
+        static ndt::type bool_kind_array_tp("Fixed * Bool"),
+            bool_array_tp("Fixed * bool");
+        if (int_kind_array_tp.match(kw->axis.get_type())) {
+          kw->axis = nd::asarray(kw->axis, int_array_tp);
+        }
+        else if (bool_kind_array_tp.match(kw->axis.get_type())) {
+          kw->axis = nd::asarray(kw->axis, bool_array_tp);
+        }
+        else {
+          stringstream ss;
+          ss << "dynd reduce: value " << kw->axis;
+          ss << " is not valid as `axis` argument";
+          throw invalid_argument(ss.str());
+        }
+        break;
+    }
+  }
 
   // Count the number of dimensions being reduced
   intptr_t reducedim_count = 0;
@@ -1055,13 +1112,14 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
       // If there are no dimensions to reduce, it's
       // just a dst_initialization operation, so create
       // that ckernel directly
-      if (!dst_init.is_null()) {
-        return dst_init.get()->instantiate(
-            dst_init.get(), dst_init.get_type(), NULL, ckb, ckb_offset, dst_tp,
-            dst_arrmeta, red_op.get_type()->get_npos(), src_tp, src_arrmeta,
-            kernreq, ectx, nd::array(), std::map<nd::string, ndt::type>());
+      if (!kw->dst_init.is_null()) {
+        return kw->dst_init.get()->instantiate(
+            kw->dst_init.get(), kw->dst_init.get_type(), NULL, ckb, ckb_offset,
+            dst_tp, dst_arrmeta, kw->red_op.get_type()->get_npos(), src_tp,
+            src_arrmeta, kernreq, ectx, nd::array(),
+            std::map<nd::string, ndt::type>());
       }
-      else if (red_ident.is_null()) {
+      else if (kw->red_ident.is_null()) {
         return make_assignment_kernel(NULL, NULL, ckb, ckb_offset, dst_tp,
                                       dst_arrmeta, src_tp, src_arrmeta, kernreq,
                                       ectx, nd::array());
@@ -1069,27 +1127,27 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
         // Create the kernel which copies the identity and then
         // does one reduction
         return strided_inner_reduction_kernel_extra::make(
-            red_op, dst_init, ckb, ckb_offset, 0, 1, dst_tp, dst_arrmeta,
-            *src_tp, *src_arrmeta, right_associative, red_ident, kernreq, ectx);
+            kw->red_op, kw->dst_init, ckb, ckb_offset, 0, 1, dst_tp,
+            dst_arrmeta, *src_tp, *src_arrmeta, kw->right_associative,
+            kw->red_ident, kernreq, ectx);
       }
     }
     throw runtime_error("make_lifted_reduction_ckernel: no dimensions were "
                         "flagged for reduction");
   }
 
-  if (!(reducedim_count == 1 || (associative && commutative))) {
+  if (!(reducedim_count == 1 || (kw->associative && kw->commutative))) {
     throw runtime_error(
         "make_lifted_reduction_ckernel: for reducing along multiple dimensions,"
         " the reduction function must be both associative and commutative");
   }
-  if (right_associative) {
+  if (kw->right_associative) {
     throw runtime_error("make_lifted_reduction_ckernel: right_associative is "
                         "not yet supported");
   }
 
-
-  ndt::type dst_el_tp = red_op.get_return_type();
-  ndt::type src_el_tp = red_op.get_pos_type(0);
+  ndt::type dst_el_tp = kw->red_op.get_return_type();
+  ndt::type src_el_tp = kw->red_op.get_pos_type(0);
 
   // This is the number of dimensions being processed by the reduction
   if (reduction_ndim != src_tp[0].get_ndim() - src_el_tp.get_ndim()) {
@@ -1133,7 +1191,7 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
     }
     if (reduction_dimflags[i]) {
       // This dimension is being reduced
-      if (src_dim_size == 0 && red_ident.is_null()) {
+      if (src_dim_size == 0 && kw->red_ident.is_null()) {
         // If the size of the src is 0, a reduction identity is required to get
         // a value
         stringstream ss;
@@ -1173,9 +1231,9 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
       } else {
         // The innermost dimension being reduced
         return strided_inner_reduction_kernel_extra::make(
-            red_op, dst_init, ckb, ckb_offset, src_stride, src_dim_size,
-            dst_i_tp, dst_arrmeta, src_i_tp, src0_arrmeta, right_associative,
-            red_ident, kernreq, ectx);
+            kw->red_op, kw->dst_init, ckb, ckb_offset, src_stride, src_dim_size,
+            dst_i_tp, dst_arrmeta, src_i_tp, src0_arrmeta,
+            kw->right_associative, kw->red_ident, kernreq, ectx);
       }
     } else {
       // This dimension is being broadcast, not reduced
@@ -1204,9 +1262,9 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
       } else {
         // The innermost dimension being broadcast
         return strided_inner_broadcast_kernel_extra::make(
-            red_op, dst_init, ckb, ckb_offset, dst_stride, src_stride,
+            kw->red_op, kw->dst_init, ckb, ckb_offset, dst_stride, src_stride,
             src_dim_size, dst_i_tp, dst_arrmeta, src_i_tp, src0_arrmeta,
-            right_associative, red_ident, kernreq, ectx);
+            kw->right_associative, kw->red_ident, kernreq, ectx);
       }
     }
   }

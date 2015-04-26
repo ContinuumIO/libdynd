@@ -12,6 +12,7 @@
 #include <dynd/kernels/ckernel_common_functions.hpp>
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/shape_tools.hpp>
+#include <dynd/asarray.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -1067,37 +1068,65 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
     }
   }
   else {
-    switch (kw->axis.get_type().get_kind()) {
-      case int_kind:
-      case uint_kind: {
-        // A single axis
-        intptr_t dim = kw->axis.as<intptr_t>();
-        for (intptr_t i = 0; i < reduction_ndim; ++i) {
-          reduction_dimflags[i] = false;
-        }
-        // TODO: Better out-of-bounds error message referencing that it's a
-        //       dimension that is out of bounds
-        dim = apply_single_index(dim, reduction_ndim, NULL);
-        reduction_dimflags[dim] = true;
-      } break;
-      case dim_kind: {
-        static ndt::type int_kind_array_tp("Fixed * Int"),
-            int_array_tp("Fixed * intptr");
-        static ndt::type bool_kind_array_tp("Fixed * Bool"),
-            bool_array_tp("Fixed * bool");
-        if (int_kind_array_tp.match(kw->axis.get_type())) {
-          kw->axis = nd::asarray(kw->axis, int_array_tp);
-        }
-        else if (bool_kind_array_tp.match(kw->axis.get_type())) {
-          kw->axis = nd::asarray(kw->axis, bool_array_tp);
-        }
-        else {
-          stringstream ss;
-          ss << "dynd reduce: value " << kw->axis;
-          ss << " is not valid as `axis` argument";
-          throw invalid_argument(ss.str());
-        }
-        break;
+    // Experimenting with the pieces that could be shaped into a
+    // pattern-matching idiom of some kind. The biggest trouble in forming this
+    // into something relatively simple to express is the desire to have all the
+    // types being matched be statically constructed, not constructed at match
+    // time.
+    static ndt::type int_kind_tp("Int");
+    static ndt::type int_kind_array_tp("Fixed * Int");
+    static ndt::type bool_kind_array_tp("Fixed * Bool");
+
+    if (int_kind_tp.match(kw->axis.get_type())) {
+      // A single axis
+      for (intptr_t i = 0; i < reduction_ndim; ++i) {
+        reduction_dimflags[i] = false;
+      }
+      // TODO: Better out-of-bounds error message referencing that it's a
+      //       dimension that is out of bounds
+      intptr_t dim = kw->axis.as<intptr_t>();
+      dim = apply_single_index(dim, reduction_ndim, NULL);
+      reduction_dimflags[dim] = true;
+    }
+    else if (int_kind_array_tp.match(kw->axis.get_type())) {
+      // An array of integer axes
+      nd::with_1d_stride<intptr_t>(
+          kw->axis, [&](intptr_t size, intptr_t stride, const intptr_t *data) {
+            for (intptr_t i = 0; i < reduction_ndim; ++i) {
+              reduction_dimflags[i] = false;
+            }
+            for (intptr_t i = 0; i < size; ++i) {
+              intptr_t dim = data[i * stride];
+              dim = apply_single_index(dim, reduction_ndim, NULL);
+              reduction_dimflags[dim] = true;
+            }
+          });
+    }
+    else if (bool_kind_array_tp.match(kw->axis.get_type())) {
+      // An array of boolean axes
+      nd::with_1d_stride<dynd_bool>(
+          kw->axis, [&](intptr_t size, intptr_t stride, const dynd_bool *data) {
+            if (size > reduction_ndim) {
+              stringstream ss;
+              ss << "reduce: provided " << size
+                 << " boolean values to axis parameter, maximum of "
+                 << reduction_ndim;
+              throw invalid_argument(ss.str());
+            }
+            // Copy the values provided, set the rest to false
+            for (intptr_t i = 0; i < size; ++i) {
+              reduction_dimflags[i] = data[i * stride];
+            }
+            for (intptr_t i = size; i < reduction_ndim; ++i) {
+              reduction_dimflags[i] = false;
+            }
+          });
+    }
+    else {
+      stringstream ss;
+      ss << "dynd reduce: value " << kw->axis;
+      ss << " is not valid as `axis` argument";
+      throw invalid_argument(ss.str());
     }
   }
 
@@ -1123,7 +1152,8 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
         return make_assignment_kernel(NULL, NULL, ckb, ckb_offset, dst_tp,
                                       dst_arrmeta, src_tp, src_arrmeta, kernreq,
                                       ectx, nd::array());
-      } else {
+      }
+      else {
         // Create the kernel which copies the identity and then
         // does one reduction
         return strided_inner_reduction_kernel_extra::make(

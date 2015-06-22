@@ -135,10 +135,9 @@ TEST(Reduction, BuiltinSum_Lift0D_NoIdentity)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a zero-dimensional reduction arrfunc (basically a no-op)
-  bool reduction_dimflags[1] = {false};
-  nd::arrfunc af = lift_reduction_arrfunc(
-      reduction_kernel, ndt::type("float32"), nd::array(), false, 0,
-      reduction_dimflags, true, true, false, nd::array());
+  nd::arrfunc af = nd::functional::reduce(
+      reduction_kernel, ndt::type("float32"), nd::array(), false,
+      nd::empty("0 * bool"), true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a = 1.25f;
@@ -170,10 +169,9 @@ TEST(Reduction, BuiltinSum_Lift0D_WithIdentity)
 
   // Lift it to a zero-dimensional reduction arrfunc (basically a no-op)
   // Use 100.f as the "identity" to confirm it's really being used
-  bool reduction_dimflags[1] = {false};
-  nd::arrfunc af = lift_reduction_arrfunc(
-      reduction_kernel, ndt::type("float32"), nd::array(), false, 0,
-      reduction_dimflags, true, true, false, nd::array(100.f));
+  nd::arrfunc af = nd::functional::reduce(
+      reduction_kernel, ndt::type("float32"), nd::array(), false,
+      nd::empty("0 * bool"), true, true, false, nd::array(100.f));
 
   // Set up some data for the test reduction
   nd::array a = 1.25f;
@@ -204,10 +202,9 @@ TEST(Reduction, BuiltinSum_Lift1D_NoIdentity)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a one-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[1] = {true};
-  nd::arrfunc af = lift_reduction_arrfunc(
-      reduction_kernel, ndt::type("Fixed * float32"), nd::array(), false, 1,
-      reduction_dimflags, true, true, false, nd::array());
+  nd::arrfunc af = nd::functional::reduce(
+      reduction_kernel, ndt::type("Fixed * float32"), nd::array(), false,
+      {true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   float vals0[5] = {1.5, -22., 3.75, 1.125, -3.375};
@@ -259,9 +256,9 @@ TEST(Reduction, BuiltinSum_Lift1D_WithIdentity)
   // Lift it to a one-dimensional strided float32 reduction arrfunc
   // Use 100.f as the "identity" to confirm it's really being used
   bool reduction_dimflags[1] = {true};
-  nd::arrfunc af = lift_reduction_arrfunc(
-      reduction_kernel, ndt::type("Fixed * float32"), nd::array(), false, 1,
-      reduction_dimflags, true, true, false, nd::array(100.f));
+  nd::arrfunc af = nd::functional::reduce(
+      reduction_kernel, ndt::type("Fixed * float32"), nd::array(), false,
+      {true}, true, true, false, nd::array(100.f));
 
   // Set up some data for the test reduction
   float vals0[5] = {1.5, -22., 3.75, 1.125, -3.375};
@@ -294,10 +291,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {true, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(),
-      false, 2, reduction_dimflags, true, true, false, nd::array());
+      false, {true, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -345,10 +341,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {true, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(), true,
-      2, reduction_dimflags, true, true, false, nd::array());
+      {true, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -357,19 +352,8 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim)
   nd::array b = nd::empty(1, 1, "float32");
   EXPECT_TYPE_MATCH(af.get_type()->get_return_type(), b.get_type());
 
-  // Instantiate the lifted ckernel
-  ckernel_builder<kernel_request_host> ckb;
-  ndt::type src_tp[1] = {a.get_type()};
-  const char *src_arrmeta[1] = {a.get_arrmeta()};
-  af.get()->instantiate(af.get(), af.get_type(), NULL, &ckb, 0, b.get_type(),
-                        b.get_arrmeta(), 1, src_tp, src_arrmeta,
-                        kernel_request_single, &eval::default_eval_context,
-                        nd::array(), std::map<nd::string, ndt::type>());
-  expr_single_t fn = ckb.get()->get_function<expr_single_t>();
-
-  // Call it on the data
-  char *src = const_cast<char *>(a.get_readonly_originptr());
-  fn(b.get_readwrite_originptr(), &src, ckb.get());
+  // Run the reduction
+  af(a, kwds("dst", b));
   EXPECT_EQ(1.5f + 2.f + 7.f - 2.25f + 7.f + 2.125f, b(0, 0).as<float>());
 }
 
@@ -380,10 +364,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {false, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(),
-      false, 2, reduction_dimflags, true, true, false, nd::array());
+      false, {false, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -435,10 +418,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce_KeepDim)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {false, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(), true,
-      2, reduction_dimflags, true, true, false, nd::array());
+      {false, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -472,10 +454,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {true, false};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(),
-      false, 2, reduction_dimflags, true, true, false, nd::array());
+      false, {true, false}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -529,10 +510,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a two-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[2] = {true, false};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * float32"), nd::array(), true,
-      2, reduction_dimflags, true, true, false, nd::array());
+      {true, false}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a =
@@ -567,11 +547,9 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a three-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[3] = {true, true, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * Fixed * float32"),
-      nd::array(), false, 3, reduction_dimflags, true, true, false,
-      nd::array());
+      nd::array(), false, {true, true, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a = parse_json("2 * 3 * 2 * float32", "[[[1.5, -2.375], [2, 1.25], "
@@ -606,11 +584,9 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_BroadcastReduceReduce)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a three-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[3] = {false, true, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * Fixed * float32"),
-      nd::array(), false, 3, reduction_dimflags, true, true, false,
-      nd::array());
+      nd::array(), false, {false, true, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a = parse_json("2 * 3 * 2 * float32", "[[[1.5, -2.375], [2, 1.25], "
@@ -645,11 +621,9 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceBroadcastReduce)
       kernels::make_builtin_sum_reduction_arrfunc(float32_type_id);
 
   // Lift it to a three-dimensional strided float32 reduction arrfunc
-  bool reduction_dimflags[3] = {true, false, true};
-  nd::arrfunc af = lift_reduction_arrfunc(
+  nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * Fixed * Fixed * float32"),
-      nd::array(), false, 3, reduction_dimflags, true, true, false,
-      nd::array());
+      nd::array(), false, {true, false, true}, true, true, false, nd::array());
 
   // Set up some data for the test reduction
   nd::array a = parse_json("2 * 3 * 2 * float32", "[[[1.5, -2.375], [2, 1.25], "

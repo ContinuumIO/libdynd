@@ -988,7 +988,11 @@ namespace nd {
         }
 
         dst = empty(dst_tp);
-      } else if (self->resolve_dst_type != NULL) {
+      } else {
+        if (self->resolve_dst_type == NULL) {
+          throw std::runtime_error(
+              "Arrfunc internal error: result_dst_type is NULL");
+        }
         // In this case, with dst_tp already populated, resolve_dst_type
         // must not overwrite it
         dst_tp = dst.get_type();

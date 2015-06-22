@@ -13,6 +13,7 @@
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/shape_tools.hpp>
 #include <dynd/asarray.hpp>
+#include <dynd/with.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -636,11 +637,11 @@ struct strided_inner_reduction_kernel_extra
       ss << "funcproto must be unary or a binary expr with all equal types";
       throw runtime_error(ss.str());
     }
-    if (red_op.get_return_type() != dst_tp) {
+    if (!red_op.get_return_type().match(dst_tp)) {
       stringstream ss;
       ss << "make_lifted_reduction_ckernel: elwise reduction ckernel ";
       ss << "dst type is " << red_op.get_return_type();
-      ss << ", expected " << dst_tp;
+      ss << ", input is non-matching " << dst_tp;
       throw type_error(ss.str());
     }
     if (red_op.get_pos_type(0) != src_tp) {
@@ -1034,7 +1035,7 @@ void nd::functional::reduce_virtual_ck::resolve_option_values(
   nd::array axis = kwds.p("axis");
   intptr_t reduction_ndim = axis.get_dim_size();
   auto reduction_dimflags =
-      reinterpret_cast<const dynd_bool *>(axis.get_readonly_originptr());
+      reinterpret_cast<const dynd::bool1 *>(axis.get_readonly_originptr());
   // The elwise reduction operation
   nd::arrfunc red_op = kwds.p("op");
   // Function to initialize destination elements, may be NULL
@@ -1061,7 +1062,7 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
   // Convert the `axis` input into an array of booleans
   intptr_t reduction_ndim = src_tp[0].get_ndim() - dst_tp.get_ndim();
   shortvector<bool> reduction_dimflags(reduction_ndim);
-  if (kw->axis.is_null) {
+  if (kw->axis.is_null()) {
     // No axis specified means reduce all dimensions
     for (intptr_t i = 0; i < reduction_ndim; ++i) {
       reduction_dimflags[i] = true;
@@ -1104,8 +1105,9 @@ size_t nd::functional::reduce_virtual_ck::instantiate(
     }
     else if (bool_kind_array_tp.match(kw->axis.get_type())) {
       // An array of boolean axes
-      nd::with_1d_stride<dynd_bool>(
-          kw->axis, [&](intptr_t size, intptr_t stride, const dynd_bool *data) {
+      nd::with_1d_stride<dynd::bool1>(
+          kw->axis,
+          [&](intptr_t size, intptr_t stride, const dynd::bool1 *data) {
             if (size > reduction_ndim) {
               stringstream ss;
               ss << "reduce: provided " << size

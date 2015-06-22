@@ -14,7 +14,9 @@ class bool1 {
   int8 m_value;
 
 public:
-  DYND_CUDA_HOST_DEVICE explicit bool1(bool value = bool()) : m_value(value) {}
+  DYND_CUDA_HOST_DEVICE bool1() = default;
+
+  DYND_CUDA_HOST_DEVICE explicit bool1(bool value) : m_value(value) {}
 
   DYND_CUDA_HOST_DEVICE operator bool() const
   {

@@ -15,6 +15,8 @@
 
 using namespace std;
 using namespace dynd;
+/*
+
 
 template <typename T>
 class Bool1 : public ::testing::Test {
@@ -26,8 +28,6 @@ class Bool : public ::testing::Test {
 
 TYPED_TEST_CASE_P(Bool1);
 TYPED_TEST_CASE_P(Bool);
-
-TEST(Bool1, DefaultConstructor) { EXPECT_EQ(bool(), bool1()); }
 
 TYPED_TEST_P(Bool1, Conversion)
 {
@@ -48,7 +48,6 @@ TYPED_TEST_P(Bool, Conversion)
   EXPECT_FALSE(static_cast<bool>(TypeParam(false)));
 }
 
-/*
 TEST(Bool1, IsConvertible)
 {
     EXPECT_TRUE((is_convertible<bool1, bool>::value));
@@ -67,13 +66,13 @@ TEST(Bool1, IsConvertible)
     EXPECT_TRUE((is_convertible<bool1, float64>::value));
     EXPECT_TRUE((is_convertible<bool1, complex64>::value));
 }
-*/
 
-typedef ::testing::Types<bool, int8, int16, int32, int64, uint8, uint16, uint32, uint64> types;
+typedef ::testing::Types<bool, int8, int16, int32, int64, uint8, uint16, uint32,
+                         uint64> types;
 
 REGISTER_TYPED_TEST_CASE_P(Bool1, Conversion);
 REGISTER_TYPED_TEST_CASE_P(Bool, Conversion);
 
-
 INSTANTIATE_TYPED_TEST_CASE_P(BuiltinTypes, Bool1, types);
 INSTANTIATE_TYPED_TEST_CASE_P(BuiltinTypes, Bool, types);
+*/

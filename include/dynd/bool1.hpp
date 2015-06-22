@@ -11,46 +11,21 @@ namespace dynd {
 
 // A boolean class that is just one byte
 class bool1 {
-  char m_value;
+  int8 m_value;
 
 public:
-  DYND_CUDA_HOST_DEVICE bool1() = default;
+  DYND_CUDA_HOST_DEVICE explicit bool1(bool value = bool()) : m_value(value) {}
 
-  DYND_CUDA_HOST_DEVICE explicit bool1(bool value) : m_value(value) {}
-
-  // Special case complex conversion to avoid ambiguous overload
-  /*
-    template <class T>
-    DYND_CUDA_HOST_DEVICE explicit bool1(complex<T> value)
-        : m_value(value != complex<T>(0))
-    {
-    }
-  */
-
-  operator bool() const { return m_value ? true : false; }
-
-  /*
-    template <typename T,
-              typename = typename std::enable_if<is_arithmetic<T>::value>::type>
-    DYND_CUDA_HOST_DEVICE explicit operator T() const
-    {
-      return static_cast<T>(static_cast<bool>(m_value));
-    }
-  */
+  DYND_CUDA_HOST_DEVICE operator bool() const
+  {
+    return m_value != static_cast<int8>(0);
+  }
 
   DYND_CUDA_HOST_DEVICE bool1 &operator=(bool value)
   {
     m_value = value;
     return *this;
   }
-
-  /*
-
-    DYND_CUDA_HOST_DEVICE bool1 &operator=(bool1 value) {
-      m_value = value.m_value;
-      return *this;
-    }
-  */
 };
 
 DYND_CUDA_HOST_DEVICE inline bool operator<(bool1 lhs, bool1 rhs)

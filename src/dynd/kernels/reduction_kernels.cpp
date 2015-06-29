@@ -6,7 +6,7 @@
 #include <dynd/kernels/reduction_kernels.hpp>
 #include <dynd/array.hpp>
 #include <dynd/types/fixed_dim_kind_type.hpp>
-#include <dynd/func/lift_reduction_arrfunc.hpp>
+#include <dynd/func/reduce.hpp>
 #include <dynd/kernels/base_kernel.hpp>
 
 using namespace std;
@@ -126,10 +126,9 @@ nd::arrfunc kernels::make_builtin_sum_reduction_arrfunc(type_id_t tid)
 nd::arrfunc kernels::make_builtin_sum1d_arrfunc(type_id_t tid)
 {
   nd::arrfunc sum_ew = kernels::make_builtin_sum_reduction_arrfunc(tid);
-  bool reduction_dimflags[1] = {true};
-  return lift_reduction_arrfunc(
-      sum_ew, ndt::make_fixed_dim_kind(ndt::type(tid)), nd::array(), false, 1,
-      reduction_dimflags, true, true, false, 0);
+  return nd::functional::reduce(
+      sum_ew, ndt::make_fixed_dim_kind(ndt::type(tid)), nd::array(), false,
+      {true}, true, true, false, 0);
 }
 
 namespace {

@@ -90,7 +90,7 @@ nd::arrfunc nd::functional::elwise(const ndt::type &self_tp,
   }
 
   return arrfunc::make<elwise_virtual_ck>(
-      self_tp, child, child.get()->data_size + sizeof(ndt::type));
+      self_tp, child, child.get()->resolution_data_size + sizeof(ndt::type));
 }
 
 nd::arrfunc nd::functional::elwise(const arrfunc &child)

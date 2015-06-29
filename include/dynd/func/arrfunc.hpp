@@ -860,6 +860,18 @@ namespace nd {
                  : NULL;
     }
 
+    const ndt::type &get_return_type() const
+    {
+      return get_type()->get_return_type();
+    }
+
+    intptr_t get_npos() const { return get_type()->get_npos(); }
+
+    const ndt::type &get_pos_type(intptr_t i) const
+    {
+      return get_type()->get_pos_type(i);
+    }
+
     const ndt::type &get_array_type() const { return m_value.get_type(); }
 
     operator nd::array() const { return m_value; }
@@ -953,13 +965,14 @@ namespace nd {
                         available, missing);
 
       // ...
-      std::unique_ptr<char[]> data(new char[get()->data_size]);
+      std::unique_ptr<char[]> resolution_data(
+          new char[get()->resolution_data_size]);
 
       // Resolve the optional keyword arguments
       if (self->resolve_option_values != NULL) {
-        self->resolve_option_values(self, self_tp, data.get(), arg_tp.size(),
-                                    arg_tp.empty() ? NULL : arg_tp.data(),
-                                    kwds_as_array, tp_vars);
+        self->resolve_option_values(
+            self, self_tp, resolution_data.get(), arg_tp.size(),
+            arg_tp.empty() ? NULL : arg_tp.data(), kwds_as_array, tp_vars);
       }
 
       // Construct the destination array, if it was not provided
@@ -968,20 +981,24 @@ namespace nd {
         // Resolve the destination type
         if (self->resolve_dst_type != NULL) {
           self->resolve_dst_type(
-              self, self_tp, data.get(), dst_tp, arg_tp.size(),
+              self, self_tp, resolution_data.get(), dst_tp, arg_tp.size(),
               arg_tp.empty() ? NULL : arg_tp.data(), kwds_as_array, tp_vars);
         } else {
           dst_tp = ndt::substitute(self_tp->get_return_type(), tp_vars, true);
         }
 
         dst = empty(dst_tp);
-      } else if (self->resolve_dst_type != NULL) {
+      } else {
+        if (self->resolve_dst_type == NULL) {
+          throw std::runtime_error(
+              "Arrfunc internal error: result_dst_type is NULL");
+        }
         // In this case, with dst_tp already populated, resolve_dst_type
         // must not overwrite it
         dst_tp = dst.get_type();
-        self->resolve_dst_type(self, self_tp, data.get(), dst_tp, arg_tp.size(),
-                               arg_tp.empty() ? NULL : arg_tp.data(),
-                               kwds_as_array, tp_vars);
+        self->resolve_dst_type(
+            self, self_tp, resolution_data.get(), dst_tp, arg_tp.size(),
+            arg_tp.empty() ? NULL : arg_tp.data(), kwds_as_array, tp_vars);
         // Sanity error check against rogue resolve_test_type
         if (dst_tp.extended() != dst.get_type().extended()) {
           std::stringstream ss;
@@ -994,7 +1011,7 @@ namespace nd {
 
       // Generate and evaluate the ckernel
       ckernel_builder<kernel_request_host> ckb;
-      self->instantiate(self, self_tp, data.get(), &ckb, 0, dst_tp,
+      self->instantiate(self, self_tp, resolution_data.get(), &ckb, 0, dst_tp,
                         dst.get_arrmeta(), arg_tp.size(),
                         arg_tp.empty() ? NULL : arg_tp.data(),
                         arg_arrmeta.empty() ? NULL : arg_arrmeta.data(),

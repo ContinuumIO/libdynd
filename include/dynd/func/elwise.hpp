@@ -6,19 +6,14 @@
 #pragma once
 
 #include <dynd/func/arrfunc.hpp>
-#include <dynd/kernels/base_kernel.hpp>
-#include <dynd/kernels/cuda_launch.hpp>
-#include <dynd/types/ellipsis_dim_type.hpp>
-#include <dynd/types/var_dim_type.hpp>
-#include <dynd/types/fixed_dim_type.hpp>
 
 namespace dynd {
 namespace nd {
   namespace functional {
 
     /**
-     * Lifts the provided ckernel, broadcasting it as necessary to execute
-     * across the additional dimensions in the ``lifted_types`` array.
+     * Lifts the provided arrfunc, broadcasting it as necessary to execute
+     * across additional dimensions in the arguments.
      *
      * \param child  The arrfunc being lifted
      */

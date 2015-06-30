@@ -1023,38 +1023,38 @@ struct strided_inner_broadcast_kernel_extra
 } // anonymous namespace
 
 void nd::functional::reduce_virtual_ck::resolve_option_values(
-    const arrfunc_type_data *self,
-    const ndt::arrfunc_type *DYND_UNUSED(self_tp), char *resolution_data,
-    intptr_t nsrc, const ndt::type *src_tp, nd::array &kwds,
-    const std::map<nd::string, ndt::type> &tp_vars)
+    const arrfunc_type_data *DYND_UNUSED(self),
+    const ndt::arrfunc_type *DYND_UNUSED(self_tp), char *DYND_UNUSED(resolution_data),
+    intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp), nd::array &kwds,
+    const std::map<nd::string, ndt::type> &DYND_UNUSED(tp_vars))
 {
   // Initialize the resolution data memory
-  auto kw = new (resolution_data) resolution_data_type;
+//  auto kw = new (resolution_data) resolution_data_type;
 
   // Axis must be a boolean array with the dimensions being reduced
   nd::array axis = kwds.p("axis");
-  intptr_t reduction_ndim = axis.get_dim_size();
-  auto reduction_dimflags =
-      reinterpret_cast<const dynd::bool1 *>(axis.get_readonly_originptr());
+//  intptr_t reduction_ndim = axis.get_dim_size();
+//  auto reduction_dimflags =
+  //    reinterpret_cast<const dynd::bool1 *>(axis.get_readonly_originptr());
   // The elwise reduction operation
   nd::arrfunc red_op = kwds.p("op");
   // Function to initialize destination elements, may be NULL
   nd::arrfunc dst_init = kwds.p("dst_init");
   // The reduction identity, may be NULL
   nd::array red_ident = kwds.p("red_ident");
-  bool right_associative = kwds.p("right_associative").as<bool>();
-  bool associative = kwds.p("associative").as<bool>();
-  bool commutative = kwds.p("commutative").as<bool>();
+//  bool right_associative = kwds.p("right_associative").as<bool>();
+//  bool associative = kwds.p("associative").as<bool>();
+//  bool commutative = kwds.p("commutative").as<bool>();
 }
 
 size_t nd::functional::reduce_virtual_ck::instantiate(
-    const arrfunc_type_data *self, const ndt::arrfunc_type *self_tp,
+    const arrfunc_type_data *DYND_UNUSED(self), const ndt::arrfunc_type *DYND_UNUSED(self_tp),
     char *resolution_data, void *ckb, intptr_t ckb_offset,
-    const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
+    const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc),
     const ndt::type *src_tp, const char *const *src_arrmeta,
     kernel_request_t kernreq, const eval::eval_context *ectx,
     const nd::array &DYND_UNUSED(kwds),
-    const std::map<dynd::nd::string, ndt::type> &tp_vars)
+    const std::map<dynd::nd::string, ndt::type> &DYND_UNUSED(tp_vars))
 {
   // Get the kwargs
   auto kw = reinterpret_cast<const resolution_data_type *>(resolution_data);

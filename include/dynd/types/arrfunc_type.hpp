@@ -136,9 +136,9 @@ public:
 
   /** How big of a buffer does the type resolution process need */
   const size_t resolution_data_size;
+  arrfunc_instantiate_t instantiate;
   const arrfunc_resolve_option_values_t resolve_option_values;
   const arrfunc_resolve_dst_type_t resolve_dst_type;
-  arrfunc_instantiate_t instantiate;
   arrfunc_free_t free;
 
   arrfunc_type_data()

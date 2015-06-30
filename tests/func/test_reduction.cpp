@@ -255,7 +255,7 @@ TEST(Reduction, BuiltinSum_Lift1D_WithIdentity)
 
   // Lift it to a one-dimensional strided float32 reduction arrfunc
   // Use 100.f as the "identity" to confirm it's really being used
-  bool reduction_dimflags[1] = {true};
+//  bool reduction_dimflags[1] = {true};
   nd::arrfunc af = nd::functional::reduce(
       reduction_kernel, ndt::type("Fixed * float32"), nd::array(), false,
       {true}, true, true, false, nd::array(100.f));

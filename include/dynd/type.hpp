@@ -127,7 +127,7 @@ namespace ndt {
       }
 
       return NULL;
-//      throw invalid_type_id((int)type_id);
+      //      throw invalid_type_id((int)type_id);
     }
 
   public:
@@ -188,17 +188,17 @@ namespace ndt {
         : m_extended(type::validate_builtin_type_id(type_id))
     {
       switch (type_id) {
-        case fixed_dim_type_id:
-          *this = ndt::type("Fixed * Any");
-          break;
-        case var_dim_type_id:
-          *this = ndt::type("var * Any");
-          break;
-        case tuple_type_id:
-          *this = ndt::type("(...)");
-          break;
-        default:
-          break;
+      case fixed_dim_type_id:
+        *this = ndt::type("Fixed * Any");
+        break;
+      case var_dim_type_id:
+        *this = ndt::type("var * Any");
+        break;
+      case tuple_type_id:
+        *this = ndt::type("(...)");
+        break;
+      default:
+        break;
       }
     }
 
@@ -886,7 +886,17 @@ namespace ndt {
     template <typename T>
     struct equivalent;
 
+    template <typename T>
+    struct has_equivalent {
+      static const bool value = std::is_destructible<equivalent<T>>::value;
+    };
+
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
+  };
+
+  template <>
+  struct type::equivalent<int32> {
+    static type make() { return type("int32"); }
   };
 
   // Forward declarations

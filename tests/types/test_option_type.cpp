@@ -201,3 +201,9 @@ TEST(OptionType, String)
   a.vals_at(1) = "NA";
   EXPECT_EQ("NA", a(1).as<string>());
 }
+
+TEST(Type, Equivalent)
+{
+  EXPECT_TRUE(ndt::type::has_equivalent<int>::value);
+  EXPECT_FALSE(ndt::type::has_equivalent<double>::value);
+}

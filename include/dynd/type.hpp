@@ -88,7 +88,7 @@ namespace nd {
 
 namespace ndt {
   namespace detail {
-    DYND_HAS(make);
+    //    DYND_HAS(make);
   } // namespace dynd::ndt::detail
 
   template <class T>
@@ -895,11 +895,14 @@ namespace ndt {
       // std::is_destructible<equivalent<T>> should be used for
       // has_equivalent<T>, but std::is_destructible does not really work in
       // MSVC 2013
+
+      static void make() {}
     };
 
     template <typename T>
     struct has_equivalent {
-      static const bool value = detail::has_make<equivalent<T>>::value;
+      static const bool value =
+          !std::is_same<decltype(equivalent<T>::make()), void>::value;
     };
 
     template <typename T>

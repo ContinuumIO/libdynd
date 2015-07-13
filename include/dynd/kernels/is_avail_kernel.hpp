@@ -38,8 +38,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(?bool) -> bool"); }
     };
 
     // option[T] for signed integer T
@@ -68,8 +66,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     // option[float]
@@ -95,8 +91,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     // option[double]
@@ -122,8 +116,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     // option[complex[float]]
@@ -154,8 +146,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     // option[complex[double]]
@@ -187,8 +177,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -207,8 +195,6 @@ namespace nd {
           dst += dst_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -234,10 +220,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      // nd::is_avail
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -262,8 +244,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -288,8 +268,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -314,8 +292,6 @@ namespace nd {
           src0 += src0_stride;
         }
       }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
     template <>
@@ -376,11 +352,6 @@ namespace nd {
           throw type_error("fixed_dim_is_avail: expected built-in type");
         }
       }
-
-      static ndt::type make_type()
-      {
-        return ndt::type("(Fixed * Any) -> bool");
-      }
     };
 
   } // namespace dynd::nd::detail
@@ -395,7 +366,12 @@ namespace ndt {
 
   template <type_id_t Src0ValueTypeID>
   struct type::equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
-    static type make() { return type("(T) -> bool)"); }
+    static type make()
+    {
+      return arrfunc_type::make(
+          type::make<bool1>(),
+          {option_type::make(type::make<Src0ValueTypeID>())});
+    }
   };
 
 } // namespace dynd::ndt

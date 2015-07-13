@@ -14,6 +14,28 @@
 #include <dynd/eval/eval_context.hpp>
 #include <dynd/exceptions.hpp>
 
+template <typename T>
+struct has_destructor {
+  /* Has destructor :) */
+  template <typename A>
+  static std::true_type test(decltype(std::declval<A>().~A()) *)
+  {
+    return std::true_type();
+  }
+
+  /* Has no destructor :( */
+  template <typename A>
+  static std::false_type test(...)
+  {
+    return std::false_type();
+  }
+
+  /* This will be either `std::true_type` or `std::false_type` */
+  typedef decltype(test<T>(0)) type;
+
+  static const bool value = type::value; /* Which is it? */
+};
+
 namespace dynd {
 
 /**
@@ -884,19 +906,119 @@ namespace ndt {
     }
 
     template <typename T>
+    struct exact;
+
+    template <typename T>
     struct equivalent;
 
     template <typename T>
     struct has_equivalent {
-      static const bool value = std::is_destructible<equivalent<T>>::value;
+      static const bool value = has_destructor<equivalent<T>>::value;
     };
+
+    template <typename T>
+    static type make()
+    {
+      return exact<T>::make();
+    }
+
+    template <type_id_t TypeID>
+    static type make()
+    {
+      return type(TypeID);
+    }
 
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
   };
 
   template <>
+  struct type::exact<bool1> {
+    static type make() { return type::make<bool_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int8> {
+    static type make() { return type::make<int8_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int16> {
+    static type make() { return type::make<int16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int32> {
+    static type make() { return type::make<int32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int64> {
+    static type make() { return type::make<int64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int128> {
+    static type make() { return type::make<int128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint8> {
+    static type make() { return type::make<uint8_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint16> {
+    static type make() { return type::make<uint16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint32> {
+    static type make() { return type::make<uint32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint64> {
+    static type make() { return type::make<uint64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint128> {
+    static type make() { return type::make<uint128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float16> {
+    static type make() { return type::make<float16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float32> {
+    static type make() { return type::make<float32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float64> {
+    static type make() { return type::make<float64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float128> {
+    static type make() { return type::make<float128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<dynd::complex<float>> {
+    static type make() { return type::make<complex_float32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<dynd::complex<double>> {
+    static type make() { return type::make<complex_float64_type_id>(); }
+  };
+
+  template <>
   struct type::equivalent<int32> {
-    static type make() { return type("int32"); }
+    static type make() { return exact<int32>::make(); }
   };
 
   // Forward declarations

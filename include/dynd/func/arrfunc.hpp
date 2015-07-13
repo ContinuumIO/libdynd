@@ -697,7 +697,6 @@ namespace nd {
   namespace detail {
 
     DYND_HAS(data_size);
-    DYND_HAS(make_type);
     DYND_HAS(data_init);
     DYND_HAS(resolve_dst_type);
     DYND_HAS(instantiate);
@@ -946,24 +945,26 @@ namespace nd {
     }
 
     template <typename KernelType>
-    static typename std::enable_if<detail::has_make_type<KernelType>::value &&
-                                       detail::has_data_size<KernelType>::value,
-                                   arrfunc>::type
+    static typename std::enable_if<
+        ndt::type::has_equivalent<KernelType>::value &&
+            detail::has_data_size<KernelType>::value,
+        arrfunc>::type
     make()
     {
-      return arrfunc(KernelType::make_type(), KernelType::data_size,
-                     detail::get_data_init<KernelType>(),
+      return arrfunc(ndt::type::equivalent<KernelType>::make(),
+                     KernelType::data_size, detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
                      detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType, typename StaticDataType>
-    static typename std::enable_if<detail::has_make_type<KernelType>::value &&
-                                       detail::has_data_size<KernelType>::value,
-                                   arrfunc>::type
+    static typename std::enable_if<
+        ndt::type::has_equivalent<KernelType>::value &&
+            detail::has_data_size<KernelType>::value,
+        arrfunc>::type
     make(StaticDataType &&static_data)
     {
-      return arrfunc(KernelType::make_type(),
+      return arrfunc(ndt::type::equivalent<KernelType>::make(),
                      std::forward<StaticDataType>(static_data),
                      KernelType::data_size, detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
@@ -972,12 +973,12 @@ namespace nd {
 
     template <typename KernelType>
     static typename std::enable_if<
-        detail::has_make_type<KernelType>::value &&
+        ndt::type::has_equivalent<KernelType>::value &&
             !detail::has_data_size<KernelType>::value,
         arrfunc>::type
     make(std::size_t data_size)
     {
-      return arrfunc(KernelType::make_type(), data_size,
+      return arrfunc(ndt::type::equivalent<KernelType>::make(), data_size,
                      detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
                      detail::get_instantiate<KernelType>());
@@ -985,12 +986,12 @@ namespace nd {
 
     template <typename KernelType, typename StaticDataType>
     static typename std::enable_if<
-        detail::has_make_type<KernelType>::value &&
+        ndt::type::has_equivalent<KernelType>::value &&
             !detail::has_data_size<KernelType>::value,
         arrfunc>::type
     make(StaticDataType &&static_data, std::size_t data_size)
     {
-      return arrfunc(KernelType::make_type(),
+      return arrfunc(ndt::type::equivalent<KernelType>::make(),
                      std::forward<StaticDataType>(static_data), data_size,
                      detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
@@ -998,9 +999,10 @@ namespace nd {
     }
 
     template <typename KernelType>
-    static typename std::enable_if<!detail::has_make_type<KernelType>::value &&
-                                       detail::has_data_size<KernelType>::value,
-                                   arrfunc>::type
+    static typename std::enable_if<
+        !ndt::type::has_equivalent<KernelType>::value &&
+            detail::has_data_size<KernelType>::value,
+        arrfunc>::type
     make(const ndt::type &self_tp)
     {
       return arrfunc(self_tp, KernelType::data_size,
@@ -1010,9 +1012,10 @@ namespace nd {
     }
 
     template <typename KernelType, typename StaticDataType>
-    static typename std::enable_if<!detail::has_make_type<KernelType>::value &&
-                                       detail::has_data_size<KernelType>::value,
-                                   arrfunc>::type
+    static typename std::enable_if<
+        !ndt::type::has_equivalent<KernelType>::value &&
+            detail::has_data_size<KernelType>::value,
+        arrfunc>::type
     make(const ndt::type &self_tp, StaticDataType &&static_data)
     {
       return arrfunc(self_tp, std::forward<StaticDataType>(static_data),
@@ -1023,7 +1026,7 @@ namespace nd {
 
     template <typename KernelType>
     static typename std::enable_if<
-        !detail::has_make_type<KernelType>::value &&
+        !ndt::type::has_equivalent<KernelType>::value &&
             !detail::has_data_size<KernelType>::value,
         arrfunc>::type
     make(const ndt::type &self_tp, std::size_t data_size)
@@ -1035,7 +1038,7 @@ namespace nd {
 
     template <typename KernelType, typename StaticDataType>
     static typename std::enable_if<
-        !detail::has_make_type<KernelType>::value &&
+        !ndt::type::has_equivalent<KernelType>::value &&
             !detail::has_data_size<KernelType>::value,
         arrfunc>::type
     make(const ndt::type &self_tp, StaticDataType &&static_data,

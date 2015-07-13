@@ -513,16 +513,15 @@ void ndt::arrfunc_type::get_dynamic_array_functions(
       sizeof(arrfunc_array_functions) / sizeof(arrfunc_array_functions[0]);
 }
 
-ndt::type ndt::arrfunc_type::make(const nd::array &pos_tp,
-                                  const ndt::type &ret_tp)
-{
-  return type(new arrfunc_type(make_tuple(pos_tp), ret_tp), false);
-}
-
 ndt::type ndt::arrfunc_type::make(const initializer_list<type_id_t> &,
                                   const ndt::type &)
 {
   return type();
+}
+
+ndt::type ndt::arrfunc_type::make(const type &ret_tp, const nd::array &arg_tp)
+{
+  return type(new arrfunc_type(make_tuple(arg_tp), ret_tp), false);
 }
 
 nd::array arrfunc_type_data::

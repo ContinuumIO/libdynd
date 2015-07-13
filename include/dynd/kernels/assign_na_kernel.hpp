@@ -351,4 +351,14 @@ namespace nd {
       detail::assign_na_kernel<DstTypeID, type_kind_of<DstTypeID>::value>;
 
 } // namespace dynd::nd
+
+namespace ndt {
+
+  template <type_id_t DstValueTypeID>
+  struct type::equivalent<nd::assign_na_kernel<DstValueTypeID>> {
+    static type make() { return type("() -> T"); }
+  };
+
+} // namespace dynd::ndt
+
 } // namespace dynd

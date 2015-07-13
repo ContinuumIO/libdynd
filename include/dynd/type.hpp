@@ -14,38 +14,6 @@
 #include <dynd/eval/eval_context.hpp>
 #include <dynd/exceptions.hpp>
 
-template <typename T>
-struct has_destructor {
-  template <typename A>
-  static std::true_type test(decltype(std::declval<A *>()->~A()) *)
-  {
-    return std::true_type();
-  }
-
-  template <typename A>
-  static std::false_type test(...)
-  {
-    return std::false_type();
-  }
-
-  typedef decltype(test<T>(0)) type;
-
-  static const bool value = type::value; 
-};
-
-/*
-template <typename T>
-struct has_destructor_helper {
-    template <typename U>
-    static std::integral_constant<bool, sizeof(U) == sizeof(U)> test(U*);
-    static std::false_type test(...);
-    using type = decltype(test((T*)0));
-};
-
-template <typename T>
-struct has_destructor : has_destructor_helper<T>::type {};
-*/
-
 namespace dynd {
 
 /**
@@ -119,6 +87,9 @@ namespace nd {
 } // namespace nd
 
 namespace ndt {
+  namespace detail {
+    DYND_HAS(make);
+  } // namespace dynd::ndt::detail
 
   template <class T>
   struct fixed_dim_from_array;
@@ -919,11 +890,16 @@ namespace ndt {
     struct exact;
 
     template <typename T>
-    struct equivalent;
+    struct equivalent {
+      // This should be an incomplete declaration and
+      // std::is_destructible<equivalent<T>> should be used for
+      // has_equivalent<T>, but std::is_destructible does not really work in
+      // MSVC 2013
+    };
 
     template <typename T>
     struct has_equivalent {
-      static const bool value = has_destructor<equivalent<T>>::value;
+      static const bool value = detail::has_make<equivalent<T>>::value;
     };
 
     template <typename T>

@@ -201,15 +201,3 @@ TEST(OptionType, String)
   a.vals_at(1) = "NA";
   EXPECT_EQ("NA", a(1).as<string>());
 }
-
-//template <typename T>
-//struct is_complete : is_complete_helper<T>::type {};
-
-TEST(Type, Equivalent)
-{
-  EXPECT_TRUE(ndt::type::has_equivalent<int>::value);
-  EXPECT_FALSE(ndt::type::has_equivalent<double>::value);
-
-//  std::cout << is_complete<ndt::type::equivalent<int>>::value << std::endl;
-  //std::exit(-1);
-}

@@ -14,11 +14,10 @@
 #include <dynd/eval/eval_context.hpp>
 #include <dynd/exceptions.hpp>
 
-/*
 template <typename T>
 struct has_destructor {
   template <typename A>
-  static std::true_type test(decltype(std::declval<A>().~A()) *)
+  static std::true_type test(decltype(std::declval<A *>()->~A()) *)
   {
     return std::true_type();
   }
@@ -33,18 +32,19 @@ struct has_destructor {
 
   static const bool value = type::value; 
 };
-*/
 
+/*
 template <typename T>
 struct has_destructor_helper {
     template <typename U>
-    static auto test(U*)  -> std::integral_constant<bool, sizeof(U) == sizeof(U)>;
-    static auto test(...) -> std::false_type;
+    static std::integral_constant<bool, sizeof(U) == sizeof(U)> test(U*);
+    static std::false_type test(...);
     using type = decltype(test((T*)0));
 };
 
 template <typename T>
 struct has_destructor : has_destructor_helper<T>::type {};
+*/
 
 namespace dynd {
 

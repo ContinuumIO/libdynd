@@ -2330,7 +2330,7 @@ namespace ndt {
   };
 
   template <type_id_t DstTypeID, type_id_t Src0TypeID>
-  struct type::has_equivalent<nd::assignment_kernel<DstTypeID, Src0TypeID>> {
+  struct has_equivalent<nd::assignment_kernel<DstTypeID, Src0TypeID>> {
     static const bool value = true;
   };
 

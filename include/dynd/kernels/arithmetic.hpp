@@ -104,7 +104,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID>
-  struct type::has_equivalent<nd::plus_kernel<Src0TypeID>> {
+  struct has_equivalent<nd::plus_kernel<Src0TypeID>> {
     static const bool value = true;
   };
 
@@ -119,7 +119,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID>
-  struct type::has_equivalent<nd::minus_kernel<Src0TypeID>> {
+  struct has_equivalent<nd::minus_kernel<Src0TypeID>> {
     static const bool value = true;
   };
 
@@ -135,7 +135,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::add_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::add_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -151,7 +151,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::subtract_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::subtract_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -167,7 +167,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::multiply_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::multiply_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -183,7 +183,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::divide_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::divide_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 

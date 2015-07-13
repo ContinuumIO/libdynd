@@ -900,11 +900,6 @@ namespace ndt {
     };
 
     template <typename T>
-    struct has_equivalent {
-      static const bool value = false;
-    };
-
-    template <typename T>
     static type make()
     {
       return exact<T>::make();
@@ -917,6 +912,11 @@ namespace ndt {
     }
 
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
+  };
+
+  template <typename T>
+  struct has_equivalent {
+    static const bool value = false;
   };
 
   template <>

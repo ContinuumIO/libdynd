@@ -375,7 +375,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0ValueTypeID>
-  struct type::has_equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
+  struct has_equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
     static const bool value = true;
   };
 

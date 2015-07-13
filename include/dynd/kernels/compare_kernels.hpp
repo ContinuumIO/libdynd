@@ -1434,7 +1434,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::less_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::less_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -1447,7 +1447,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::less_equal_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::less_equal_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -1460,7 +1460,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::equal_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::equal_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -1473,7 +1473,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::not_equal_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::not_equal_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -1486,7 +1486,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::greater_equal_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::greater_equal_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 
@@ -1499,7 +1499,7 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::has_equivalent<nd::greater_kernel<Src0TypeID, Src1TypeID>> {
+  struct has_equivalent<nd::greater_kernel<Src0TypeID, Src1TypeID>> {
     static const bool value = true;
   };
 

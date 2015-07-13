@@ -104,6 +104,11 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID>
+  struct type::has_equivalent<nd::plus_kernel<Src0TypeID>> {
+    static const bool value = true;
+  };
+
+  template <type_id_t Src0TypeID>
   struct type::equivalent<nd::minus_kernel<Src0TypeID>> {
     static type make()
     {
@@ -111,6 +116,11 @@ namespace ndt {
       return arrfunc_type::make(type::make<typename kernel_type::dst_type>(),
                                 {type::make<Src0TypeID>()});
     }
+  };
+
+  template <type_id_t Src0TypeID>
+  struct type::has_equivalent<nd::minus_kernel<Src0TypeID>> {
+    static const bool value = true;
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
@@ -125,6 +135,11 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct type::has_equivalent<nd::add_kernel<Src0TypeID, Src1TypeID>> {
+    static const bool value = true;
+  };
+
+  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::subtract_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
@@ -133,6 +148,11 @@ namespace ndt {
           type::make<typename kernel_type::dst_type>(),
           {type::make<Src0TypeID>(), type::make<Src1TypeID>()});
     }
+  };
+
+  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct type::has_equivalent<nd::subtract_kernel<Src0TypeID, Src1TypeID>> {
+    static const bool value = true;
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
@@ -147,6 +167,11 @@ namespace ndt {
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct type::has_equivalent<nd::multiply_kernel<Src0TypeID, Src1TypeID>> {
+    static const bool value = true;
+  };
+
+  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::divide_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
@@ -155,6 +180,11 @@ namespace ndt {
           type::make<typename kernel_type::dst_type>(),
           {type::make<Src0TypeID>(), type::make<Src1TypeID>()});
     }
+  };
+
+  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct type::has_equivalent<nd::divide_kernel<Src0TypeID, Src1TypeID>> {
+    static const bool value = true;
   };
 
 } // namespace dynd::ndt

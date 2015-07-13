@@ -901,8 +901,7 @@ namespace ndt {
 
     template <typename T>
     struct has_equivalent {
-      static const bool value =
-          !std::is_same<decltype(equivalent<T>::make()), void>::value;
+      static const bool value = false;
     };
 
     template <typename T>

@@ -365,14 +365,18 @@ namespace nd {
 namespace ndt {
 
   template <type_id_t Src0ValueTypeID>
-  struct type::equivalent<nd::detail::is_avail_kernel<
-      Src0ValueTypeID, type_kind_of<Src0ValueTypeID>::value>> {
+  struct type::equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
     static type make()
     {
       return arrfunc_type::make(
           type::make<bool1>(),
           {option_type::make(type::make<Src0ValueTypeID>())});
     }
+  };
+
+  template <type_id_t Src0ValueTypeID>
+  struct type::has_equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
+    static const bool value = true;
   };
 
 } // namespace dynd::ndt

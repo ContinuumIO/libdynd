@@ -134,15 +134,16 @@ TEST(DataShapeParser, Option)
             ndt::type("Fixed * option[bool]"));
   EXPECT_EQ(ndt::make_fixed_dim_kind(ndt::make_option<bool1>()),
             ndt::type("Fixed * ?bool"));
-  EXPECT_EQ(ndt::make_fixed_dim_kind(ndt::make_option(
+  EXPECT_EQ(ndt::make_fixed_dim_kind(ndt::option_type::make(
                 ndt::make_fixed_dim_kind(ndt::make_type<float>()))),
             ndt::type("Fixed * option[Fixed * float32]"));
-  EXPECT_EQ(ndt::make_fixed_dim_kind(ndt::make_option(
+  EXPECT_EQ(ndt::make_fixed_dim_kind(ndt::option_type::make(
                 ndt::make_fixed_dim_kind(ndt::make_type<float>()))),
             ndt::type("Fixed * ?Fixed * float32"));
-  EXPECT_EQ(ndt::make_struct(ndt::make_option(ndt::make_type<int32_t>()), "x",
-                             ndt::make_option(ndt::make_type<int64_t>()), "y"),
-            ndt::type("{x : ?int32, y : ?int64}"));
+  EXPECT_EQ(
+      ndt::make_struct(ndt::option_type::make(ndt::make_type<int32_t>()), "x",
+                       ndt::option_type::make(ndt::make_type<int64_t>()), "y"),
+      ndt::type("{x : ?int32, y : ?int64}"));
 }
 
 TEST(DataShapeParser, StridedDim)

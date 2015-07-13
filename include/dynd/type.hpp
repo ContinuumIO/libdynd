@@ -883,6 +883,9 @@ namespace ndt {
       return ss.str();
     }
 
+    template <typename T>
+    struct equivalent;
+
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
   };
 

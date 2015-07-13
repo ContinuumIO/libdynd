@@ -14,7 +14,7 @@ namespace dynd {
 namespace nd {
   namespace detail {
 
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
+    template <type_id_t Src0ValueTypeID, type_kind_t Src0ValueTypeKind>
     struct is_avail_kernel;
 
     template <>
@@ -39,7 +39,7 @@ namespace nd {
         }
       }
 
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
+      static ndt::type make_type() { return ndt::type("(?bool) -> bool"); }
     };
 
     // option[T] for signed integer T
@@ -235,6 +235,8 @@ namespace nd {
         }
       }
 
+      // nd::is_avail
+
       static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
@@ -375,36 +377,26 @@ namespace nd {
         }
       }
 
-      static ndt::type make_type() { return ndt::type("(Fixed * Any) -> bool"); }
-    };
-
-    template <>
-    struct is_avail_kernel<pointer_type_id, expr_kind>
-        : base_kernel<is_avail_kernel<pointer_type_id, expr_kind>,
-                      kernel_request_host, 1> {
-      void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
+      static ndt::type make_type()
       {
-        throw std::runtime_error(
-            "is_avail for pointers is not yet implemented");
+        return ndt::type("(Fixed * Any) -> bool");
       }
-
-      void strided(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride),
-                   char *const *DYND_UNUSED(src),
-                   const intptr_t *DYND_UNUSED(src_stride),
-                   size_t DYND_UNUSED(count))
-      {
-        throw std::runtime_error(
-            "is_avail for pointers is not yet implemented");
-      }
-
-      static ndt::type make_type() { return ndt::type("(T) -> bool"); }
     };
 
   } // namespace dynd::nd::detail
 
-  template <type_id_t Src0TypeID>
-  using is_avail_kernel =
-      detail::is_avail_kernel<Src0TypeID, type_kind_of<Src0TypeID>::value>;
+  template <type_id_t Src0ValueTypeID>
+  using is_avail_kernel = detail::is_avail_kernel<
+      Src0ValueTypeID, type_kind_of<Src0ValueTypeID>::value>;
 
 } // namespace dynd::nd
+
+namespace ndt {
+
+  template <type_id_t Src0ValueTypeID>
+  struct type::equivalent<nd::is_avail_kernel<Src0ValueTypeID>> {
+    static type make() { return type("(T) -> bool)"); }
+  };
+
+} // namespace dynd::ndt
 } // namespace dynd

@@ -19,7 +19,8 @@
 using namespace std;
 using namespace dynd;
 
-TEST(OptionType, Create) {
+TEST(OptionType, Create)
+{
   ndt::type d;
 
   d = ndt::make_option<int16_t>();
@@ -37,24 +38,27 @@ TEST(OptionType, Create) {
   EXPECT_EQ(d, ndt::type("?int16"));
   EXPECT_EQ(d, ndt::type("option[int16]"));
 
-  d = ndt::make_option(ndt::make_string());
+  d = ndt::option_type::make(ndt::make_string());
   EXPECT_EQ(option_type_id, d.get_type_id());
   EXPECT_EQ(option_kind, d.get_kind());
   EXPECT_EQ(ndt::make_string().get_data_alignment(), d.get_data_alignment());
   EXPECT_EQ(ndt::make_string().get_data_size(), d.get_data_size());
-  EXPECT_EQ(ndt::make_string(), d.extended<ndt::option_type>()->get_value_type());
+  EXPECT_EQ(ndt::make_string(),
+            d.extended<ndt::option_type>()->get_value_type());
   EXPECT_FALSE(d.is_expression());
   // Roundtripping through a string
   EXPECT_EQ(d, ndt::type(d.str()));
   EXPECT_EQ("?string", d.str());
 
   // No option of option allowed
-  EXPECT_THROW(ndt::make_option(ndt::make_option(ndt::make_type<int>())),
-               type_error);
+  EXPECT_THROW(
+      ndt::option_type::make(ndt::option_type::make(ndt::make_type<int>())),
+      type_error);
   EXPECT_THROW(ndt::type("option[option[bool]]"), type_error);
 }
 
-TEST(OptionType, OptionIntAssign) {
+TEST(OptionType, OptionIntAssign)
+{
   nd::array a, b, c;
   eval::eval_context tmp_ectx;
 
@@ -87,7 +91,8 @@ TEST(OptionType, OptionIntAssign) {
   EXPECT_ARR_EQ(nd::view(c, "Fixed * int32"), nd::view(b, "Fixed * int32"));
 }
 
-TEST(OptionType, Cast) {
+TEST(OptionType, Cast)
+{
   nd::array a, b;
 
   a = parse_json("3 * string", "[\"null\", \"NA\", \"25\"]");
@@ -97,7 +102,8 @@ TEST(OptionType, Cast) {
                 nd::view(b, "3 * int"));
 }
 
-TEST(OptionType, FloatNAvsNaN) {
+TEST(OptionType, FloatNAvsNaN)
+{
   nd::array a = nd::empty("3 * ?float64");
 
   parse_json(a, "[0, null, \"nan\"]");
@@ -108,7 +114,8 @@ TEST(OptionType, FloatNAvsNaN) {
   // TODO: An isnan arrfunc should return false, NA, true
 }
 
-TEST(OptionType, Float) {
+TEST(OptionType, Float)
+{
   nd::array a = nd::empty("5 * float64");
 
   parse_json(a, "[12, 0, \"nan\", -99, \"nan\"]");
@@ -124,7 +131,8 @@ TEST(OptionType, Float) {
   EXPECT_FALSE(nd::is_scalar_avail(b(4)));
 }
 
-TEST(OptionType, Date) {
+TEST(OptionType, Date)
+{
   nd::array a = nd::empty("5 * ?date");
 
   parse_json(a, "[null, \"2013-04-05\", \"NA\", \"\", \"Jan 3, 2020\"]");
@@ -140,7 +148,8 @@ TEST(OptionType, Date) {
   EXPECT_FALSE(nd::is_scalar_avail(a(4)));
 }
 
-TEST(OptionType, Time) {
+TEST(OptionType, Time)
+{
   nd::array a = nd::empty("5 * ?time");
 
   parse_json(a, "[null, \"3:45\", \"NA\", \"\", \"05:17:33.1234 PM\"]");
@@ -156,7 +165,8 @@ TEST(OptionType, Time) {
   EXPECT_FALSE(nd::is_scalar_avail(a(4)));
 }
 
-TEST(OptionType, DateTime) {
+TEST(OptionType, DateTime)
+{
   nd::array a = nd::empty("5 * ?datetime");
 
   parse_json(a, "[null, \"2013-04-05 3:45\", \"NA\", \"\","
@@ -173,7 +183,8 @@ TEST(OptionType, DateTime) {
   EXPECT_FALSE(nd::is_scalar_avail(a(4)));
 }
 
-TEST(OptionType, String) {
+TEST(OptionType, String)
+{
   nd::array a = nd::empty("5 * ?string");
 
   parse_json(a, "[null, \"testing\", \"NA\", \"\","

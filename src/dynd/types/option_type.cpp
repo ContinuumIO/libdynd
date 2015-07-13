@@ -15,6 +15,7 @@
 #include <dynd/func/make_callable.hpp>
 #include <dynd/pp/list.hpp>
 #include <dynd/parser_util.hpp>
+#include <dynd/func/option.hpp>
 
 #include <algorithm>
 
@@ -34,25 +35,6 @@ ndt::option_type::option_type(const type &value_tp)
     ss << "Cannot construct an option type out of " << value_tp
        << ", it is already an option type";
     throw type_error(ss.str());
-  }
-
-  if (value_tp.is_builtin()) {
-    m_is_avail = get_option_builtin_is_avail(value_tp.get_type_id());
-    m_assign_na = get_option_builtin_assign_na(value_tp.get_type_id());
-    if (!m_is_avail.is_null() && !m_assign_na.is_null()) {
-      return;
-    }
-  } else {
-    m_is_avail = value_tp.extended()->get_is_avail();
-    m_assign_na = value_tp.extended()->get_assign_na();
-    if (!m_is_avail.is_null() &&
-        m_is_avail.get_array_type() != option_type::make_is_avail_type() &&
-        !m_assign_na.is_null() &&
-        m_assign_na.get_array_type() != option_type::make_assign_na_type()) {
-      stringstream ss;
-      ss << "Type " << m_value_tp << " returned invalid is_avail or assign_na";
-      throw invalid_argument(ss.str());
-    }
   }
 }
 
@@ -79,11 +61,13 @@ const ndt::type &ndt::option_type::make_assign_na_type()
 bool ndt::option_type::is_avail(const char *arrmeta, const char *data,
                                 const eval::eval_context *ectx) const
 {
+/*
   if (m_is_avail.is_null()) {
     stringstream ss;
     ss << "cannot instantiate data with type " << type(this, true);
     throw type_error(ss.str());
   }
+*/
 
   if (m_value_tp.is_builtin()) {
     switch (m_value_tp.get_type_id()) {
@@ -135,11 +119,13 @@ bool ndt::option_type::is_avail(const char *arrmeta, const char *data,
 void ndt::option_type::assign_na(const char *arrmeta, char *data,
                                  const eval::eval_context *ectx) const
 {
+/*
   if (m_assign_na.is_null()) {
     stringstream ss;
     ss << "cannot instantiate data with type " << type(this, true);
     throw type_error(ss.str());
   }
+*/
 
   if (m_value_tp.is_builtin()) {
     switch (m_value_tp.get_type_id()) {
@@ -230,7 +216,7 @@ void ndt::option_type::transform_child_types(type_transform_fn_t transform_fn,
   bool was_transformed = false;
   transform_fn(m_value_tp, arrmeta_offset + 0, extra, tmp_tp, was_transformed);
   if (was_transformed) {
-    out_transformed_tp = make_option(tmp_tp);
+    out_transformed_tp = make(tmp_tp);
     out_was_transformed = true;
   } else {
     out_transformed_tp = type(this, true);
@@ -239,7 +225,7 @@ void ndt::option_type::transform_child_types(type_transform_fn_t transform_fn,
 
 ndt::type ndt::option_type::get_canonical_type() const
 {
-  return make_option(m_value_tp.get_canonical_type());
+  return make(m_value_tp.get_canonical_type());
 }
 
 void ndt::option_type::set_from_utf8_string(
@@ -302,11 +288,13 @@ bool ndt::option_type::operator==(const base_type &rhs) const
 void ndt::option_type::arrmeta_default_construct(char *arrmeta,
                                                  bool blockref_alloc) const
 {
+/*
   if (m_is_avail.is_null() || m_assign_na.is_null()) {
     stringstream ss;
     ss << "cannot instantiate data with type " << type(this, true);
     throw type_error(ss.str());
   }
+*/
 
   if (!m_value_tp.is_builtin()) {
     m_value_tp.extended()->arrmeta_default_construct(arrmeta, blockref_alloc);
@@ -475,7 +463,7 @@ struct static_options {
 };
 } // anonymous namespace
 
-ndt::type ndt::make_option(const type &value_tp)
+ndt::type ndt::option_type::make(const type &value_tp)
 {
   // Static instances of the types, which have a reference
   // count > 0 for the lifetime of the program. This static

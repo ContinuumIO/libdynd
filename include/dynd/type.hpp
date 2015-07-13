@@ -87,6 +87,9 @@ namespace nd {
 } // namespace nd
 
 namespace ndt {
+  namespace detail {
+    //    DYND_HAS(make);
+  } // namespace dynd::ndt::detail
 
   template <class T>
   struct fixed_dim_from_array;
@@ -127,7 +130,7 @@ namespace ndt {
       }
 
       return NULL;
-//      throw invalid_type_id((int)type_id);
+      //      throw invalid_type_id((int)type_id);
     }
 
   public:
@@ -188,17 +191,17 @@ namespace ndt {
         : m_extended(type::validate_builtin_type_id(type_id))
     {
       switch (type_id) {
-        case fixed_dim_type_id:
-          *this = ndt::type("Fixed * Any");
-          break;
-        case var_dim_type_id:
-          *this = ndt::type("var * Any");
-          break;
-        case tuple_type_id:
-          *this = ndt::type("(...)");
-          break;
-        default:
-          break;
+      case fixed_dim_type_id:
+        *this = ndt::type("Fixed * Any");
+        break;
+      case var_dim_type_id:
+        *this = ndt::type("var * Any");
+        break;
+      case tuple_type_id:
+        *this = ndt::type("(...)");
+        break;
+      default:
+        break;
       }
     }
 
@@ -883,7 +886,127 @@ namespace ndt {
       return ss.str();
     }
 
+    template <typename T>
+    struct exact;
+
+    template <typename T>
+    struct equivalent {
+      // This should be an incomplete declaration and
+      // std::is_destructible<equivalent<T>> should be used for
+      // has_equivalent<T>, but std::is_destructible does not really work in
+      // MSVC 2013
+
+      static void make() {}
+    };
+
+    template <typename T>
+    static type make()
+    {
+      return exact<T>::make();
+    }
+
+    template <type_id_t TypeID>
+    static type make()
+    {
+      return type(TypeID);
+    }
+
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
+  };
+
+  template <typename T>
+  struct has_equivalent {
+    static const bool value = false;
+  };
+
+  template <>
+  struct type::exact<bool1> {
+    static type make() { return type::make<bool_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int8> {
+    static type make() { return type::make<int8_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int16> {
+    static type make() { return type::make<int16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int32> {
+    static type make() { return type::make<int32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int64> {
+    static type make() { return type::make<int64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<int128> {
+    static type make() { return type::make<int128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint8> {
+    static type make() { return type::make<uint8_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint16> {
+    static type make() { return type::make<uint16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint32> {
+    static type make() { return type::make<uint32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint64> {
+    static type make() { return type::make<uint64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<uint128> {
+    static type make() { return type::make<uint128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float16> {
+    static type make() { return type::make<float16_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float32> {
+    static type make() { return type::make<float32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float64> {
+    static type make() { return type::make<float64_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<float128> {
+    static type make() { return type::make<float128_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<dynd::complex<float>> {
+    static type make() { return type::make<complex_float32_type_id>(); }
+  };
+
+  template <>
+  struct type::exact<dynd::complex<double>> {
+    static type make() { return type::make<complex_float64_type_id>(); }
+  };
+
+  template <>
+  struct type::equivalent<int32> {
+    static type make() { return exact<int32>::make(); }
   };
 
   // Forward declarations

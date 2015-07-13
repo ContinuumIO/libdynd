@@ -8,6 +8,7 @@
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/kernels/base_virtual_kernel.hpp>
 #include <dynd/types/option_type.hpp>
+#include <dynd/types/time_type.hpp>
 
 namespace dynd {
 namespace nd {
@@ -350,4 +351,19 @@ namespace nd {
       detail::assign_na_kernel<DstTypeID, type_kind_of<DstTypeID>::value>;
 
 } // namespace dynd::nd
+
+namespace ndt {
+
+  template <type_id_t DstValueTypeID>
+  struct type::equivalent<nd::assign_na_kernel<DstValueTypeID>> {
+    static type make() { return type("() -> T"); }
+  };
+
+  template <type_id_t Src0ValueTypeID>
+  struct has_equivalent<nd::assign_na_kernel<Src0ValueTypeID>> {
+    static const bool value = true;
+  };
+
+} // namespace dynd::ndt
+
 } // namespace dynd

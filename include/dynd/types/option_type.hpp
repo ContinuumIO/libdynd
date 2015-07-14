@@ -48,12 +48,6 @@ namespace ndt {
 
     void get_vars(std::unordered_set<std::string> &vars) const;
 
-    /** Returns the type that m_is_avail has */
-    static const type &make_is_avail_type();
-
-    /** Returns the type that m_assign_na has */
-    static const type &make_assign_na_type();
-
     const type &get_value_type() const { return m_value_tp.value_type(); }
 
     /** Assigns NA to one value */

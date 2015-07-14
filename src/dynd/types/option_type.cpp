@@ -44,23 +44,10 @@ void ndt::option_type::get_vars(std::unordered_set<std::string> &vars) const
   m_value_tp.get_vars(vars);
 }
 
-const ndt::type &ndt::option_type::make_is_avail_type()
-{
-  static ndt::type static_instance =
-      make_arrfunc(make_tuple(make_typevar("T")), make_type<bool1>());
-  return static_instance;
-}
-
-const ndt::type &ndt::option_type::make_assign_na_type()
-{
-  static ndt::type static_instance = make_arrfunc(0, NULL, make_typevar("T"));
-  return static_instance;
-}
-
 bool ndt::option_type::is_avail(const char *arrmeta, const char *data,
                                 const eval::eval_context *ectx) const
 {
-  nd::arrfunc is_avail = get_is_avail();
+  nd::arrfunc &is_avail = get_is_avail();
   if (is_avail.is_null()) {
     stringstream ss;
     ss << "cannot instantiate data with type " << type(this, true);
@@ -116,7 +103,7 @@ bool ndt::option_type::is_avail(const char *arrmeta, const char *data,
 void ndt::option_type::assign_na(const char *arrmeta, char *data,
                                  const eval::eval_context *ectx) const
 {
-  nd::arrfunc assign_na = get_assign_na();
+  nd::arrfunc &assign_na = get_assign_na();
   if (assign_na.is_null()) {
     stringstream ss;
     ss << "cannot instantiate data with type " << type(this, true);

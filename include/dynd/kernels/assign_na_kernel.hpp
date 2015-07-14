@@ -332,7 +332,9 @@ namespace ndt {
   struct type::equivalent<nd::assign_na_kernel<DstValueTypeID>> {
     static type make()
     {
-      return make_arrfunc(make_tuple(), make_option(type(DstValueTypeID)));
+ //     return make_arrfunc(make_tuple(), make_option(type(DstValueTypeID)));
+
+      return type("() -> T");
     }
   };
 

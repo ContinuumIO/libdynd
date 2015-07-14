@@ -313,12 +313,14 @@ set(libdynd_SRC
     src/dynd/func/math.cpp
     src/dynd/func/multidispatch.cpp
     src/dynd/func/neighborhood.cpp
+    src/dynd/func/option.cpp
     src/dynd/func/outer.cpp
     src/dynd/func/permute.cpp
     src/dynd/func/random.cpp
     src/dynd/func/rolling.cpp
     src/dynd/func/take.cpp
     src/dynd/func/take_by_pointer.cpp
+    include/dynd/func/apply.hpp
     include/dynd/func/arithmetic.hpp
     include/dynd/func/arrfunc.hpp
     include/dynd/func/arrfunc_registry.hpp
@@ -332,8 +334,8 @@ set(libdynd_SRC
     include/dynd/func/elwise_gfunc.hpp
     include/dynd/func/elwise_reduce_gfunc.hpp
     include/dynd/func/fft.hpp
-    include/dynd/func/apply.hpp
     include/dynd/func/make_callable.hpp
+    include/dynd/func/option.hpp
     include/dynd/func/lift_reduction_arrfunc.hpp
     include/dynd/func/make_callable.hpp
     include/dynd/func/math.hpp
@@ -372,7 +374,6 @@ set(libdynd_SRC
     src/dynd/kernels/make_lifted_reduction_ckernel.cpp
     src/dynd/kernels/multidispatch_kernel.cpp
     src/dynd/kernels/option_assignment_kernels.cpp
-    src/dynd/kernels/option_kernels.cpp
     src/dynd/kernels/pointer_assignment_kernels.cpp
     src/dynd/kernels/reduction_kernels.cpp
     src/dynd/kernels/rolling.cpp
@@ -391,6 +392,7 @@ set(libdynd_SRC
     include/dynd/kernels/apply.hpp
     include/dynd/kernels/arithmetic.hpp
     include/dynd/kernels/assignment_kernels.hpp
+    include/dynd/kernels/assign_na_kernel.hpp
     include/dynd/kernels/base_kernel.hpp
     include/dynd/kernels/base_virtual_kernel.hpp
     include/dynd/kernels/buffered_kernels.hpp
@@ -413,11 +415,11 @@ set(libdynd_SRC
     include/dynd/kernels/expr_kernel_generator.hpp
     include/dynd/kernels/expression_assignment_kernels.hpp
     include/dynd/kernels/expression_comparison_kernels.hpp
-    include/dynd/func/fft.hpp
+    include/dynd/kernels/fft.hpp
+    include/dynd/kernels/is_avail_kernel.hpp
     include/dynd/kernels/make_lifted_reduction_ckernel.hpp
     include/dynd/kernels/multidispatch_kernel.hpp
     include/dynd/kernels/option_assignment_kernels.hpp
-    include/dynd/kernels/option_kernels.hpp
     include/dynd/kernels/outer.hpp
     include/dynd/kernels/pointer_assignment_kernels.hpp
     include/dynd/kernels/reduction_kernels.hpp

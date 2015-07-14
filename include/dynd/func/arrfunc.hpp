@@ -697,7 +697,6 @@ namespace nd {
   namespace detail {
 
     DYND_HAS(data_size);
-    DYND_HAS(make_type);
     DYND_HAS(data_init);
     DYND_HAS(resolve_dst_type);
     DYND_HAS(instantiate);
@@ -952,8 +951,8 @@ namespace nd {
         arrfunc>::type
     make()
     {
-      return arrfunc(ndt::type::equivalent<KernelType>::make(),
-                     KernelType::data_size, detail::get_data_init<KernelType>(),
+      return arrfunc(ndt::type::make<KernelType>(), KernelType::data_size,
+                     detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
                      detail::get_instantiate<KernelType>());
     }
@@ -965,7 +964,7 @@ namespace nd {
         arrfunc>::type
     make(StaticDataType &&static_data)
     {
-      return arrfunc(ndt::type::equivalent<KernelType>::make(),
+      return arrfunc(ndt::type::make<KernelType>(),
                      std::forward<StaticDataType>(static_data),
                      KernelType::data_size, detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
@@ -979,7 +978,7 @@ namespace nd {
         arrfunc>::type
     make(std::size_t data_size)
     {
-      return arrfunc(ndt::type::equivalent<KernelType>::make(), data_size,
+      return arrfunc(ndt::type::make<KernelType>(), data_size,
                      detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),
                      detail::get_instantiate<KernelType>());
@@ -992,7 +991,7 @@ namespace nd {
         arrfunc>::type
     make(StaticDataType &&static_data, std::size_t data_size)
     {
-      return arrfunc(ndt::type::equivalent<KernelType>::make(),
+      return arrfunc(ndt::type::make<KernelType>(),
                      std::forward<StaticDataType>(static_data), data_size,
                      detail::get_data_init<KernelType>(),
                      detail::get_resolve_dst_type<KernelType>(),

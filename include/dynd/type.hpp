@@ -904,6 +904,12 @@ namespace ndt {
       static const bool value = detail::has_make<equivalent<T>>::value;
     };
 
+    template <typename T>
+    static type make()
+    {
+      return equivalent<T>::make();
+    }
+
     friend std::ostream &operator<<(std::ostream &o, const type &rhs);
   };
 

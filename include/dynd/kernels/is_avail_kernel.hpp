@@ -14,7 +14,7 @@ namespace dynd {
 namespace nd {
   namespace detail {
 
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
+    template <type_id_t Src0ValueTypeID, type_kind_t Src0ValueTypeKind>
     struct is_avail_kernel;
 
     template <>
@@ -376,9 +376,9 @@ namespace nd {
 
   } // namespace dynd::nd::detail
 
-  template <type_id_t Src0TypeID>
+  template <type_id_t Src0ValueTypeID>
   using is_avail_kernel =
-      detail::is_avail_kernel<Src0TypeID, type_kind_of<Src0TypeID>::value>;
+      detail::is_avail_kernel<Src0ValueTypeID, type_kind_of<Src0ValueTypeID>::value>;
 
 } // namespace dynd::nd
 

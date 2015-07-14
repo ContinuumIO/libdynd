@@ -8,12 +8,13 @@
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/kernels/base_virtual_kernel.hpp>
 #include <dynd/types/option_type.hpp>
+#include <dynd/types/time_type.hpp>
 
 namespace dynd {
 namespace nd {
   namespace detail {
 
-    template <type_id_t DstTypeID, type_kind_t DstTypeKind>
+    template <type_id_t DstValueTypeID, type_kind_t DstValueTypeKind>
     struct assign_na_kernel;
 
     template <>
@@ -319,19 +320,21 @@ namespace nd {
 
   } // namespace dynd::nd::detail
 
-  template <type_id_t DstTypeID>
+  template <type_id_t DstValueTypeID>
   using assign_na_kernel =
-      detail::assign_na_kernel<DstTypeID, type_kind_of<DstTypeID>::value>;
+      detail::assign_na_kernel<DstValueTypeID, type_kind_of<DstValueTypeID>::value>;
 
 } // namespace dynd::nd
 
 namespace ndt {
 
-  template <type_id_t Src0ValueTypeID>
-  struct type::equivalent<nd::assign_na_kernel<Src0ValueTypeID>> {
+  template <type_id_t DstValueTypeID>
+  struct type::equivalent<nd::assign_na_kernel<DstValueTypeID>> {
     static type make()
     {
-      return ndt::type("() -> T");
+ //     return make_arrfunc(make_tuple(), make_option(type(DstValueTypeID)));
+
+      return type("() -> T");
     }
   };
 

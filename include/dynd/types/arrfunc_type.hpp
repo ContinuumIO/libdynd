@@ -94,8 +94,6 @@ typedef intptr_t (*arrfunc_instantiate_t)(
  */
 typedef void (*arrfunc_static_data_free_t)(char *static_data);
 
-typedef ndt::type (*arrfunc_make_type_t)();
-
 /**
  * This is a struct designed for interoperability at
  * the C ABI level. It contains enough information

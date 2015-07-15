@@ -15,6 +15,7 @@
 #include <dynd/func/make_callable.hpp>
 #include <dynd/pp/list.hpp>
 #include <dynd/parser_util.hpp>
+#include <dynd/func/option.hpp>
 
 #include <algorithm>
 
@@ -37,7 +38,11 @@ ndt::option_type::option_type(const type &value_tp)
   }
 
   if (value_tp.is_builtin()) {
-    m_is_avail = get_option_builtin_is_avail(value_tp.get_type_id());
+    m_is_avail = nd::is_avail::get_child(value_tp); // This line breaks Windows
+                                                    // tests for some reason,
+                                                    // but works elsewhere
+
+    //    m_is_avail = get_option_builtin_is_avail(value_tp.get_type_id());
     m_assign_na = get_option_builtin_assign_na(value_tp.get_type_id());
     if (!m_is_avail.is_null() && !m_assign_na.is_null()) {
       return;

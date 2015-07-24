@@ -23,7 +23,7 @@ namespace nd {
      */
     DYND_API callable elwise(const callable &child);
 
-    callable elwise(const ndt::type &self_tp, const callable &child);
+    DYND_API callable elwise(const ndt::type &self_tp, const callable &child);
 
     ndt::type elwise_make_type(const ndt::callable_type *child_tp);
 

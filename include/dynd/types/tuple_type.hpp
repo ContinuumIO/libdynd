@@ -72,13 +72,14 @@ namespace ndt {
         size_t *out_count) const;
 
     /** Makes a tuple type with the specified types */
-    static type make(const nd::array &field_types, bool variadic = false)
+    DYND_API static type make(const nd::array &field_types,
+                              bool variadic = false)
     {
       return type(new tuple_type(field_types, variadic), false);
     }
 
     /** Makes an empty tuple */
-    static type make(bool variadic = false)
+    DYND_API static type make(bool variadic = false)
     {
       return make(nd::empty(0, make_type()), variadic);
     }

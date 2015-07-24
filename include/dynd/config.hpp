@@ -33,6 +33,8 @@
 
 #ifdef __clang__
 
+#define DYND_API
+
 #if __has_feature(cxx_constexpr)
 #define DYND_CONSTEXPR constexpr
 #else
@@ -44,6 +46,8 @@
 #define DYND_TOLOWER std::tolower
 
 #elif defined(__GNUC__)
+
+#define DYND_API
 
 // Hack trying to work around gcc isfinite problems
 #if !defined(_GNU_SOURCE)
@@ -58,6 +62,16 @@
 #define DYND_TOLOWER tolower
 
 #elif defined(_MSC_VER)
+
+#if defined(_WIN32)
+#if defined(DYND_EXPORT)
+// Building the library
+#define DYND_API __declspec(dllexport)
+#else
+// Importing the library
+#define DYND_API __declspec(dllimport)
+#endif
+#endif
 
 #define DYND_ISSPACE isspace
 #define DYND_TOLOWER tolower

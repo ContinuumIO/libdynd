@@ -372,22 +372,23 @@ namespace ndt {
         size_t *out_count) const;
 
     /** Makes an callable type with both positional and keyword arguments */
-    static type make(const type &ret_tp, const type &tuple_tp,
-                     const type &struct_tp)
+    DYND_API static type make(const type &ret_tp, const type &tuple_tp,
+                              const type &struct_tp)
     {
       return type(new callable_type(ret_tp, tuple_tp, struct_tp), false);
     }
 
     /** Makes an callable type with both positional and keyword arguments */
-    static type make(const type &ret_tp, const nd::array &pos_tp,
-                     const nd::array &kwd_names, const nd::array &kwd_tp)
+    DYND_API static type make(const type &ret_tp, const nd::array &pos_tp,
+                              const nd::array &kwd_names,
+                              const nd::array &kwd_tp)
     {
       return make(ret_tp, tuple_type::make(pos_tp),
                   struct_type::make(kwd_names, kwd_tp));
     }
 
     /** Makes an callable type with just positional arguments */
-    static type make(const type &ret_tp, const type &tuple_tp)
+    DYND_API static type make(const type &ret_tp, const type &tuple_tp)
     {
       if (tuple_tp.get_type_id() != tuple_type_id) {
         return make(ret_tp, tuple_type::make({tuple_tp}), struct_type::make());
@@ -399,13 +400,13 @@ namespace ndt {
     }
 
     /** Makes an callable type with just positional arguments */
-    static type make(const type &ret_tp, const nd::array &pos_tp)
+    DYND_API static type make(const type &ret_tp, const nd::array &pos_tp)
     {
       return make(ret_tp, tuple_type::make(pos_tp), struct_type::make());
     }
 
     /** Makes an callable type with no arguments */
-    static type make(const type &ret_tp)
+    DYND_API static type make(const type &ret_tp)
     {
       return make(ret_tp, tuple_type::make(), struct_type::make());
     }

@@ -183,7 +183,10 @@ namespace ndt {
     }
 
     /** Construct from a type ID */
-    type(type_id_t tp_id) : type((validate_type_id(tp_id), instances[tp_id])) {}
+    DYND_API type(type_id_t tp_id)
+        : type((validate_type_id(tp_id), instances[tp_id]))
+    {
+    }
 
     /** Construct from a string representation */
     explicit type(const std::string &rep);

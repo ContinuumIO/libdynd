@@ -83,14 +83,14 @@ namespace ndt {
         size_t *out_count) const;
 
     /** Makes a struct type with the specified fields */
-    static type make(const nd::array &field_names, const nd::array &field_types,
+    DYND_API static type make(const nd::array &field_names, const nd::array &field_types,
                      bool variadic = false)
     {
       return type(new struct_type(field_names, field_types, variadic), false);
     }
 
     /** Makes an empty struct type */
-    static type make(bool variadic = false)
+    DYND_API static type make(bool variadic = false)
     {
       return make(nd::empty(0, string_type::make()), nd::empty(0, make_type()),
                   variadic);

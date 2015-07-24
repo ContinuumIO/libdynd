@@ -21,7 +21,7 @@ namespace nd {
      *
      * \param child  The callable being lifted
      */
-    callable elwise(const callable &child);
+    DYND_API callable elwise(const callable &child);
 
     callable elwise(const ndt::type &self_tp, const callable &child);
 

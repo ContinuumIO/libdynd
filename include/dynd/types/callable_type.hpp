@@ -109,11 +109,11 @@ struct callable_type_data {
   /**
    * On 32-bit platforms, if the size changes, it may be
    * necessary to use
-   * char data[4 * 8 + ((sizeof(void *) == 4) ? 4 : 0)];
+   * char data[6 * 8 + ((sizeof(void *) == 4) ? 4 : 0)];
    * to ensure the total struct size is divisible by 64 bits.
    */
   static const std::size_t static_data_size =
-      4 * 8 + ((sizeof(void *) == 4) ? 4 : 0);
+      6 * 8 + ((sizeof(void *) == 4) ? 4 : 0);
 
   char static_data[static_data_size];
   std::size_t data_size;

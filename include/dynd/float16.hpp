@@ -21,14 +21,14 @@
 namespace dynd {
 
 // Bit-level conversions
-DYND_CUDA_HOST_DEVICE uint16_t
-    float_to_halfbits(float value, assign_error_mode errmode);
-DYND_CUDA_HOST_DEVICE uint16_t
-    double_to_halfbits(double value, assign_error_mode errmode);
-DYND_CUDA_HOST_DEVICE float halfbits_to_float(uint16_t value);
-DYND_CUDA_HOST_DEVICE double halfbits_to_double(uint16_t value);
+DYND_API DYND_CUDA_HOST_DEVICE uint16_t
+float_to_halfbits(float value, assign_error_mode errmode);
+DYND_API DYND_CUDA_HOST_DEVICE uint16_t
+double_to_halfbits(double value, assign_error_mode errmode);
+DYND_API DYND_CUDA_HOST_DEVICE float halfbits_to_float(uint16_t value);
+DYND_API DYND_CUDA_HOST_DEVICE double halfbits_to_double(uint16_t value);
 
-class float16 {
+class DYND_API float16 {
   uint16_t m_bits;
 
 public:
@@ -264,7 +264,8 @@ public:
     }
   */
 
-  DYND_CUDA_HOST_DEVICE friend float16 float16_from_bits(uint16_t bits);
+  DYND_API DYND_CUDA_HOST_DEVICE friend float16
+  float16_from_bits(uint16_t bits);
 
   float16 operator-() const { return float16(-static_cast<float>(*this)); }
 };

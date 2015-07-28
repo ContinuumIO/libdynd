@@ -19,7 +19,7 @@
 #ifdef DYND_USE_STD_ATOMIC
 #include <atomic>
 namespace dynd {
-    typedef std::atomic<int32_t> atomic_refcount;
+    typedef std::atomic_int32_t atomic_refcount;
 } // namespace dynd
 #elif defined(_MSC_VER)
 

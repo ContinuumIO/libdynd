@@ -106,7 +106,7 @@ namespace ndt {
    * which case this is entirely a value type with no allocated memory.
    *
    */
-  class type {
+  class DYND_API type {
     static type instances[DYND_TYPE_ID_MAX + 1];
 
     const base_type *m_extended;
@@ -896,7 +896,7 @@ namespace ndt {
       return equivalent<T>::make(std::forward<A>(a)...);
     }
 
-    friend std::ostream &operator<<(std::ostream &o, const type &rhs);
+    friend DYND_API std::ostream &operator<<(std::ostream &o, const type &rhs);
   };
 
   template <>
@@ -1095,8 +1095,8 @@ namespace ndt {
    *                     is encountered, it is untouched, so the caller
    *                     should initialize it to false.
    */
-  type make_type(intptr_t ndim, const intptr_t *shape, const ndt::type &dtype,
-                 bool &out_any_var);
+  DYND_API type make_type(intptr_t ndim, const intptr_t *shape,
+                          const ndt::type &dtype, bool &out_any_var);
 
   /**
    * Returns the type of an array constructed from a value.
@@ -1113,9 +1113,9 @@ namespace ndt {
     return make_fixed_dim(value.size(), type::make<T>());
   }
 
-  type type_of(const nd::array &val);
+  DYND_API type type_of(const nd::array &val);
 
-  type type_of(const nd::callable &val);
+  DYND_API type type_of(const nd::callable &val);
 
   /**
    * Returns the type to use for packing this specific value. The value
@@ -1157,26 +1157,27 @@ namespace ndt {
    */
   extern const type static_builtin_types[builtin_type_id_count];
 
-  std::ostream &operator<<(std::ostream &o, const type &rhs);
+  DYND_API std::ostream &operator<<(std::ostream &o, const type &rhs);
 
 } // namespace ndt
 
 /** Prints raw bytes as hexadecimal */
-void hexadecimal_print(std::ostream &o, char value);
-void hexadecimal_print(std::ostream &o, unsigned char value);
-void hexadecimal_print(std::ostream &o, unsigned short value);
-void hexadecimal_print(std::ostream &o, unsigned int value);
-void hexadecimal_print(std::ostream &o, unsigned long value);
-void hexadecimal_print(std::ostream &o, unsigned long long value);
-void hexadecimal_print(std::ostream &o, const char *data,
-                       intptr_t element_size);
-void hexadecimal_print_summarized(std::ostream &o, const char *data,
-                                  intptr_t element_size, intptr_t summary_size);
+DYND_API void hexadecimal_print(std::ostream &o, char value);
+DYND_API void hexadecimal_print(std::ostream &o, unsigned char value);
+DYND_API void hexadecimal_print(std::ostream &o, unsigned short value);
+DYND_API void hexadecimal_print(std::ostream &o, unsigned int value);
+DYND_API void hexadecimal_print(std::ostream &o, unsigned long value);
+DYND_API void hexadecimal_print(std::ostream &o, unsigned long long value);
+DYND_API void hexadecimal_print(std::ostream &o, const char *data,
+                                intptr_t element_size);
+DYND_API void hexadecimal_print_summarized(std::ostream &o, const char *data,
+                                           intptr_t element_size,
+                                           intptr_t summary_size);
 
-void strided_array_summarized(std::ostream &o, const ndt::type &tp,
-                              const char *arrmeta, const char *data,
-                              intptr_t dim_size, intptr_t stride);
-void print_indented(std::ostream &o, const std::string &indent,
-                    const std::string &s, bool skipfirstline = false);
+DYND_API void strided_array_summarized(std::ostream &o, const ndt::type &tp,
+                                       const char *arrmeta, const char *data,
+                                       intptr_t dim_size, intptr_t stride);
+DYND_API void print_indented(std::ostream &o, const std::string &indent,
+                             const std::string &s, bool skipfirstline = false);
 
 } // namespace dynd

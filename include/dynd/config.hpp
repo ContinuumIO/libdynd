@@ -533,6 +533,23 @@ https://connect.microsoft.com/VisualStudio/feedback/details/1045260/unpacking-st
 };
 */
 
+/**
+ * An enumeration for the error checks during assignment.
+ */
+enum assign_error_mode {
+  /** No error checking during assignment */
+  assign_error_nocheck,
+  /** Check overflow, but allow precision loss. Checks loss of imaginary
+     component  */
+  assign_error_overflow,
+  /** Overflow and loss of fractional part (for float -> int) checking */
+  assign_error_fractional,
+  /** Overflow and floating point precision loss checking */
+  assign_error_inexact,
+  /** Use the mode specified in the eval_context */
+  assign_error_default
+};
+
 } // namespace dynd
 
 /////////////////////////////////////////

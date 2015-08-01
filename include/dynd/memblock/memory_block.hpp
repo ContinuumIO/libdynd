@@ -36,7 +36,7 @@ enum memory_block_type_t {
     memmap_memory_block_type
 };
 
-std::ostream& operator<<(std::ostream& o, memory_block_type_t mbt);
+DYND_API std::ostream& operator<<(std::ostream& o, memory_block_type_t mbt);
 
 /**
  * This is the data that goes at the start of every memory block, including
@@ -49,7 +49,7 @@ struct memory_block_data {
     /** A memory_block_type_t enum value */
     uint32_t m_type;
 
-    explicit memory_block_data(long use_count, memory_block_type_t type)
+    DYND_API explicit memory_block_data(long use_count, memory_block_type_t type)
         : m_use_count(use_count), m_type(type)
     {
         //std::cout << "memblock " << (void *)this << " cre: " << this->m_use_count << std::endl;
@@ -182,7 +182,7 @@ void memory_block_debug_print(const memory_block_data *memblock, std::ostream& o
  * A smart pointer to a memory_block object. Very similar
  * to boost::intrusive_ptr<memory_block_data>.
  */
-class memory_block_ptr {
+class DYND_API memory_block_ptr {
     memory_block_data *m_memblock;
 public:
     /** Default constructor */

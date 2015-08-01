@@ -57,7 +57,7 @@ namespace nd {
   };
 
   /** Stream printing function */
-  std::ostream &operator<<(std::ostream &o, const array &rhs);
+  DYND_API std::ostream &operator<<(std::ostream &o, const array &rhs);
 
   class array_vals;
   class array_vals_at;
@@ -65,7 +65,7 @@ namespace nd {
   /**
    * This is the primary multi-dimensional array class.
    */
-  class array {
+  class DYND_API array {
     /**
      * The nd::array class is a wrapper around an array_memory_block, which
      * contains arrmeta as described by the type.
@@ -804,59 +804,59 @@ namespace nd {
 
     void debug_print(std::ostream &o, const std::string &indent = "") const;
 
-    friend std::ostream &operator<<(std::ostream &o, const array &rhs);
+    friend DYND_API std::ostream &operator<<(std::ostream &o, const array &rhs);
     friend class array_vals;
     friend class array_vals_at;
   };
 
-  array operator+(const array &a0);
-  array operator-(const array &a0);
+  DYND_API array operator+(const array &a0);
+  DYND_API array operator-(const array &a0);
 
-  array operator+(const array &op0, const array &op1);
-  array operator-(const array &op0, const array &op1);
-  array operator/(const array &op0, const array &op1);
-  array operator*(const array &op0, const array &op1);
+  DYND_API array operator+(const array &op0, const array &op1);
+  DYND_API array operator-(const array &op0, const array &op1);
+  DYND_API array operator/(const array &op0, const array &op1);
+  DYND_API array operator*(const array &op0, const array &op1);
 
-  array operator<(const array &a0, const array &a1);
-  array operator<=(const array &a0, const array &a1);
-  array operator==(const array &a0, const array &a1);
-  array operator!=(const array &a0, const array &a1);
-  array operator>=(const array &a0, const array &a1);
-  array operator>(const array &a0, const array &a1);
+  DYND_API array operator<(const array &a0, const array &a1);
+  DYND_API array operator<=(const array &a0, const array &a1);
+  DYND_API array operator==(const array &a0, const array &a1);
+  DYND_API array operator!=(const array &a0, const array &a1);
+  DYND_API array operator>=(const array &a0, const array &a1);
+  DYND_API array operator>(const array &a0, const array &a1);
 
-  nd::array array_rw(bool1 value);
-  nd::array array_rw(bool value);
-  nd::array array_rw(signed char value);
-  nd::array array_rw(short value);
-  nd::array array_rw(int value);
-  nd::array array_rw(long value);
-  nd::array array_rw(long long value);
-  nd::array array_rw(const int128 &value);
-  nd::array array_rw(unsigned char value);
-  nd::array array_rw(unsigned short value);
-  nd::array array_rw(unsigned int value);
-  nd::array array_rw(unsigned long value);
-  nd::array array_rw(unsigned long long value);
-  nd::array array_rw(const uint128 &value);
-  nd::array array_rw(float16 value);
-  nd::array array_rw(float value);
-  nd::array array_rw(double value);
-  nd::array array_rw(const float128 &value);
-  nd::array array_rw(complex<float> value);
-  nd::array array_rw(complex<double> value);
-  nd::array array_rw(std::complex<float> value);
-  nd::array array_rw(std::complex<double> value);
-  nd::array array_rw(const std::string &value);
+  DYND_API nd::array array_rw(bool1 value);
+  DYND_API nd::array array_rw(bool value);
+  DYND_API nd::array array_rw(signed char value);
+  DYND_API nd::array array_rw(short value);
+  DYND_API nd::array array_rw(int value);
+  DYND_API nd::array array_rw(long value);
+  DYND_API nd::array array_rw(long long value);
+  DYND_API nd::array array_rw(const int128 &value);
+  DYND_API nd::array array_rw(unsigned char value);
+  DYND_API nd::array array_rw(unsigned short value);
+  DYND_API nd::array array_rw(unsigned int value);
+  DYND_API nd::array array_rw(unsigned long value);
+  DYND_API nd::array array_rw(unsigned long long value);
+  DYND_API nd::array array_rw(const uint128 &value);
+  DYND_API nd::array array_rw(float16 value);
+  DYND_API nd::array array_rw(float value);
+  DYND_API nd::array array_rw(double value);
+  DYND_API nd::array array_rw(const float128 &value);
+  DYND_API nd::array array_rw(complex<float> value);
+  DYND_API nd::array array_rw(complex<double> value);
+  DYND_API nd::array array_rw(std::complex<float> value);
+  DYND_API nd::array array_rw(std::complex<double> value);
+  DYND_API nd::array array_rw(const std::string &value);
   /** Construct a string from a NULL-terminated UTF8 string */
-  nd::array array_rw(const char *cstr);
+  DYND_API nd::array array_rw(const char *cstr);
   /** Construct a string from a UTF8 buffer and specified buffer size */
-  nd::array array_rw(const char *str, size_t size);
+  DYND_API nd::array array_rw(const char *str, size_t size);
   /**
    * Constructs a scalar with the 'type' type.
    * NOTE: Does NOT create a scalar of the provided type,
    *       use dynd::empty(type) for that!
    */
-  nd::array array_rw(const ndt::type &dt);
+  DYND_API nd::array array_rw(const ndt::type &dt);
   /**
    * Constructs a readwrite array from a C-style array.
    */
@@ -988,11 +988,11 @@ namespace nd {
 
   /** Makes a strided array with uninitialized data. If axis_perm is NULL, it is
    * C-order */
-  array make_strided_array(const ndt::type &uniform_dtype, intptr_t ndim,
-                           const intptr_t *shape,
-                           int64_t access_flags = read_access_flag |
-                                                  write_access_flag,
-                           const int *axis_perm = NULL);
+  DYND_API array make_strided_array(const ndt::type &uniform_dtype,
+                                    intptr_t ndim, const intptr_t *shape,
+                                    int64_t access_flags = read_access_flag |
+                                                           write_access_flag,
+                                    const int *axis_perm = NULL);
 
   /**
    * \brief Makes a strided array pointing to existing data
@@ -1014,22 +1014,23 @@ namespace nd {
    *
    * \returns  The created array.
    */
-  array make_strided_array_from_data(const ndt::type &uniform_dtype,
-                                     intptr_t ndim, const intptr_t *shape,
-                                     const intptr_t *strides,
-                                     int64_t access_flags, char *data_ptr,
-                                     const memory_block_ptr &data_reference,
-                                     char **out_uniform_arrmeta = NULL);
+  DYND_API array make_strided_array_from_data(
+      const ndt::type &uniform_dtype, intptr_t ndim, const intptr_t *shape,
+      const intptr_t *strides, int64_t access_flags, char *data_ptr,
+      const memory_block_ptr &data_reference,
+      char **out_uniform_arrmeta = NULL);
 
   /** Makes a POD (plain old data) array with data initialized by the provided
    * pointer */
-  array make_pod_array(const ndt::type &pod_dt, const void *data);
+  DYND_API array make_pod_array(const ndt::type &pod_dt, const void *data);
 
   /** Makes an array of 'bytes' type from the data */
-  array make_bytes_array(const char *data, size_t len, size_t alignment = 1);
+  DYND_API array make_bytes_array(const char *data, size_t len,
+                                  size_t alignment = 1);
 
-  array make_string_array(const char *str, size_t len,
-                          string_encoding_t encoding, uint64_t access_flags);
+  DYND_API array make_string_array(const char *str, size_t len,
+                                   string_encoding_t encoding,
+                                   uint64_t access_flags);
   inline array make_ascii_array(const char *str, size_t len)
   {
     return make_string_array(str, len, string_encoding_ascii,
@@ -1088,10 +1089,10 @@ namespace nd {
    *
    * \returns  An array of type "N * string".
    */
-  array make_strided_string_array(const char *const *cstr_array,
-                                  size_t array_size);
-  array make_strided_string_array(const std::string **str_array,
-                                  size_t array_size);
+  DYND_API array make_strided_string_array(const char *const *cstr_array,
+                                           size_t array_size);
+  DYND_API array make_strided_string_array(const std::string **str_array,
+                                           size_t array_size);
 
   inline array_vals array::vals() const { return array_vals(*this); }
 
@@ -1163,7 +1164,7 @@ namespace nd {
    * Constructs an uninitialized array of the given dtype. This is
    * the usual function to use for allocating such an array.
    */
-  array empty(const ndt::type &tp);
+  DYND_API array empty(const ndt::type &tp);
 
   /**
    * Constructs an uninitialized array with uninitialized arrmeta of the
@@ -1172,7 +1173,7 @@ namespace nd {
    * IMPORTANT: You should use nd::empty normally. If you use this function,
    *            you must manually initialize the arrmeta as well.
    */
-  array empty_shell(const ndt::type &tp);
+  DYND_API array empty_shell(const ndt::type &tp);
 
   /**
    * Constructs an uninitialized array of the given dtype, with ndim/shape
@@ -1321,14 +1322,14 @@ namespace nd {
    * \param rhs  The array whose shape and memory layout to emulate.
    * \param uniform_dtype   The array data type of the new array.
    */
-  array empty_like(const array &rhs, const ndt::type &uniform_dtype);
+  DYND_API array empty_like(const array &rhs, const ndt::type &uniform_dtype);
 
   /**
    * Constructs an empty array matching the parameters of 'rhs'
    *
    * \param rhs  The array whose shape, memory layout, and dtype to emulate.
    */
-  array empty_like(const array &rhs);
+  DYND_API array empty_like(const array &rhs);
 
   /**
    * Constructs an array, with each element initialized to 0, of the given
@@ -1363,7 +1364,8 @@ namespace nd {
    * In this function, the type provided is the complete type of the array
    * result, not just its dtype.
    */
-  array typed_ones(intptr_t ndim, const intptr_t *shape, const ndt::type &tp);
+  DYND_API array typed_ones(intptr_t ndim, const intptr_t *shape,
+                            const ndt::type &tp);
 
   /**
    * A version of typed_ones that accepts a std::vector as the shape.
@@ -1407,14 +1409,14 @@ namespace nd {
    * what you
    * are doing. It needs to be implemented properly.
    */
-  array concatenate(const nd::array &x, const nd::array &y);
+  DYND_API array concatenate(const nd::array &x, const nd::array &y);
 
   /**
    * Reshapes an array into the new shape. This is currently a prototype and
    * should only be used
    * with contiguous arrays of built-in dtypes.
    */
-  array reshape(const array &a, const array &shape);
+  DYND_API array reshape(const array &a, const array &shape);
 
   /**
    * Reshapes an array into the new shape. This is currently a prototype and
@@ -1781,8 +1783,8 @@ namespace nd {
    * Given the type/arrmeta/data of an array (or sub-component of an array),
    * evaluates a new copy of it as the canonical type.
    */
-  array eval_raw_copy(const ndt::type &dt, const char *arrmeta,
-                      const char *data);
+  DYND_API array eval_raw_copy(const ndt::type &dt, const char *arrmeta,
+                               const char *data);
 
   /**
    * Memory-maps a file with dynd type 'bytes'.
@@ -1794,9 +1796,9 @@ namespace nd {
    *             Python semantics for out of bounds and negative values.
    * \param access  The access permissions with which to open the file.
    */
-  array memmap(const std::string &filename, intptr_t begin = 0,
-               intptr_t end = std::numeric_limits<intptr_t>::max(),
-               uint32_t access = default_access_flags);
+  DYND_API array memmap(const std::string &filename, intptr_t begin = 0,
+                        intptr_t end = std::numeric_limits<intptr_t>::max(),
+                        uint32_t access = default_access_flags);
 
   /**
    * Performs a binary search of the first dimension of the array, which
@@ -1805,13 +1807,15 @@ namespace nd {
    *
    * \returns  The index of the found element, or -1 if not found.
    */
-  intptr_t binary_search(const array &n, const char *arrmeta, const char *data);
+  DYND_API intptr_t binary_search(const array &n, const char *arrmeta,
+                                  const char *data);
 
-  array groupby(const array &data_values, const array &by,
-                const ndt::type &groups = ndt::type());
+  DYND_API array groupby(const array &data_values, const array &by,
+                         const ndt::type &groups = ndt::type());
 
-  bool is_scalar_avail(const ndt::type &tp, const char *arrmeta,
-                       const char *data, const eval::eval_context *ectx);
+  DYND_API bool is_scalar_avail(const ndt::type &tp, const char *arrmeta,
+                                const char *data,
+                                const eval::eval_context *ectx);
 
   /**
    * Returns true if the array is a scalar whose value is available (not NA).
@@ -1824,8 +1828,8 @@ namespace nd {
                            arr.get_readonly_originptr(), ectx);
   }
 
-  void assign_na(const ndt::type &tp, const char *arrmeta, char *data,
-                 const eval::eval_context *ectx);
+  DYND_API void assign_na(const ndt::type &tp, const char *arrmeta, char *data,
+                          const eval::eval_context *ectx);
 
   inline void
   assign_na(array &out,
@@ -1842,7 +1846,8 @@ namespace nd {
    * \param  field_count  The number of fields.
    * \param  field_values  The values of the fields.
    */
-  array combine_into_tuple(size_t field_count, const array *field_values);
+  DYND_API array combine_into_tuple(size_t field_count,
+                                    const array *field_values);
 
   /**
    * Packs a value into memory allocated to store it via the ``make_type(val)``

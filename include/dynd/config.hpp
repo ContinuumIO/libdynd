@@ -43,6 +43,8 @@
 #define DYND_ISSPACE std::isspace
 #define DYND_TOLOWER std::tolower
 
+#define DYND_API
+
 #elif defined(__GNUC__)
 
 // Hack trying to work around gcc isfinite problems
@@ -56,6 +58,8 @@
 
 #define DYND_ISSPACE isspace
 #define DYND_TOLOWER tolower
+
+#define DYND_API
 
 #elif defined(_MSC_VER)
 
@@ -113,6 +117,14 @@ public:
     _set_invalid_parameter_handler(m_saved);
   }
 };
+
+#if defined(DYND_EXPORT)
+// Building the library
+#define DYND_API __declspec(dllexport)
+#else
+// Importing the library
+#define DYND_API __declspec(dllimport)
+#endif
 
 #endif // end of compiler vendor checks
 
@@ -520,6 +532,23 @@ https://connect.microsoft.com/VisualStudio/feedback/details/1045260/unpacking-st
   }
 };
 */
+
+/**
+ * An enumeration for the error checks during assignment.
+ */
+enum assign_error_mode {
+  /** No error checking during assignment */
+  assign_error_nocheck,
+  /** Check overflow, but allow precision loss. Checks loss of imaginary
+     component  */
+  assign_error_overflow,
+  /** Overflow and loss of fractional part (for float -> int) checking */
+  assign_error_fractional,
+  /** Overflow and floating point precision loss checking */
+  assign_error_inexact,
+  /** Use the mode specified in the eval_context */
+  assign_error_default
+};
 
 } // namespace dynd
 

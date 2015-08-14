@@ -248,7 +248,7 @@ struct remove_all_pointers {
 template <typename T>
 struct remove_all_pointers<T *> {
   typedef typename remove_all_pointers<typename std::remove_cv<T>::type>::type
-      type;
+  type;
 };
 
 template <typename T, typename U>
@@ -269,7 +269,9 @@ struct integer_proxy;
 
 template <typename T>
 struct integer_proxy<integer_sequence<T>> {
-  enum { size = 0 };
+  enum {
+    size = 0
+  };
 
   template <typename... U, typename F, typename... A>
   static void for_each(F, A &&...)
@@ -285,7 +287,9 @@ struct integer_proxy<integer_sequence<T>> {
 
 template <typename T, T I0>
 struct integer_proxy<integer_sequence<T, I0>> {
-  enum { size = 1 };
+  enum {
+    size = 1
+  };
 
   template <typename... U, typename F, typename... A>
   static void for_each(F f, A &&... a)
@@ -302,7 +306,9 @@ struct integer_proxy<integer_sequence<T, I0>> {
 
 template <typename T, T I0, T... I>
 struct integer_proxy<integer_sequence<T, I0, I...>> {
-  enum { size = dynd::integer_sequence<T, I0, I...>::size };
+  enum {
+    size = dynd::integer_sequence<T, I0, I...>::size
+  };
 
 #if !(defined(_MSC_VER) && (_MSC_VER == 1800))
   template <typename R, typename... A>
@@ -581,6 +587,16 @@ extern const char dynd_version_string[];
 #endif
 #endif
 
+template <typename T>
+struct as_true_type {
+  typedef std::true_type type;
+};
+
+template <typename T>
+struct as_false_type {
+  typedef std::false_type type;
+};
+
 // This doesn't work if there are multiple methods enabled via a template
 // parameter, need to fix that
 #define DYND_HAS(NAME)                                                         \
@@ -589,10 +605,14 @@ extern const char dynd_version_string[];
                                                                                \
   template <typename T>                                                        \
   class has_##NAME<T> {                                                        \
-    template <typename U,                                                      \
-              typename = typename std::enable_if<                              \
-                  !std::is_member_pointer<decltype(&U::NAME)>::value>::type>   \
-    static std::true_type test(int);                                           \
+    template <typename U>                                                      \
+    static typename as_true_type<typename U::NAME>::type test(int);            \
+                                                                               \
+    template <typename U>                                                      \
+    static typename std::enable_if<                                            \
+        !std::is_member_pointer<decltype(&U::NAME)>::value,                    \
+        std::true_type>::type                                                  \
+    test(int);                                                                 \
                                                                                \
     template <typename>                                                        \
     static std::false_type test(...);                                          \
@@ -642,13 +662,18 @@ namespace dynd {
  * Function to call for initializing dynd's global state, such
  * as cached ndt::type objects, the arrfunc registry, etc.
  */
-inline int libdynd_init() { return 0; }
+inline int libdynd_init()
+{
+  return 0;
+}
 
 /**
  * Function to call to free all resources associated with
  * dynd's global state, that were initialized by libdynd_init.
  */
-inline void libdynd_cleanup() {}
+inline void libdynd_cleanup()
+{
+}
 
 /**
   * A function which can be used at runtime to identify whether
@@ -831,11 +856,20 @@ namespace detail {
       memcpy(m_data, data, sizeof(m_data));
     }
 
-    DYND_CUDA_HOST_DEVICE operator T *() { return m_data; }
+    DYND_CUDA_HOST_DEVICE operator T *()
+    {
+      return m_data;
+    }
 
-    DYND_CUDA_HOST_DEVICE operator const T *() const { return m_data; }
+    DYND_CUDA_HOST_DEVICE operator const T *() const
+    {
+      return m_data;
+    }
 
-    DYND_CUDA_HOST_DEVICE T &operator[](intptr_t i) { return m_data[i]; }
+    DYND_CUDA_HOST_DEVICE T &operator[](intptr_t i)
+    {
+      return m_data[i];
+    }
 
     DYND_CUDA_HOST_DEVICE const T &operator[](intptr_t i) const
     {
@@ -848,11 +882,19 @@ namespace detail {
   public:
     DYND_CUDA_HOST_DEVICE array_wrapper() = default;
 
-    DYND_CUDA_HOST_DEVICE array_wrapper(const T *DYND_UNUSED(data)) {}
+    DYND_CUDA_HOST_DEVICE array_wrapper(const T *DYND_UNUSED(data))
+    {
+    }
 
-    DYND_CUDA_HOST_DEVICE operator T *() { return NULL; }
+    DYND_CUDA_HOST_DEVICE operator T *()
+    {
+      return NULL;
+    }
 
-    DYND_CUDA_HOST_DEVICE operator const T *() const { return NULL; }
+    DYND_CUDA_HOST_DEVICE operator const T *() const
+    {
+      return NULL;
+    }
   };
 
   template <int N, typename T>
@@ -866,9 +908,14 @@ namespace detail {
     T m_value;
 
   public:
-    value_wrapper(const T &value) : m_value(value) {}
+    value_wrapper(const T &value) : m_value(value)
+    {
+    }
 
-    DYND_CUDA_HOST_DEVICE operator T() const { return m_value; }
+    DYND_CUDA_HOST_DEVICE operator T() const
+    {
+      return m_value;
+    }
   };
 
   template <typename T>

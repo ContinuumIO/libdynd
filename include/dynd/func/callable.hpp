@@ -656,6 +656,7 @@ struct as_array<nd::array &> {
 namespace nd {
   namespace detail {
 
+    DYND_HAS(static_data_typex);
     DYND_HAS(data_size);
     DYND_HAS(data_init);
     DYND_HAS(resolve_dst_type);
@@ -1133,6 +1134,23 @@ namespace nd {
                       detail::get_resolve_dst_type<KernelType>(),
                       detail::get_instantiate<KernelType>());
     }
+
+    /*
+        template <typename KernelType, typename StaticDataType>
+        static typename std::enable_if<
+            !ndt::type::has_equivalent<KernelType>::value &&
+                detail::has_static_data_typex<KernelType>::value &&
+                !detail::has_data_size<KernelType>::value,
+            callable>::type
+        make(const ndt::type &self_tp, StaticDataType &&static_data,
+             std::size_t data_size)
+        {
+          return callable(self_tp, std::forward<StaticDataType>(static_data),
+                          data_size, detail::get_data_init<KernelType>(),
+                          detail::get_resolve_dst_type<KernelType>(),
+                          detail::get_instantiate<KernelType>());
+        }
+    */
 
     template <template <int> class CKT, typename T>
     static callable make(const ndt::type &self_tp, T &&data, size_t data_size)

@@ -759,14 +759,14 @@ struct conditional_make<false, T, U, As...> {
 
 template <typename T, typename U>
 struct is_lcast_arithmetic
-    : conditional_make<is_mixed_arithmetic<T, U>::value, is_common_type_of,
-                       std::false_type, U, T, U>::type {
+    : conditional_make<is_arithmetic<T>::value &&is_arithmetic<U>::value,
+                       is_common_type_of, std::false_type, U, T, U>::type {
 };
 
 template <typename T, typename U>
 struct is_rcast_arithmetic
-    : conditional_make<is_mixed_arithmetic<T, U>::value, is_common_type_of,
-                       std::false_type, T, T, U>::type {
+    : conditional_make<is_arithmetic<T>::value &&is_arithmetic<U>::value,
+                       is_common_type_of, std::false_type, T, T, U>::type {
 };
 
 template <typename T>
@@ -798,9 +798,24 @@ T floor(T value)
 
 namespace dynd {
 
+template <bool Value, typename... Ts>
+struct common_type_if;
+
+template <typename... Ts>
+struct common_type_if<true, Ts...> : std::enable_if<true,
+                                                    std::common_type<Ts...>> {
+};
+
+template <typename... Ts>
+struct common_type_if<false, Ts...> : std::enable_if<false> {
+};
+
+/*
+
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         !is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     T>::type
 operator+(T lhs, U rhs)
@@ -810,7 +825,8 @@ operator+(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         is_lcast_arithmetic<T, U>::value && !is_rcast_arithmetic<T, U>::value,
     U>::type
 operator+(T lhs, U rhs)
@@ -818,10 +834,10 @@ operator+(T lhs, U rhs)
   return static_cast<U>(lhs) + rhs;
 }
 
-/*
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     typename std::common_type<T, U>::type>::type
 operator+(T lhs, U rhs)
@@ -833,7 +849,8 @@ operator+(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         !is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     T>::type
 operator/(T lhs, U rhs)
@@ -843,7 +860,8 @@ operator/(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         is_lcast_arithmetic<T, U>::value && !is_rcast_arithmetic<T, U>::value,
     U>::type
 operator/(T lhs, U rhs)
@@ -853,13 +871,22 @@ operator/(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+    !std::is_same<T, U>::value &&
+        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
         is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     typename std::common_type<T, U>::type>::type
 operator/(T lhs, U rhs)
 {
   return static_cast<typename std::common_type<T, U>::type>(lhs) /
          static_cast<typename std::common_type<T, U>::type>(rhs);
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename std::enable_if<
+    std::is_floating_point<T>::value &&is_integral<U>::value, T &>::type
+operator/=(T &lhs, U rhs)
+{
+  return lhs /= static_cast<T>(rhs);
 }
 
 template <typename T, typename U>
@@ -881,15 +908,6 @@ operator/(T lhs, complex<U> rhs)
   return static_cast<typename std::common_type<T, U>::type>(lhs) /
          static_cast<complex<typename std::common_type<T, U>::type>>(rhs);
 }
-
-template <typename T, typename U>
-DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    std::is_floating_point<T>::value &&is_integral<U>::value, T &>::type
-operator/=(T &lhs, U rhs)
-{
-  return lhs /= static_cast<T>(rhs);
-}
-
 } // namespace dynd
 
 #ifdef DYND_CUDA

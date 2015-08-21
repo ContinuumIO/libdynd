@@ -50,7 +50,7 @@ nd::array nd::operator/(const array &a0, const array &a1)
   return divide(a0, a1);
 }
 
-struct nd::compound_add nd::compound_add;
+//struct nd::compound_add nd::compound_add;
 
 /*
 nd::array &nd::array::operator+=(const array &rhs)

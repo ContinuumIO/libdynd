@@ -144,8 +144,13 @@ inline void DYND_MEMCPY(char *dst, const char *src, intptr_t count)
 // These are small templates 'missing' from the standard library
 namespace dynd {
 
-template <typename...>
-using void_t = void;
+template <typename... Ts>
+struct make_void {
+  typedef void type;
+};
+
+template <typename... Ts>
+using void_t = typename make_void<Ts...>::type;
 
 template <typename T, typename U, typename V, typename = void_t<>>
 struct is_common_type_of : std::false_type {

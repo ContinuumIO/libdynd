@@ -244,13 +244,13 @@ namespace nd {
   callable compound_arithmetic_operator<FuncType, KernelType>::children
       [DYND_TYPE_ID_MAX + 1][DYND_TYPE_ID_MAX + 1];
 
+  extern struct compound_add
+      : compound_arithmetic_operator<compound_add, compound_add_kernel_t> {
+  } compound_add;
+
   extern struct compound_div
       : compound_arithmetic_operator<compound_div, compound_div_kernel_t> {
   } compound_div;
-
-//  extern struct compound_add
-  //    : compound_arithmetic_operator<compound_div, compound_add_kernel_t> {
-//  } compound_add;
 
 } // namespace dynd::nd
 } // namespace dynd

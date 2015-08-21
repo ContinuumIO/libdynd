@@ -144,31 +144,21 @@ inline void DYND_MEMCPY(char *dst, const char *src, intptr_t count)
 // These are small templates 'missing' from the standard library
 namespace dynd {
 
-template <typename... Ts>
-struct make_void {
-  typedef void type;
-};
-
-template <typename... Ts>
-using void_t = typename make_void<Ts...>::type;
-
-template <typename T, typename U, typename V>
+template <typename T, typename... Us>
 struct is_common_type_of
-    : std::is_same<T, typename std::common_type<U, V>::type> {
+    : std::is_same<T, typename std::common_type<Us...>::type> {
 };
 
-/*
-template <typename T, typename U, typename V, typename = void_t<>>
-struct is_common_type_of : std::false_type {
+template <bool Value, typename T, typename... Us>
+struct is_common_type_of_if;
+
+template <typename T, typename... Us>
+struct is_common_type_of_if<true, T, Us...> : is_common_type_of<T, Us...> {
 };
 
-template <typename T, typename U, typename V>
-struct is_common_type_of<
-    T, U, V,
-    void_t<typename std::common_type<
-        U, V>::type>> : std::is_same<T, typename std::common_type<U, V>::type> {
+template <typename T, typename... Us>
+struct is_common_type_of_if<false, T, Us...> : std::false_type {
 };
-*/
 
 template <typename T>
 struct is_function_pointer {
@@ -753,12 +743,31 @@ template <typename T>
 struct is_mixed_arithmetic<T, T> : std::false_type {
 };
 
-/*
-template <typename T, typename U, typename V>
-struct is_common_type_of
-    : std::is_same<T, typename std::common_type<U, V>::type> {
+template <bool Value, template <typename...> class T, typename U,
+          typename... As>
+struct conditional_make;
+
+template <template <typename...> class T, typename U, typename... As>
+struct conditional_make<true, T, U, As...> {
+  typedef T<As...> type;
 };
-*/
+
+template <template <typename...> class T, typename U, typename... As>
+struct conditional_make<false, T, U, As...> {
+  typedef U type;
+};
+
+template <typename T, typename U>
+struct is_lcast_arithmetic
+    : conditional_make<is_mixed_arithmetic<T, U>::value, is_common_type_of,
+                       std::false_type, U, T, U>::type {
+};
+
+template <typename T, typename U>
+struct is_rcast_arithmetic
+    : conditional_make<is_mixed_arithmetic<T, U>::value, is_common_type_of,
+                       std::false_type, T, T, U>::type {
+};
 
 template <typename T>
 struct is_signed {
@@ -791,20 +800,18 @@ namespace dynd {
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value),
-    typename std::common_type<T, U>::type>::type
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_rcast_arithmetic<T, U>::value,
+    T>::type
 operator+(T lhs, U rhs)
 {
   return lhs + static_cast<T>(rhs);
 }
 
-/*
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
-        is_common_type_of<U, T, U>::value,
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_lcast_arithmetic<T, U>::value,
     U>::type
 operator+(T lhs, U rhs)
 {
@@ -813,21 +820,19 @@ operator+(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value),
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     typename std::common_type<T, U>::type>::type
 operator+(T lhs, U rhs)
 {
   return static_cast<typename std::common_type<T, U>::type>(lhs) +
          static_cast<typename std::common_type<T, U>::type>(rhs);
 }
-*/
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
-        is_common_type_of<T, T, U>::value,
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_rcast_arithmetic<T, U>::value,
     T>::type
 operator/(T lhs, U rhs)
 {
@@ -836,9 +841,8 @@ operator/(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
-        is_common_type_of<U, T, U>::value,
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_lcast_arithmetic<T, U>::value,
     U>::type
 operator/(T lhs, U rhs)
 {
@@ -847,10 +851,8 @@ operator/(T lhs, U rhs)
 
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
-    is_mixed_arithmetic<T, U>::value &&
-        !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
-        !(is_common_type_of<T, T, U>::value ||
-          is_common_type_of<U, T, U>::value),
+    !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
+        is_lcast_arithmetic<T, U>::value && is_rcast_arithmetic<T, U>::value,
     typename std::common_type<T, U>::type>::type
 operator/(T lhs, U rhs)
 {

@@ -798,7 +798,6 @@ T floor(T value)
 
 namespace dynd {
 
-/*
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
     !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&
@@ -819,6 +818,7 @@ operator+(T lhs, U rhs)
   return static_cast<U>(lhs) + rhs;
 }
 
+/*
 template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename std::enable_if<
     !(std::is_arithmetic<T>::value && std::is_arithmetic<U>::value) &&

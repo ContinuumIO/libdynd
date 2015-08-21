@@ -41,6 +41,7 @@ TEST(Mean, 2D)
 // template <typename...>
 // using void_t = void;
 
+/*
 // primary template handles types that have no nested ::type member:
 template <class, class = void_t<>>
 struct has_type_member : std::false_type {
@@ -71,9 +72,10 @@ struct is_common_type_of_2
     : detail2::is_common_type_of_2<
           has_type_member<std::common_type<T, Us...>>::value, T, Us...> {
 };
+*/
 
 TEST(CommonType, X)
 {
-  EXPECT_FALSE((is_common_type_of_2<nd::array, void *, nd::array>::value));
-  EXPECT_TRUE((is_common_type_of_2<double, double, int>::value));
+  EXPECT_FALSE((is_common_type_of<nd::array, void *, nd::array>::value));
+  EXPECT_TRUE((is_common_type_of<double, double, int>::value));
 }

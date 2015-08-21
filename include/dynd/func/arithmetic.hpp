@@ -248,5 +248,9 @@ namespace nd {
       : compound_arithmetic_operator<compound_div, compound_div_kernel_t> {
   } compound_div;
 
+//  extern struct compound_add
+  //    : compound_arithmetic_operator<compound_div, compound_add_kernel_t> {
+//  } compound_add;
+
 } // namespace dynd::nd
 } // namespace dynd

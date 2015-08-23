@@ -59,7 +59,7 @@ struct strided_expr_kernel_extra {
 
   static void destruct(ckernel_prefix *self)
   {
-    self->destroy_child_ckernel(sizeof(extra_type));
+    self->get_child_ckernel(sizeof(extra_type))->destroy();
   }
 };
 
@@ -215,7 +215,7 @@ struct strided_or_var_to_strided_expr_kernel_extra {
 
   static void destruct(ckernel_prefix *self)
   {
-    self->destroy_child_ckernel(sizeof(extra_type));
+    self->get_child_ckernel(sizeof(extra_type))->destroy();
   }
 };
 
@@ -449,7 +449,7 @@ struct strided_or_var_to_var_expr_kernel_extra {
 
   static void destruct(ckernel_prefix *self)
   {
-    self->destroy_child_ckernel(sizeof(extra_type));
+    self->get_child_ckernel(sizeof(extra_type))->destroy();
   }
 };
 

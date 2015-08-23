@@ -143,15 +143,7 @@ namespace nd {
     static void destruct(ckernel_prefix *rawself)
     {
       SelfType *self = get_self(rawself);
-      /* If there are any child kernels, a child class must implement */
-      /* this to destroy them. */
-      self->destruct_children();
       self->~SelfType();
-    }
-
-    /**  Default implementation of destruct_children does nothing.  */
-    void destruct_children()
-    {
     }
 
     static intptr_t instantiate(

@@ -151,18 +151,16 @@ struct is_common_type_of
           std::true_type, std::false_type>::type {
 };
 
-template <bool Value, template <typename...> class T,
-          template <typename...> class U, typename... As>
+/** Type metaprogram which instantiates `T<As...>` or `U<A...>` depending on whether `Value` is true or false. */
+template <bool Value, template <typename...> class T, template <typename...> class U, typename... As>
 struct conditional_make;
 
-template <template <typename...> class T, template <typename...> class U,
-          typename... As>
+template <template <typename...> class T, template <typename...> class U, typename... As>
 struct conditional_make<true, T, U, As...> {
   typedef T<As...> type;
 };
 
-template <template <typename...> class T, template <typename...> class U,
-          typename... As>
+template <template <typename...> class T, template <typename...> class U, typename... As>
 struct conditional_make<false, T, U, As...> {
   typedef U<As...> type;
 };
@@ -763,7 +761,7 @@ using not_t = std::integral_constant<bool, !T::value>;
 template <typename T, typename U>
 struct is_lcast_arithmetic
     : not_t<typename conditional_make<
-          is_arithmetic<T>::value &&is_arithmetic<U>::value, is_common_type_of,
+          is_arithmetic<T>::value && is_arithmetic<U>::value, is_common_type_of,
           true_t, T, T, U>::type> {
 };
 
@@ -771,7 +769,7 @@ struct is_lcast_arithmetic
 template <typename T, typename U>
 struct is_rcast_arithmetic
     : not_t<typename conditional_make<
-          is_arithmetic<T>::value &&is_arithmetic<U>::value, is_common_type_of,
+          is_arithmetic<T>::value && is_arithmetic<U>::value, is_common_type_of,
           true_t, U, T, U>::type> {
 };
 
@@ -804,6 +802,7 @@ T floor(T value)
 
 namespace dynd {
 
+// An enable_if class for when T should cast to U
 template <typename T, typename U>
 struct operator_if_only_lcast_arithmetic
     : std::enable_if<
@@ -814,6 +813,7 @@ struct operator_if_only_lcast_arithmetic
           U> {
 };
 
+// An enable_if class for when U should be cast to T
 template <typename T, typename U>
 struct operator_if_only_rcast_arithmetic
     : std::enable_if<
@@ -829,6 +829,7 @@ struct make_void {
   typedef void type;
 };
 
+// An enable_if class for when both U and T should be cast to std::common_type<T, U>
 template <typename T, typename U>
 struct operator_if_lrcast_arithmetic
     : std::enable_if<
@@ -859,8 +860,52 @@ template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename operator_if_lrcast_arithmetic<T, U>::type
 operator+(T lhs, U rhs)
 {
-  return static_cast<typename std::common_type<T, U>::type>(lhs) +
-         static_cast<typename std::common_type<T, U>::type>(rhs);
+  typedef typename std::common_type<T, U>::type common_t;
+  return static_cast<common_t>(lhs) + static_cast<common_t>(rhs);
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_only_rcast_arithmetic<T, U>::type
+operator-(T lhs, U rhs)
+{
+  return lhs + static_cast<T>(rhs);
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_only_lcast_arithmetic<T, U>::type
+operator-(T lhs, U rhs)
+{
+  return static_cast<U>(lhs) + rhs;
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_lrcast_arithmetic<T, U>::type
+operator-(T lhs, U rhs)
+{
+  typedef typename std::common_type<T, U>::type common_t;
+  return static_cast<common_t>(lhs) + static_cast<common_t>(rhs);
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_only_rcast_arithmetic<T, U>::type
+operator*(T lhs, U rhs)
+{
+  return lhs * static_cast<T>(rhs);
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_only_lcast_arithmetic<T, U>::type
+operator*(T lhs, U rhs)
+{
+  return static_cast<U>(lhs) * rhs;
+}
+
+template <typename T, typename U>
+DYND_CUDA_HOST_DEVICE typename operator_if_lrcast_arithmetic<T, U>::type
+operator*(T lhs, U rhs)
+{
+  typedef typename std::common_type<T, U>::type common_t;
+  return static_cast<common_t>(lhs) * static_cast<common_t>(rhs);
 }
 
 template <typename T, typename U>
@@ -881,8 +926,8 @@ template <typename T, typename U>
 DYND_CUDA_HOST_DEVICE typename operator_if_lrcast_arithmetic<T, U>::type
 operator/(T lhs, U rhs)
 {
-  return static_cast<typename std::common_type<T, U>::type>(lhs) /
-         static_cast<typename std::common_type<T, U>::type>(rhs);
+  typedef typename std::common_type<T, U>::type common_t;
+  return static_cast<common_t>(lhs) / static_cast<common_t>(rhs);
 }
 
 template <typename T, typename U>

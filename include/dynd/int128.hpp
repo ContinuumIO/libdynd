@@ -174,14 +174,14 @@ public:
     return int128(m_hi + ~rhs.m_hi + (lo < m_lo), lo);
   }
 
-  DYND_CUDA_HOST_DEVICE inline int128 operator*(uint32_t rhs) const;
-
   //  DYND_CUDA_HOST_DEVICE inline int128 operator/(uint32_t rhs) const;
 
   DYND_CUDA_HOST_DEVICE int128 &operator/=(int128 DYND_UNUSED(rhs))
   {
     throw std::runtime_error("operator/= is not implemented for int128");
   }
+
+  DYND_CUDA_HOST_DEVICE int128 operator<<(int rhs) const;
 
   DYND_CUDA_HOST_DEVICE operator float() const
   {
@@ -263,6 +263,16 @@ public:
     return (unsigned long long)m_lo;
   }
 };
+
+DYND_CUDA_HOST_DEVICE int128 operator*(int128&lhs, uint32_t rhs);
+
+DYND_CUDA_HOST_DEVICE int128 operator*(int128 lhs, uint64_t rhs);
+
+DYND_CUDA_HOST_DEVICE int128 operator*(int128 lhs, int128 rhs);
+
+inline DYND_CUDA_HOST_DEVICE int128 operator*(int64_t lhs, int128 rhs) { return int128(lhs) * rhs; }
+
+inline DYND_CUDA_HOST_DEVICE int128 operator*(int128 lhs, int64_t rhs) { return lhs * int128(rhs); }
 
 template <>
 struct is_integral<int128> : std::true_type {

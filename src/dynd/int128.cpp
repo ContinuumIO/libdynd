@@ -73,22 +73,49 @@ dynd::int128::int128(const float128 &DYND_UNUSED(value))
 #endif
 }
 
-int128 dynd::int128::operator*(uint32_t rhs) const
+int128 dynd::operator*(int128 lhs, uint32_t rhs)
 {
-  if ((int64_t)m_hi < 0) {
+  if ((int64_t)lhs.m_hi < 0) {
     // TODO: fix case for minimum int, which will recurse forever
-    return -(-(*this) * rhs);
+    return -(-lhs * rhs);
   } else {
     // Split the multiplication into three
     // First product
-    uint64_t lo_partial = (m_lo & 0x00000000ffffffffULL) * rhs;
+    uint64_t lo_partial = (lhs.m_lo & 0x00000000ffffffffULL) * rhs;
     // Second product
-    uint64_t tmp = ((m_lo & 0xffffffff00000000ULL) >> 32) * rhs;
+    uint64_t tmp = ((lhs.m_lo & 0xffffffff00000000ULL) >> 32) * rhs;
     uint64_t lo = lo_partial + (tmp << 32);
     uint64_t hi = (tmp >> 32) + (lo < lo_partial);
     // Third product
-    hi += m_hi * rhs;
+    hi += lhs.m_hi * rhs;
     return int128(hi, lo);
+  }
+}
+
+DYND_CUDA_HOST_DEVICE int128 dynd::operator*(int128 lhs, uint64_t rhs)
+{
+  if ((int64_t)lhs.m_hi < 0) {
+    // TODO: fix case for minimum int, which will recurse forever
+    return -(-lhs * rhs);
+  } else {
+    return lhs * (uint32_t)rhs + (lhs * (uint32_t)(rhs >> 32)) << 32;
+  }
+}
+
+int128 dynd::operator*(int128 lhs, int128 rhs)
+{
+  if ((int64_t)rhs.m_hi < 0) {
+    // TODO: fix case for minimum int, which will recurse forever
+    if ((int64_t)lhs.m_hi < 0) {
+      return -lhs * (-rhs);
+    } else {
+      return -(lhs * (-rhs));
+    }
+  } else if ((int64_t)lhs.m_hi < 0) {
+    // TODO: fix case for minimum int, which will recurse forever
+    return -(-lhs * rhs);
+  } else {
+    return lhs * rhs.m_lo + (lhs * rhs.m_hi) << 64;
   }
 }
 
@@ -115,6 +142,16 @@ int128 dynd::int128::operator/(uint32_t rhs) const
   }
 }
 */
+
+DYND_CUDA_HOST_DEVICE int128 int128::operator<<(int rhs) const {
+  if (0 <= rhs && rhs <= 63) {
+    return int128((m_hi << rhs) | m_lo >> (64 - rhs), m_lo << rhs);
+  } else if (64 <= rhs && rhs <= 127) {
+    return int128((m_lo << (rhs - 64), 0ULL));
+  } else {
+    return int128();
+  }
+}
 
 std::ostream &dynd::operator<<(ostream &out, const int128 &val)
 {

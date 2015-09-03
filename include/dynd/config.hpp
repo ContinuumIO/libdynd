@@ -793,6 +793,21 @@ T floor(T value)
 
 } // namespace dynd
 
+#include <complex>
+
+// Add some complex std::common_type partial specializations
+namespace std {
+template <typename S, typename T>
+struct common_type<complex<S>, complex<T>> : common_type<complex<common_type<S, T>>> {
+};
+template <typename S, typename T>
+struct common_type<complex<S>, T> : common_type<complex<common_type<S, T>>> {
+};
+template <typename S, typename T>
+struct common_type<S, complex<T>> : common_type<complex<common_type<S, T>>> {
+};
+}
+
 #include <dynd/bool1.hpp>
 #include <dynd/int128.hpp>
 #include <dynd/uint128.hpp>

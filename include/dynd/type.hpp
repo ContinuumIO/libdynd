@@ -31,9 +31,8 @@ inline size_t inc_to_alignment(size_t offset, size_t alignment)
  */
 inline char *inc_to_alignment(char *ptr, size_t alignment)
 {
-  return reinterpret_cast<char *>(
-      (reinterpret_cast<std::size_t>(ptr) + alignment - 1) &
-      (std::size_t)(-(std::ptrdiff_t)alignment));
+  return reinterpret_cast<char *>((reinterpret_cast<std::size_t>(ptr) + alignment - 1) &
+                                  (std::size_t)(-(std::ptrdiff_t)alignment));
 }
 
 /**
@@ -42,9 +41,8 @@ inline char *inc_to_alignment(char *ptr, size_t alignment)
  */
 inline void *inc_to_alignment(void *ptr, size_t alignment)
 {
-  return reinterpret_cast<char *>(
-      (reinterpret_cast<std::size_t>(ptr) + alignment - 1) &
-      (size_t)(-(std::ptrdiff_t)alignment));
+  return reinterpret_cast<char *>((reinterpret_cast<std::size_t>(ptr) + alignment - 1) &
+                                  (size_t)(-(std::ptrdiff_t)alignment));
 }
 
 /**
@@ -71,12 +69,9 @@ struct iterdata_broadcasting_terminator {
   iterdata_common common;
   char *data;
 };
-char *iterdata_broadcasting_terminator_incr(iterdata_common *iterdata,
-                                            intptr_t level);
-char *iterdata_broadcasting_terminator_adv(iterdata_common *iterdata,
-                                           intptr_t level, intptr_t i);
-char *iterdata_broadcasting_terminator_reset(iterdata_common *iterdata,
-                                             char *data, intptr_t level);
+char *iterdata_broadcasting_terminator_incr(iterdata_common *iterdata, intptr_t level);
+char *iterdata_broadcasting_terminator_adv(iterdata_common *iterdata, intptr_t level, intptr_t i);
+char *iterdata_broadcasting_terminator_reset(iterdata_common *iterdata, char *data, intptr_t level);
 
 // Forward declaration of nd::array and nd::strided_vals
 namespace nd {
@@ -131,8 +126,7 @@ namespace ndt {
 
   public:
     /** Constructor */
-    type()
-        : m_extended(reinterpret_cast<const base_type *>(uninitialized_type_id))
+    type() : m_extended(reinterpret_cast<const base_type *>(uninitialized_type_id))
     {
     }
     /**
@@ -167,8 +161,7 @@ namespace ndt {
     /** Move constructor */
     type(type &&rhs) : m_extended(rhs.m_extended)
     {
-      rhs.m_extended =
-          reinterpret_cast<const base_type *>(uninitialized_type_id);
+      rhs.m_extended = reinterpret_cast<const base_type *>(uninitialized_type_id);
     }
     /** Move assignment operator */
     type &operator=(type &&rhs)
@@ -177,8 +170,7 @@ namespace ndt {
         base_type_decref(m_extended);
       }
       m_extended = rhs.m_extended;
-      rhs.m_extended =
-          reinterpret_cast<const base_type *>(uninitialized_type_id);
+      rhs.m_extended = reinterpret_cast<const base_type *>(uninitialized_type_id);
       return *this;
     }
 
@@ -225,9 +217,7 @@ namespace ndt {
 
     bool operator==(const type &rhs) const
     {
-      return m_extended == rhs.m_extended ||
-             (!is_builtin() && !rhs.is_builtin() &&
-              *m_extended == *rhs.m_extended);
+      return m_extended == rhs.m_extended || (!is_builtin() && !rhs.is_builtin() && *m_extended == *rhs.m_extended);
     }
     bool operator!=(const type &rhs) const
     {
@@ -278,8 +268,7 @@ namespace ndt {
      *
      * \returns  The type that results from the indexing operation.
      */
-    type at_single(intptr_t i0, const char **inout_arrmeta = NULL,
-                   const char **inout_data = NULL) const
+    type at_single(intptr_t i0, const char **inout_arrmeta = NULL, const char **inout_data = NULL) const
     {
       if (!is_builtin()) {
         return m_extended->at_single(i0, inout_arrmeta, inout_data);
@@ -316,8 +305,7 @@ namespace ndt {
       return at_array(3, i);
     }
     /** Indexing with four index values */
-    type at(const irange &i0, const irange &i1, const irange &i2,
-            const irange &i3) const
+    type at(const irange &i0, const irange &i1, const irange &i2, const irange &i3) const
     {
       irange i[4] = {i0, i1, i2, i3};
       return at_array(4, i);
@@ -343,15 +331,12 @@ namespace ndt {
      *                            may be NULL.
      * \param tp_vars     A map of names to matched type vars.
      */
-    bool match(const char *arrmeta, const ndt::type &candidate_tp,
-               const char *candidate_arrmeta,
+    bool match(const char *arrmeta, const ndt::type &candidate_tp, const char *candidate_arrmeta,
                std::map<std::string, ndt::type> &tp_vars) const;
 
-    bool match(const char *arrmeta, const ndt::type &candidate_tp,
-               const char *candidate_arrmeta) const;
+    bool match(const char *arrmeta, const ndt::type &candidate_tp, const char *candidate_arrmeta) const;
 
-    bool match(const ndt::type &candidate_tp,
-               std::map<std::string, ndt::type> &tp_vars) const;
+    bool match(const ndt::type &candidate_tp, std::map<std::string, ndt::type> &tp_vars) const;
 
     bool match(const ndt::type &candidate_tp) const;
 
@@ -373,8 +358,7 @@ namespace ndt {
      * extended-type version. See
      * the function in base_type with the same name for more details.
      */
-    type apply_linear_index(intptr_t nindices, const irange *indices,
-                            size_t current_i, const type &root_tp,
+    type apply_linear_index(intptr_t nindices, const irange *indices, size_t current_i, const type &root_tp,
                             bool leading_dimension) const;
 
     /**
@@ -389,8 +373,7 @@ namespace ndt {
         return *this;
       } else {
         // All chaining happens in the operand_type
-        return static_cast<const base_expr_type *>(m_extended)
-            ->get_value_type();
+        return static_cast<const base_expr_type *>(m_extended)->get_value_type();
       }
     }
 
@@ -405,8 +388,7 @@ namespace ndt {
       if (is_builtin() || m_extended->get_kind() != expr_kind) {
         return *this;
       } else {
-        return static_cast<const base_expr_type *>(m_extended)
-            ->get_operand_type();
+        return static_cast<const base_expr_type *>(m_extended)->get_operand_type();
       }
     }
 
@@ -422,11 +404,9 @@ namespace ndt {
         return *this;
       } else {
         // Follow the operand type chain to get the storage type
-        const type *dt = &static_cast<const base_expr_type *>(m_extended)
-                              ->get_operand_type();
+        const type *dt = &static_cast<const base_expr_type *>(m_extended)->get_operand_type();
         while (dt->get_kind() == expr_kind) {
-          dt = &static_cast<const base_expr_type *>(dt->m_extended)
-                    ->get_operand_type();
+          dt = &static_cast<const base_expr_type *>(dt->m_extended)->get_operand_type();
         }
         return *dt;
       }
@@ -480,9 +460,7 @@ namespace ndt {
     size_t get_default_data_size() const
     {
       if (is_builtin_type(m_extended)) {
-        return static_cast<intptr_t>(
-            detail::builtin_data_sizes
-                [reinterpret_cast<uintptr_t>(m_extended)]);
+        return static_cast<intptr_t>(detail::builtin_data_sizes[reinterpret_cast<uintptr_t>(m_extended)]);
       } else {
         return m_extended->get_default_data_size();
       }
@@ -531,8 +509,7 @@ namespace ndt {
         return true;
       } else {
         return m_extended->get_data_size() > 0 &&
-               (m_extended->get_flags() &
-                (type_flag_blockref | type_flag_destructor)) == 0;
+               (m_extended->get_flags() & (type_flag_blockref | type_flag_destructor)) == 0;
       }
     }
 
@@ -614,8 +591,7 @@ namespace ndt {
      * \param replace_ndim  The number of array dimensions to include in
      *                      the data type which is replaced.
      */
-    type with_replaced_dtype(const type &replacement_tp,
-                             intptr_t replace_ndim = 0) const;
+    type with_replaced_dtype(const type &replacement_tp, intptr_t replace_ndim = 0) const;
 
     /**
      * Returns this type without the leading memory type, if there is one.
@@ -692,8 +668,7 @@ namespace ndt {
       if (ndim == include_ndim) {
         return *this;
       } else if (ndim > include_ndim) {
-        return m_extended->get_type_at_dimension(inout_arrmeta,
-                                                 ndim - include_ndim);
+        return m_extended->get_type_at_dimension(inout_arrmeta, ndim - include_ndim);
       } else {
         std::stringstream ss;
         ss << "Cannot use " << include_ndim << " array ";
@@ -712,8 +687,7 @@ namespace ndt {
 
     intptr_t get_size(const char *arrmeta) const;
 
-    type get_type_at_dimension(char **inout_arrmeta, intptr_t i,
-                               intptr_t total_ndim = 0) const
+    type get_type_at_dimension(char **inout_arrmeta, intptr_t i, intptr_t total_ndim = 0) const
     {
       if (!is_builtin()) {
         return m_extended->get_type_at_dimension(inout_arrmeta, i, total_ndim);
@@ -773,8 +747,7 @@ namespace ndt {
      *
      * \returns  True if it is a strided array type, false otherwise.
      */
-    bool get_as_strided(const char *arrmeta, intptr_t *out_dim_size,
-                        intptr_t *out_stride, ndt::type *out_el_tp,
+    bool get_as_strided(const char *arrmeta, intptr_t *out_dim_size, intptr_t *out_stride, ndt::type *out_el_tp,
                         const char **out_el_arrmeta) const;
 
     /**
@@ -791,9 +764,7 @@ namespace ndt {
      *
      * \returns  True if it is a strided array type, false otherwise.
      */
-    bool get_as_strided(const char *arrmeta, intptr_t ndim,
-                        const size_stride_t **out_size_stride,
-                        ndt::type *out_el_tp,
+    bool get_as_strided(const char *arrmeta, intptr_t ndim, const size_stride_t **out_size_stride, ndt::type *out_el_tp,
                         const char **out_el_arrmeta) const;
 
     /** The size of the data required for uniform iteration */
@@ -818,13 +789,11 @@ namespace ndt {
      * \param out_uniform_type  This is populated with the type of each iterated
      *                          element
      */
-    void iterdata_construct(iterdata_common *iterdata,
-                            const char **inout_arrmeta, intptr_t ndim,
-                            const intptr_t *shape, type &out_uniform_type) const
+    void iterdata_construct(iterdata_common *iterdata, const char **inout_arrmeta, intptr_t ndim, const intptr_t *shape,
+                            type &out_uniform_type) const
     {
       if (!is_builtin()) {
-        m_extended->iterdata_construct(iterdata, inout_arrmeta, ndim, shape,
-                                       out_uniform_type);
+        m_extended->iterdata_construct(iterdata, inout_arrmeta, ndim, shape, out_uniform_type);
       }
     }
 
@@ -841,8 +810,7 @@ namespace ndt {
       if (is_builtin()) {
         return sizeof(iterdata_broadcasting_terminator);
       } else {
-        return m_extended->get_iterdata_size(ndim) +
-               sizeof(iterdata_broadcasting_terminator);
+        return m_extended->get_iterdata_size(ndim) + sizeof(iterdata_broadcasting_terminator);
       }
     }
 
@@ -859,21 +827,17 @@ namespace ndt {
      * \param out_uniform_tp  This is populated with the type of each iterated
      *                        element
      */
-    void broadcasted_iterdata_construct(iterdata_common *iterdata,
-                                        const char **inout_arrmeta,
-                                        intptr_t ndim, const intptr_t *shape,
-                                        type &out_uniform_tp) const
+    void broadcasted_iterdata_construct(iterdata_common *iterdata, const char **inout_arrmeta, intptr_t ndim,
+                                        const intptr_t *shape, type &out_uniform_tp) const
     {
       size_t size;
       if (is_builtin()) {
         size = 0;
       } else {
-        size = m_extended->iterdata_construct(iterdata, inout_arrmeta, ndim,
-                                              shape, out_uniform_tp);
+        size = m_extended->iterdata_construct(iterdata, inout_arrmeta, ndim, shape, out_uniform_tp);
       }
       iterdata_broadcasting_terminator *id =
-          reinterpret_cast<iterdata_broadcasting_terminator *>(
-              reinterpret_cast<char *>(iterdata) + size);
+          reinterpret_cast<iterdata_broadcasting_terminator *>(reinterpret_cast<char *>(iterdata) + size);
       id->common.incr = &iterdata_broadcasting_terminator_incr;
       id->common.adv = &iterdata_broadcasting_terminator_adv;
       id->common.reset = &iterdata_broadcasting_terminator_reset;
@@ -886,8 +850,7 @@ namespace ndt {
      * \param data      pointer to the data element to print
      * \param arrmeta  pointer to the nd::array arrmeta for the data element
      */
-    void print_data(std::ostream &o, const char *arrmeta,
-                    const char *data) const;
+    void print_data(std::ostream &o, const char *arrmeta, const char *data) const;
 
     std::string str() const
     {
@@ -949,6 +912,11 @@ namespace ndt {
     {
       return type::make<bool1>();
     }
+
+    static type make(const bool &DYND_UNUSED(val))
+    {
+      return make();
+    }
   };
 
   template <>
@@ -972,6 +940,11 @@ namespace ndt {
     static type make()
     {
       return type(type_id_of<int>::value);
+    }
+
+    static type make(const int &DYND_UNUSED(val))
+    {
+      return make();
     }
   };
 
@@ -1126,6 +1099,14 @@ namespace ndt {
     }
   };
 
+  template <typename T>
+  struct type::equivalent<std::initializer_list<T>> {
+    static type make(const std::initializer_list<T> &val)
+    {
+      return make_fixed_dim(val.size(), type::make<T>());
+    }
+  };
+
   // The removal of const is a temporary solution until we decide if and how
   // types should support const
   template <typename T>
@@ -1180,8 +1161,7 @@ namespace ndt {
    * \param dtype  The data type of each array element.
    */
   template <int N>
-  inline type make_type(intptr_t ndim, const intptr_t *shape,
-                        const char (&dtype)[N])
+  inline type make_type(intptr_t ndim, const intptr_t *shape, const char (&dtype)[N])
   {
     return make_type(ndim, shape, ndt::type(dtype));
   }
@@ -1200,8 +1180,7 @@ namespace ndt {
    *                     is encountered, it is untouched, so the caller
    *                     should initialize it to false.
    */
-  type make_type(intptr_t ndim, const intptr_t *shape, const ndt::type &dtype,
-                 bool &out_any_var);
+  type make_type(intptr_t ndim, const intptr_t *shape, const ndt::type &dtype, bool &out_any_var);
 
   /**
    * Returns the type of an array constructed from a value.
@@ -1273,15 +1252,11 @@ void hexadecimal_print(std::ostream &o, unsigned short value);
 void hexadecimal_print(std::ostream &o, unsigned int value);
 void hexadecimal_print(std::ostream &o, unsigned long value);
 void hexadecimal_print(std::ostream &o, unsigned long long value);
-void hexadecimal_print(std::ostream &o, const char *data,
-                       intptr_t element_size);
-void hexadecimal_print_summarized(std::ostream &o, const char *data,
-                                  intptr_t element_size, intptr_t summary_size);
+void hexadecimal_print(std::ostream &o, const char *data, intptr_t element_size);
+void hexadecimal_print_summarized(std::ostream &o, const char *data, intptr_t element_size, intptr_t summary_size);
 
-void strided_array_summarized(std::ostream &o, const ndt::type &tp,
-                              const char *arrmeta, const char *data,
+void strided_array_summarized(std::ostream &o, const ndt::type &tp, const char *arrmeta, const char *data,
                               intptr_t dim_size, intptr_t stride);
-void print_indented(std::ostream &o, const std::string &indent,
-                    const std::string &s, bool skipfirstline = false);
+void print_indented(std::ostream &o, const std::string &indent, const std::string &s, bool skipfirstline = false);
 
 } // namespace dynd

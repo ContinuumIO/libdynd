@@ -580,6 +580,63 @@ namespace nd {
       }
     };
 
+    template <>
+    struct reduction_kernel<var_dim_type_id, false,
+                            false> : base_reduction_kernel<reduction_kernel<var_dim_type_id, false, false>> {
+      intptr_t src0_stride;
+
+      reduction_kernel(intptr_t src0_stride) : src0_stride(src0_stride)
+      {
+      }
+
+      void single_first(char *dst, char *const *src)
+      {
+        reduction_kernel_prefix *child = get_reduction_child();
+        char *src0 = reinterpret_cast<ndt::var_dim_type::data_type *>(src[0])->begin;
+
+        child->single_first(dst, &src0);
+        src0 += src0_stride;
+
+        child->strided_followup(dst, 0, &src0, &src0_stride,
+                                reinterpret_cast<ndt::var_dim_type::data_type *>(src[0])->size - 1);
+      }
+
+      void strided_first(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride), char *const *DYND_UNUSED(src),
+                         const intptr_t *DYND_UNUSED(src_stride), size_t DYND_UNUSED(count))
+      {
+        std::cout << "strided_first" << std::endl;
+      }
+
+      void strided_followup(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride), char *const *DYND_UNUSED(src),
+                            const intptr_t *DYND_UNUSED(src_stride), size_t DYND_UNUSED(size))
+      {
+        std::cout << "strided_followup" << std::endl;
+      }
+
+      static intptr_t instantiate(char *static_data, size_t data_size, char *data, void *ckb, intptr_t ckb_offset,
+                                  const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
+                                  const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
+                                  const eval::eval_context *ectx, intptr_t nkwd, const array *kwds,
+                                  const std::map<std::string, ndt::type> &tp_vars)
+      {
+        const ndt::type &src0_element_tp = src_tp[0].extended<ndt::var_dim_type>()->get_element_type();
+        const char *src0_element_arrmeta = src_arrmeta[0] + sizeof(var_dim_type_arrmeta);
+
+        make(ckb, kernreq, ckb_offset,
+             reinterpret_cast<const ndt::var_dim_type::metadata_type *>(src_arrmeta[0])->stride);
+
+        --reinterpret_cast<data_type *>(data)->ndim;
+        --reinterpret_cast<data_type *>(data)->naxis;
+        if (reinterpret_cast<data_type *>(data)->axes != NULL) {
+          ++reinterpret_cast<data_type *>(data)->axes;
+        }
+
+        return reduction_virtual_kernel::instantiate(static_data, data_size, data, ckb, ckb_offset, dst_tp, dst_arrmeta,
+                                                     nsrc, &src0_element_tp, &src0_element_arrmeta,
+                                                     kernel_request_single, ectx, nkwd, kwds, tp_vars);
+      }
+    };
+
     /**
      * STRIDED INITIAL BROADCAST DIMENSION
      * This ckernel handles one dimension of the reduction processing,
@@ -855,7 +912,9 @@ namespace nd {
             reduction_kernel<fixed_dim_type_id, false, true>::instantiate},
            {reduction_kernel<fixed_dim_type_id, true, false>::instantiate,
             reduction_kernel<fixed_dim_type_id, true, true>::instantiate}},
-          {{NULL, reduction_kernel<var_dim_type_id, false, true>::instantiate}, {NULL, NULL}}};
+          {{reduction_kernel<var_dim_type_id, false, false>::instantiate,
+            reduction_kernel<var_dim_type_id, false, true>::instantiate},
+           {NULL, NULL}}};
 
       if (reinterpret_cast<data_type *>(data)->ndim == 0) {
         callable &child = reinterpret_cast<static_data_type *>(static_data)->child;

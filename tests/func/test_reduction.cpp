@@ -110,7 +110,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim)
                     kwds("axes", nd::array(initializer_list<int>{0}), "keepdims", true)));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_FixedVar_ReduceReduce)
+TEST(Reduction, FixedVar_ReduceReduce)
 {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 

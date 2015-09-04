@@ -149,13 +149,22 @@ namespace nd {
         data->stored_ndim = data->ndim;
 
         for (intptr_t i = data->ndim - 1, j = data->naxis - 1; i >= 0; --i) {
+          ndt::type dim_tp = src_tp[0].get_type_at_dimension(NULL, i);
           if (data->axes == NULL || (j >= 0 && i == data->axes[j])) {
             if (data->keepdims) {
-              dst_tp = ndt::make_fixed_dim(1, dst_tp);
+              switch (dim_tp.get_type_id()) {
+              case fixed_dim_type_id:
+                dst_tp = ndt::make_fixed_dim(1, dst_tp);
+                break;
+              case var_dim_type_id:
+                dst_tp = ndt::var_dim_type::make(dst_tp);
+                break;
+              default:
+                break;
+              }
             }
             --j;
           } else {
-            ndt::type dim_tp = src_tp[0].get_type_at_dimension(NULL, i);
             dst_tp = dim_tp.extended<ndt::base_dim_type>()->with_element_type(dst_tp);
           }
         }

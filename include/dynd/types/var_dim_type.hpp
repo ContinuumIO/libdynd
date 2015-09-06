@@ -128,6 +128,22 @@ namespace ndt {
     typedef var_dim_type_arrmeta metadata_type;
   };
 
+  template <typename T>
+  struct type::equivalent<std::initializer_list<std::initializer_list<T>>> {
+    static type make(const std::initializer_list<std::initializer_list<T>> &val)
+    {
+      auto it = val.begin();
+      size_t size = it->size();
+      while (++it != val.end()) {
+        if (size != it->size()) {
+          return make_fixed_dim(val.size(), var_dim_type::make(type::make<T>()));
+        }
+      };
+
+      return make_fixed_dim(val.size(), make_fixed_dim(size, type::make<T>()));
+    }
+  };
+
   /**
    * A helper function for reserving initial space in a var dim element.
    * This requires that the element being created (at `data`) is NULL, and

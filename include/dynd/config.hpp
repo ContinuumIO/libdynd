@@ -602,15 +602,17 @@ extern const char dynd_version_string[];
 #endif
 #endif
 
+// This doesn't work if there are multiple methods enabled via a template
+// parameter, need to fix that
 #define DYND_HAS(NAME)                                                                                                 \
   template <typename...>                                                                                               \
   class has_##NAME;                                                                                                    \
                                                                                                                        \
   template <typename T>                                                                                                \
   class has_##NAME<T> {                                                                                                \
-    template <typename U>                                                                                              \
-    static typename std::enable_if<!std::is_member_pointer<decltype(&U::NAME)>::value, std::true_type>::type           \
-    test(int);                                                                                                         \
+    template <typename U,                                                                                              \
+              typename = typename std::enable_if<!std::is_member_pointer<decltype(&U::NAME)>::value>::type>            \
+    static std::true_type test(int);                                                                                   \
                                                                                                                        \
     template <typename>                                                                                                \
     static std::false_type test(...);                                                                                  \

@@ -59,6 +59,8 @@ DYND_API nd::callable nd::zeros::make()
          0);
 }
 
+DYND_API struct nd::zeros nd::zeros;
+
 DYND_API nd::callable nd::ones::children[DYND_TYPE_ID_MAX + 1];
 
 DYND_API nd::callable nd::ones::make()
@@ -103,3 +105,5 @@ DYND_API nd::callable nd::ones::make()
              },
          0);
 }
+
+DYND_API struct nd::ones nd::ones;

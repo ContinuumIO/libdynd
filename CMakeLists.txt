@@ -295,6 +295,7 @@ set(libdynd_SRC
     src/dynd/func/constant.cpp
     src/dynd/func/elwise.cpp
     src/dynd/func/fft.cpp
+    src/dynd/func/fill.cpp
     src/dynd/func/reduction.cpp
     src/dynd/func/math.cpp
     src/dynd/func/max.cpp
@@ -320,6 +321,7 @@ set(libdynd_SRC
     include/dynd/func/constant.hpp
     include/dynd/func/elwise.hpp
     include/dynd/func/fft.hpp
+    include/dynd/func/fill.hpp
     include/dynd/func/apply.hpp
     include/dynd/func/reduction.hpp
     include/dynd/func/math.hpp
@@ -404,6 +406,7 @@ set(libdynd_SRC
     include/dynd/kernels/fft_kernel.hpp
     include/dynd/kernels/is_avail_kernel.hpp
     include/dynd/kernels/multidispatch_kernel.hpp
+    include/dynd/kernels/ones_kernel.hpp
     include/dynd/kernels/option_assignment_kernels.hpp
     include/dynd/kernels/outer.hpp
     include/dynd/kernels/pointer_assignment_kernels.hpp
@@ -419,6 +422,7 @@ set(libdynd_SRC
     include/dynd/kernels/tuple_comparison_kernels.hpp
     include/dynd/kernels/uniform_kernel.hpp
     include/dynd/kernels/var_dim_assignment_kernels.hpp
+    include/dynd/kernels/zeros_kernel.hpp
     # MemBlock
     src/dynd/memblock/memory_block.cpp
     src/dynd/memblock/executable_memory_block_windows_x64.cpp

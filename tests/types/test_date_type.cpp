@@ -431,7 +431,7 @@ TEST(DateType, ReplaceOfConvert)
 
 TEST(DateType, NumPyCompatibleProperty)
 {
-  nd::array a = {-16730LL, 0LL, 11001LL, numeric_limits<int64_t>::min()};
+  nd::array a = {-16730LL, 0LL, 11001LL, (long long)numeric_limits<int64_t>::min()};
   nd::array a_date = a.adapt(ndt::date_type::make(), "days since 1970-01-01");
   // Reading from the 'int64 as date' view
   EXPECT_EQ("1924-03-13", a_date(0).as<string>());

@@ -431,9 +431,7 @@ TEST(DateType, ReplaceOfConvert)
 
 TEST(DateType, NumPyCompatibleProperty)
 {
-  int64_t vals64[] = {-16730, 0, 11001, numeric_limits<int64_t>::min()};
-
-  nd::array a = nd::array_rw(vals64);
+  nd::array a = {-16730LL, 0LL, 11001LL, (long long)numeric_limits<int64_t>::min()};
   nd::array a_date = a.adapt(ndt::date_type::make(), "days since 1970-01-01");
   // Reading from the 'int64 as date' view
   EXPECT_EQ("1924-03-13", a_date(0).as<string>());
@@ -451,30 +449,26 @@ TEST(DateType, NumPyCompatibleProperty)
 TEST(DateType, AdaptFromInt)
 {
   nd::array a, b;
+  ndt::type d = ndt::date_type::make();
 
   // int32
-  a = nd::array_rw(25);
-  b = a.adapt(ndt::date_type::make(), "days since 2012-03-02");
+  a = 25;
+  b = a.adapt(d, "days since 2012-03-02");
   EXPECT_EQ("2012-03-27", b.as<string>());
-  // This adapter works both ways
-  b.vals() = "2012-03-01";
-  EXPECT_EQ(-1, a.as<int>());
 
   // int64
-  a = nd::array_rw(365LL);
-  b = a.adapt(ndt::date_type::make(), "days since 1925-03-02");
+  a = 365LL;
+  b = a.adapt(d, "days since 1925-03-02");
   EXPECT_EQ("1926-03-02", b.as<string>());
-  b.vals() = "1925-04-02";
-  EXPECT_EQ(31, a.as<int>());
 
   // Array of int32
   const char *s_vals[] = {"2000-01-01", "2100-02-01", "2099-12-31"};
-  int32_t i32_vals[] = {-5, 10, 0};
-  a = nd::array_rw(i32_vals);
-  b = a.adapt(ndt::date_type::make(), "days since 2100-1-1");
+  a = {-5, 10, 0};
+  b = a.adapt(d, "days since 2100-1-1");
   EXPECT_EQ("2099-12-27", b(0).as<string>());
   EXPECT_EQ("2100-01-11", b(1).as<string>());
   EXPECT_EQ("2100-01-01", b(2).as<string>());
+  // This adapter works both ways
   b.vals() = s_vals;
   EXPECT_EQ(-365 * 100 - 25, a(0).as<int>());
   EXPECT_EQ(31, a(1).as<int>());

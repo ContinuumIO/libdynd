@@ -812,6 +812,7 @@ namespace nd {
       }
 
       // bind<args, char **>::type
+        std::cout << "kernel_request_metadata_single" << std::endl;
       return _call<args1>(std::forward<A>(a)...);
     }
 

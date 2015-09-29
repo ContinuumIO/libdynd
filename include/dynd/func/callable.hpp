@@ -12,6 +12,7 @@
 #include <dynd/types/base_type.hpp>
 #include <dynd/types/callable_type.hpp>
 #include <dynd/kernels/ckernel_builder.hpp>
+#include <dynd/kernels/base_kernel.hpp>
 #include <dynd/types/struct_type.hpp>
 #include <dynd/types/substitute_typevars.hpp>
 #include <dynd/types/type_type.hpp>
@@ -587,6 +588,12 @@ namespace nd {
     class args;
 
     template <typename... A>
+    using args0 = args<char *, A...>;
+
+    template <typename... A>
+    using args1 = args<char **, A...>;
+
+    template <typename... A>
     struct has_kwds;
 
     array m_value;
@@ -798,11 +805,14 @@ namespace nd {
     template <typename... A>
     typename std::enable_if<has_kwds<A...>::value, array>::type operator()(A &&... a)
     {
+      // bind<args, char *>::type
       if (get()->kernreq == kernel_request_single) {
-        return _call<bind<args, char *>::type>(std::forward<A>(a)...);
+        std::cout << "kernel_request_single" << std::endl;
+        return _call<args0>(std::forward<A>(a)...);
       }
 
-      return _call<bind<args, char **>::type>(std::forward<A>(a)...);
+      // bind<args, char **>::type
+      return _call<args1>(std::forward<A>(a)...);
     }
 
     template <typename... A>

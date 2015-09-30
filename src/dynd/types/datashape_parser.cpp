@@ -793,7 +793,7 @@ static nd::array parse_datashape_list(const char *&rbegin, const char *end, map<
   }
 
   rbegin = begin;
-  return dlist;
+  return nd::array(dlist);
 }
 
 // integer_list : INTEGER COMMA integer_list RBRACKET
@@ -812,7 +812,7 @@ static nd::array parse_integer_list(const char *&rbegin, const char *end)
     if (!parse_token_ds(begin, end, ',')) {
       if (parse_token_ds(begin, end, ']')) {
         rbegin = begin;
-        return dlist;
+        return nd::array(dlist);
       } else {
         return nd::array();
       }
@@ -852,7 +852,7 @@ static nd::array parse_string_list(const char *&rbegin, const char *end)
   }
 
   rbegin = begin;
-  return dlist;
+  return nd::array(dlist);
 }
 
 // list_type_arg : LBRACKET RBRACKET
@@ -871,13 +871,13 @@ static nd::array parse_type_arg(const char *&rbegin, const char *end, map<string
   const char *strbegin, *strend;
   if (parse::parse_int_no_ws(begin, end, strbegin, strend)) {
     rbegin = begin;
-    return parse::checked_string_to_int64(strbegin, strend);
+    return nd::array(parse::checked_string_to_int64(strbegin, strend));
   }
 
   string str;
   if (parse_quoted_string(begin, end, str)) {
     rbegin = begin;
-    return str;
+    return nd::array(str);
   }
 
   if (parse::parse_token(begin, end, '[')) {
@@ -899,7 +899,7 @@ static nd::array parse_type_arg(const char *&rbegin, const char *end, map<string
   ndt::type tp = parse_datashape(begin, end, symtable);
   if (!tp.is_null()) {
     rbegin = begin;
-    return tp;
+    return nd::array(tp);
   }
 
   return nd::array();
@@ -922,7 +922,7 @@ nd::array dynd::parse_type_constr_args(const char *&rbegin, const char *end, map
   }
 
   if (parse_token_ds(begin, end, ']')) {
-    return nd::empty(ndt::tuple_type::make({ndt::tuple_type::make(), ndt::struct_type::make()}));
+    return nd::empty(ndt::tuple_type::make(nd::array({ndt::tuple_type::make(), ndt::struct_type::make()})));
   }
 
   vector<nd::array> pos_args;
@@ -994,7 +994,8 @@ nd::array dynd::parse_type_constr_args(const char *&rbegin, const char *end, map
             [](const nd::array &a) { return a.get_type(); });
 
   ndt::type result_tp =
-      ndt::tuple_type::make({ndt::tuple_type::make(pos_arg_types), ndt::struct_type::make(kw_names, kw_arg_types)});
+      ndt::tuple_type::make(nd::array({ndt::tuple_type::make(nd::array(pos_arg_types)),
+                                       ndt::struct_type::make(nd::array(kw_names), nd::array(kw_arg_types))}));
 
   result = nd::empty(result_tp);
   nd::array pos = result(0);
@@ -1134,7 +1135,7 @@ static ndt::type parse_struct(const char *&rbegin, const char *end, map<string, 
   }
 
   rbegin = begin;
-  return ndt::struct_type::make(field_name_list, field_type_list, variadic);
+  return ndt::struct_type::make(nd::array(field_name_list), nd::array(field_type_list), variadic);
 }
 
 // funcproto_kwds : record_item, record_item*
@@ -1178,7 +1179,7 @@ static ndt::type parse_funcproto_kwds(const char *&rbegin, const char *end, map<
   }
 
   rbegin = begin;
-  return ndt::struct_type::make(field_name_list, field_type_list, variadic);
+  return ndt::struct_type::make(nd::array(field_name_list), nd::array(field_type_list), variadic);
 }
 
 // tuple : LPAREN tuple_item tuple_item* RPAREN
@@ -1213,7 +1214,7 @@ static ndt::type parse_tuple_or_funcproto(const char *&rbegin, const char *end, 
           if (!funcproto_kwd.is_null()) {
             if (!parse_token_ds(begin, end, "->")) {
               rbegin = begin;
-              return ndt::tuple_type::make(field_type_list);
+              return ndt::tuple_type::make(nd::array(field_type_list));
             }
 
             ndt::type return_type = parse_datashape(begin, end, symtable);
@@ -1221,7 +1222,7 @@ static ndt::type parse_tuple_or_funcproto(const char *&rbegin, const char *end, 
               throw datashape_parse_error(begin, "expected function prototype return type");
             }
             rbegin = begin;
-            return ndt::callable_type::make(return_type, ndt::tuple_type::make(field_type_list, variadic),
+            return ndt::callable_type::make(return_type, ndt::tuple_type::make(nd::array(field_type_list), variadic),
                                             funcproto_kwd);
           } else {
             throw datashape_parse_error(begin, "expected funcproto keyword arguments");
@@ -1263,7 +1264,7 @@ static ndt::type parse_tuple_or_funcproto(const char *&rbegin, const char *end, 
   // It might be a function prototype, check for the "->" token
   if (!parse_token_ds(begin, end, "->")) {
     rbegin = begin;
-    return ndt::tuple_type::make(field_type_list, variadic);
+    return ndt::tuple_type::make(nd::array(field_type_list), variadic);
   }
 
   ndt::type return_type = parse_datashape(begin, end, symtable);
@@ -1276,7 +1277,7 @@ static ndt::type parse_tuple_or_funcproto(const char *&rbegin, const char *end, 
   //       the requirement that arrays into callable constructors are
   //       immutable, that too
   //       many copies may be occurring.
-  return ndt::callable_type::make(return_type, ndt::tuple_type::make(field_type_list, variadic));
+  return ndt::callable_type::make(return_type, ndt::tuple_type::make(nd::array(field_type_list), variadic));
 }
 
 //    datashape_nooption : dim ASTERISK datashape

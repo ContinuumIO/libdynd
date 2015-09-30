@@ -1573,7 +1573,7 @@ namespace ndt {
   struct type::equivalent<nd::less_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 
@@ -1581,7 +1581,7 @@ namespace ndt {
   struct type::equivalent<nd::less_equal_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 
@@ -1589,7 +1589,7 @@ namespace ndt {
   struct type::equivalent<nd::equal_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 
@@ -1597,7 +1597,7 @@ namespace ndt {
   struct type::equivalent<nd::not_equal_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 
@@ -1605,7 +1605,7 @@ namespace ndt {
   struct type::equivalent<nd::greater_equal_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 
@@ -1613,7 +1613,7 @@ namespace ndt {
   struct type::equivalent<nd::greater_kernel<Src0TypeID, Src1TypeID>> {
     static type make()
     {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
+      return callable_type::make(type::make<bool1>(), nd::array({type(Src0TypeID), type(Src1TypeID)}));
     }
   };
 

@@ -41,7 +41,7 @@ namespace nd {
       for (type_id_t i0 : numeric_type_ids()) {
         for (type_id_t i1 : dim_type_ids()) {
           const ndt::type child_tp = ndt::callable_type::make(
-              ndt::type("Any"), {ndt::type(i0), ndt::type(i1)});
+              ndt::type("Any"), nd::array({ndt::type(i0), ndt::type(i1)}));
           children[{{i0, i1}}] = functional::elwise(child_tp, self);
         }
       }
@@ -61,7 +61,7 @@ namespace nd {
         typedef join<numeric_type_ids, dim_type_ids>::type type_ids;
         for (type_id_t i1 : type_ids()) {
           const ndt::type child_tp = ndt::callable_type::make(
-              ndt::type("Any"), {ndt::type(i0), ndt::type(i1)});
+              ndt::type("Any"), nd::array({ndt::type(i0), ndt::type(i1)}));
           children[{{i0, i1}}] = functional::elwise(child_tp, self);
         }
       }

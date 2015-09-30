@@ -188,7 +188,7 @@ namespace nd {
         for (int i = 0; i < nkwd; ++i) {
           new_kwds[i] = kwds[i];
         }
-        new_kwds[nkwd] = reinterpret_cast<intptr_t>(nh->start_stop);
+        new_kwds[nkwd] = nd::array(reinterpret_cast<intptr_t>(nh->start_stop));
 
         ckb_offset = nh_op.get()->instantiate(
             nh_op.get()->static_data, 0, NULL, ckb, ckb_offset, nh_dst_tp,

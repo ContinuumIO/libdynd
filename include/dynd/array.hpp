@@ -80,31 +80,31 @@ namespace nd {
      * Constructs a zero-dimensional scalar from a C++ scalar.
      *
      */
-    array(bool1 value);
-    array(bool value);
-    array(signed char value);
-    array(short value);
-    array(int value);
-    array(long value);
-    array(long long value);
-    array(const int128 &value);
-    array(unsigned char value);
-    array(unsigned short value);
-    array(unsigned int value);
-    array(unsigned long value);
-    array(unsigned long long value);
-    array(const uint128 &value);
-    array(float16 value);
-    array(float value);
-    array(double value);
-    array(const float128 &value);
-    array(complex<float> value);
-    array(complex<double> value);
-    array(std::complex<float> value);
-    array(std::complex<double> value);
-    array(const std::string &value);
+    explicit array(bool1 value);
+    explicit array(bool value);
+    explicit array(signed char value);
+    explicit array(short value);
+    explicit array(int value);
+    explicit array(long value);
+    explicit array(long long value);
+    explicit array(const int128 &value);
+    explicit array(unsigned char value);
+    explicit array(unsigned short value);
+    explicit array(unsigned int value);
+    explicit array(unsigned long value);
+    explicit array(unsigned long long value);
+    explicit array(const uint128 &value);
+    explicit array(float16 value);
+    explicit array(float value);
+    explicit array(double value);
+    explicit array(const float128 &value);
+    explicit array(complex<float> value);
+    explicit array(complex<double> value);
+    explicit array(std::complex<float> value);
+    explicit array(std::complex<double> value);
+    explicit array(const std::string &value);
     /** Construct a string from a NULL-terminated UTF8 string */
-    array(const char *cstr);
+    explicit array(const char *cstr);
     /** Construct a string from a UTF8 buffer and specified buffer size */
     array(const char *str, size_t size);
     /**
@@ -112,24 +112,24 @@ namespace nd {
      * NOTE: Does NOT create a scalar of the provided type,
      *       use nd::empty(type) for that!
      */
-    array(const ndt::type &dt);
+    explicit array(const ndt::type &dt);
 
     /**
      * Constructs an array from a multi-dimensional C-style array.
      */
     template <class T, int N>
-    array(const T (&rhs)[N]);
+    explicit array(const T (&rhs)[N]);
     /** Specialize to treat char arrays as strings */
     template <int N>
-    array(const char (&rhs)[N]);
+    explicit array(const char (&rhs)[N]);
     /** Specialize to create 1D arrays of strings */
     template <int N>
-    array(const char *(&rhs)[N]);
+    explicit array(const char *(&rhs)[N]);
     template <int N>
-    array(const std::string *(&rhs)[N]);
+    explicit array(const std::string *(&rhs)[N]);
     /** Specialize to create 1D arrays of ndt::types */
     template <int N>
-    array(const ndt::type (&rhs)[N]);
+    explicit array(const ndt::type (&rhs)[N]);
 
     /**
      * Constructs a 1D array from a pointer and a size.
@@ -140,22 +140,22 @@ namespace nd {
 
     /** Constructs an array from a 1D initializer list */
     template <class T>
-    array(const std::initializer_list<T> &il);
+    explicit array(const std::initializer_list<T> &il);
     /** Constructs an array from a 2D initializer list */
     template <class T>
-    array(const std::initializer_list<std::initializer_list<T>> &il);
+    explicit array(const std::initializer_list<std::initializer_list<T>> &il);
     /** Constructs an array from a 3D initializer list */
     template <class T>
-    array(const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &il);
+    explicit array(const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &il);
 
     /** Constructs an array from a 1D const char * (string) initializer list */
-    array(const std::initializer_list<const char *> &il);
+    explicit array(const std::initializer_list<const char *> &il);
 
     /** Constructs an array from a 1D ndt::type initializer list */
-    array(const std::initializer_list<ndt::type> &il);
+    explicit array(const std::initializer_list<ndt::type> &il);
 
     /** Constructs an array from a 1D bool initializer list */
-    array(const std::initializer_list<bool> &il);
+    explicit array(const std::initializer_list<bool> &il);
 
     /** Assigns an array from a 1D initializer list */
     template <class T>
@@ -183,7 +183,7 @@ namespace nd {
      * Constructs an array from a std::vector.
      */
     template <class T>
-    array(const std::vector<T> &vec);
+    explicit array(const std::vector<T> &vec);
 
     explicit array(const memory_block_ptr &ndobj_memblock) : m_memblock(ndobj_memblock)
     {
@@ -857,16 +857,56 @@ namespace nd {
   DYND_API array operator-(const array &a0);
 
   DYND_API array operator+(const array &op0, const array &op1);
+  template <typename T>
+  array operator+(const array &op0, const T &op1){ return op0 + nd::array(op1); }
+  template <typename T>
+  array operator+(const T &op0, const array &op1){ return nd::array(op0) + op1; }
   DYND_API array operator-(const array &op0, const array &op1);
+  template <typename T>
+  array operator-(const array &op0, const T &op1){ return op0 - nd::array(op1); }
+  template <typename T>
+  array operator-(const T &op0, const array &op1){ return nd::array(op0) - op1; }
   DYND_API array operator/(const array &op0, const array &op1);
+  template <typename T>
+  array operator/(const array &op0, const T &op1){ return op0 / nd::array(op1); }
+  template <typename T>
+  array operator/(const T &op0, const array &op1){ return nd::array(op0) / op1; }
   DYND_API array operator*(const array &op0, const array &op1);
+  template <typename T>
+  array operator*(const array &op0, const T &op1){ return op0 * nd::array(op1); }
+  template <typename T>
+  array operator*(const T &op0, const array &op1){ return nd::array(op0) * op1; }
 
   DYND_API array operator<(const array &a0, const array &a1);
+  template <typename T>
+  array operator<(const array &op0, const T &op1){ return op0 < nd::array(op1); }
+  template <typename T>
+  array operator<(const T &op0, const array &op1){ return nd::array(op0) < op1; }
   DYND_API array operator<=(const array &a0, const array &a1);
+  template <typename T>
+  array operator<=(const array &op0, const T &op1){ return op0 <= nd::array(op1); }
+  template <typename T>
+  array operator<=(const T &op0, const array &op1){ return nd::array(op0) <= op1; }
   DYND_API array operator==(const array &a0, const array &a1);
+  template <typename T>
+  array operator==(const array &op0, const T &op1){ return op0 == nd::array(op1); }
+  template <typename T>
+  array operator==(const T &op0, const array &op1){ return nd::array(op0) == op1; }
   DYND_API array operator!=(const array &a0, const array &a1);
+  template <typename T>
+  array operator!=(const array &op0, const T &op1){ return op0 != nd::array(op1); }
+  template <typename T>
+  array operator!=(const T &op0, const array &op1){ return nd::array(op0) != op1; }
   DYND_API array operator>=(const array &a0, const array &a1);
+  template <typename T>
+  array operator>=(const array &op0, const T &op1){ return op0 >= nd::array(op1); }
+  template <typename T>
+  array operator>=(const T &op0, const array &op1){ return nd::array(op0) >= op1; }
   DYND_API array operator>(const array &a0, const array &a1);
+  template <typename T>
+  array operator>(const array &op0, const T &op1){ return op0 > nd::array(op1); }
+  template <typename T>
+  array operator>(const T &op0, const array &op1){ return nd::array(op0) > op1; }
 
   DYND_API nd::array array_rw(bool1 value);
   DYND_API nd::array array_rw(bool value);
@@ -1374,7 +1414,7 @@ namespace nd {
   inline array dtyped_zeros(intptr_t ndim, const intptr_t *shape, const ndt::type &tp)
   {
     nd::array res = dtyped_empty(ndim, shape, tp);
-    res.val_assign(0);
+    res.val_assign(nd::array(0));
 
     return res;
   }
@@ -1416,7 +1456,7 @@ namespace nd {
   inline array dtyped_ones(intptr_t ndim, const intptr_t *shape, const ndt::type &tp)
   {
     nd::array res = dtyped_empty(ndim, shape, tp);
-    res.val_assign(1);
+    res.val_assign(nd::array(1));
 
     return res;
   }
@@ -1622,7 +1662,6 @@ namespace nd {
     DYND_MEMCPY(get_ndo()->data.ptr, reinterpret_cast<const void *>(&rhs), size);
   }
 
-  // Temporarily removed due to conflicting dll linkage with earlier versions of this function.
   template <class T, int N>
   nd::array array_rw(const T (&rhs)[N])
   {

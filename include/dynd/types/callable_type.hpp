@@ -433,7 +433,7 @@ namespace ndt {
     static type make(const type &ret_tp, const type &tuple_tp)
     {
       if (tuple_tp.get_type_id() != tuple_type_id) {
-        return make(ret_tp, tuple_type::make(nd::array({tuple_tp})), struct_type::make());
+        return make(ret_tp, tuple_type::make({tuple_tp}), struct_type::make());
       }
 
       return make(ret_tp, tuple_tp, struct_type::make(tuple_tp.extended<base_tuple_type>()->is_variadic()));
@@ -471,8 +471,7 @@ namespace ndt {
     static type make(T &&name)
     {
       return callable_type::make(type::make<R>(), tuple_type::make(),
-                                 struct_type::make(nd::array({std::forward<T>(name)}),
-                                                   nd::array({type::make<A0>()})));
+                                 struct_type::make({std::forward<T>(name)}, {type::make<A0>()}));
     }
   };
 
@@ -480,7 +479,7 @@ namespace ndt {
   struct type::equivalent<R(A0, A...)> {
     static type make()
     {
-      return callable_type::make(type::make<R>(), nd::array({type::make<A0>(), type::make<A>()...}));
+      return callable_type::make(type::make<R>(), {type::make<A0>(), type::make<A>()...});
     }
 
     template <typename... T>
@@ -488,7 +487,7 @@ namespace ndt {
     {
       type tp[1 + sizeof...(A)] = {type::make<A0>(), type::make<A>()...};
 
-      return callable_type::make(type::make<R>(), nd::array(tp, 1 + sizeof...(A) - sizeof...(T)), nd::array({names...}),
+      return callable_type::make(type::make<R>(), nd::array(tp, 1 + sizeof...(A) - sizeof...(T)), {names...},
                                  nd::array(tp + (1 + sizeof...(A) - sizeof...(T)), sizeof...(T)));
     }
   };

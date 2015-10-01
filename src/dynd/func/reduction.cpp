@@ -34,10 +34,9 @@ nd::callable nd::functional::reduction(const callable &child)
 
   return callable::make<reduction_virtual_kernel>(
       ndt::callable_type::make(ndt::ellipsis_dim_type::make_if_not_variadic(child.get_ret_type()),
-                               nd::array({ndt::ellipsis_dim_type::make_if_not_variadic(child.get_arg_type(0))}),
-                               nd::array({"axes", "identity", "keepdims"}),
-                               nd::array({ndt::option_type::make(ndt::type("Fixed * int32")),
-                                          ndt::option_type::make(child.get_ret_type()),
-                                          ndt::option_type::make(ndt::type::make<bool1>())})),
+                               {ndt::ellipsis_dim_type::make_if_not_variadic(child.get_arg_type(0))},
+                               {"axes", "identity", "keepdims"}, {ndt::option_type::make(ndt::type("Fixed * int32")),
+                                                                  ndt::option_type::make(child.get_ret_type()),
+                                                                  ndt::option_type::make(ndt::type::make<bool1>())}),
       reduction_virtual_kernel::static_data_type(child), sizeof(reduction_virtual_kernel::data_type));
 }

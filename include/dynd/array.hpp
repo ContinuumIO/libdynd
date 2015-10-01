@@ -140,22 +140,22 @@ namespace nd {
 
     /** Constructs an array from a 1D initializer list */
     template <class T>
-    explicit array(const std::initializer_list<T> &il);
+    array(const std::initializer_list<T> &il);
     /** Constructs an array from a 2D initializer list */
     template <class T>
-    explicit array(const std::initializer_list<std::initializer_list<T>> &il);
+    array(const std::initializer_list<std::initializer_list<T>> &il);
     /** Constructs an array from a 3D initializer list */
     template <class T>
-    explicit array(const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &il);
+    array(const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &il);
 
     /** Constructs an array from a 1D const char * (string) initializer list */
-    explicit array(const std::initializer_list<const char *> &il);
+    array(const std::initializer_list<const char *> &il);
 
     /** Constructs an array from a 1D ndt::type initializer list */
-    explicit array(const std::initializer_list<ndt::type> &il);
+    array(const std::initializer_list<ndt::type> &il);
 
     /** Constructs an array from a 1D bool initializer list */
-    explicit array(const std::initializer_list<bool> &il);
+    array(const std::initializer_list<bool> &il);
 
     /** Assigns an array from a 1D initializer list */
     template <class T>

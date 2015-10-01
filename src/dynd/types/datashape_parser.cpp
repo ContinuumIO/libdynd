@@ -922,7 +922,7 @@ nd::array dynd::parse_type_constr_args(const char *&rbegin, const char *end, map
   }
 
   if (parse_token_ds(begin, end, ']')) {
-    return nd::empty(ndt::tuple_type::make(nd::array({ndt::tuple_type::make(), ndt::struct_type::make()})));
+    return nd::empty(ndt::tuple_type::make({ndt::tuple_type::make(), ndt::struct_type::make()}));
   }
 
   vector<nd::array> pos_args;
@@ -994,8 +994,8 @@ nd::array dynd::parse_type_constr_args(const char *&rbegin, const char *end, map
             [](const nd::array &a) { return a.get_type(); });
 
   ndt::type result_tp =
-      ndt::tuple_type::make(nd::array({ndt::tuple_type::make(nd::array(pos_arg_types)),
-                                       ndt::struct_type::make(nd::array(kw_names), nd::array(kw_arg_types))}));
+      ndt::tuple_type::make({ndt::tuple_type::make(nd::array(pos_arg_types)),
+                            ndt::struct_type::make(nd::array(kw_names), nd::array(kw_arg_types))});
 
   result = nd::empty(result_tp);
   nd::array pos = result(0);

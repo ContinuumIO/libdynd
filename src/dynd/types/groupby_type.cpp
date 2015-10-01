@@ -40,9 +40,8 @@ ndt::groupby_type::groupby_type(const type &data_values_tp,
                         "have at least one array dimension");
   }
   m_operand_type =
-      struct_type::make(nd::array({"data", "by"}),
-                        nd::array({pointer_type::make(data_values_tp),
-                                  pointer_type::make(by_values_tp)}));
+      struct_type::make({"data", "by"}, {pointer_type::make(data_values_tp),
+                                         pointer_type::make(by_values_tp)});
   m_members.arrmeta_size = m_operand_type.get_arrmeta_size();
   const categorical_type *cd = m_groups_type.extended<categorical_type>();
   m_value_type =

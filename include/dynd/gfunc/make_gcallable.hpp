@@ -446,7 +446,7 @@ namespace gfunc {
       }
       static ndt::type make_parameters_type(const char *name0)
       {
-        return ndt::struct_type::make(nd::array({name0}), nd::array({make_parameter_type<P0>::make()}));
+        return ndt::struct_type::make({name0}, {make_parameter_type<P0>::make()});
       }
     };
 
@@ -465,8 +465,8 @@ namespace gfunc {
       }
       static ndt::type make_parameters_type(const char *name0, const char *name1)
       {
-        return ndt::struct_type::make(nd::array({name0, name1}),
-                                      nd::array({make_parameter_type<P0>::make(), make_parameter_type<P1>::make()}));
+        return ndt::struct_type::make({name0, name1},
+                                      {make_parameter_type<P0>::make(), make_parameter_type<P1>::make()});
       }
     };
 

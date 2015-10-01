@@ -148,7 +148,7 @@ DYND_API nd::callable nd::take_by_pointer::make()
 {
   return callable::make<take_by_pointer_virtual_ck>(
       ndt::callable_type::make(ndt::type("R * pointer[T]"),
-                               nd::array({ndt::type("M * T"), ndt::type("N * Ix")})),
+                               {ndt::type("M * T"), ndt::type("N * Ix")}),
       0);
 }
 

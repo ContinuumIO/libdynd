@@ -218,12 +218,13 @@ namespace nd {
     void swap(array &rhs);
 
     /**
-     * Assignment operator (should be just "= default" in C++11).
+     * Assignment operator.
      * Copies with reference semantics.
      */
-    inline array &operator=(const array &rhs)
-    {
-      m_memblock = rhs.m_memblock;
+    array &operator=(const array &rhs) = default;
+    template <typename T, typename std::enable_if<ndt::type::has_equivalent<T>::value, int>::type = 0>
+    inline array &operator=(const T &rhs) {
+      *this = nd::array(rhs);
       return *this;
     }
 
@@ -857,55 +858,55 @@ namespace nd {
   DYND_API array operator-(const array &a0);
 
   DYND_API array operator+(const array &op0, const array &op1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator+(const array &op0, const T &op1){ return op0 + nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator+(const T &op0, const array &op1){ return nd::array(op0) + op1; }
   DYND_API array operator-(const array &op0, const array &op1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator-(const array &op0, const T &op1){ return op0 - nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator-(const T &op0, const array &op1){ return nd::array(op0) - op1; }
   DYND_API array operator/(const array &op0, const array &op1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator/(const array &op0, const T &op1){ return op0 / nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator/(const T &op0, const array &op1){ return nd::array(op0) / op1; }
   DYND_API array operator*(const array &op0, const array &op1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator*(const array &op0, const T &op1){ return op0 * nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator*(const T &op0, const array &op1){ return nd::array(op0) * op1; }
 
   DYND_API array operator<(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator<(const array &op0, const T &op1){ return op0 < nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator<(const T &op0, const array &op1){ return nd::array(op0) < op1; }
   DYND_API array operator<=(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator<=(const array &op0, const T &op1){ return op0 <= nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator<=(const T &op0, const array &op1){ return nd::array(op0) <= op1; }
   DYND_API array operator==(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator==(const array &op0, const T &op1){ return op0 == nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator==(const T &op0, const array &op1){ return nd::array(op0) == op1; }
   DYND_API array operator!=(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator!=(const array &op0, const T &op1){ return op0 != nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator!=(const T &op0, const array &op1){ return nd::array(op0) != op1; }
   DYND_API array operator>=(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator>=(const array &op0, const T &op1){ return op0 >= nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator>=(const T &op0, const array &op1){ return nd::array(op0) >= op1; }
   DYND_API array operator>(const array &a0, const array &a1);
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator>(const array &op0, const T &op1){ return op0 > nd::array(op1); }
-  template <typename T>
+  template <typename T, typename std::enable_if<is_dynd_scalar<T>::value, int>::type = 0>
   array operator>(const T &op0, const array &op1){ return nd::array(op0) > op1; }
 
   DYND_API nd::array array_rw(bool1 value);
@@ -979,7 +980,7 @@ namespace nd {
 
     /** Does a value-assignment from the rhs C++ scalar. */
     template <class T>
-    typename std::enable_if<is_dynd_scalar<T>::value, array_vals &>::type operator=(const T &rhs)
+    typename std::enable_if<ndt::type::has_equivalent<T>::value, array_vals &>::type operator=(const T &rhs)
     {
       m_arr.val_assign(ndt::type::make<T>(), NULL, (const char *)&rhs);
       return *this;
@@ -1039,7 +1040,7 @@ namespace nd {
 
     /** Does a value-assignment from the rhs C++ scalar. */
     template <class T>
-    typename std::enable_if<is_dynd_scalar<T>::value, array_vals_at &>::type operator=(const T &rhs)
+    typename std::enable_if<ndt::type::has_equivalent<T>::value, array_vals_at &>::type operator=(const T &rhs)
     {
       m_arr.val_assign(ndt::type::make<T>(), NULL, (const char *)&rhs);
       return *this;

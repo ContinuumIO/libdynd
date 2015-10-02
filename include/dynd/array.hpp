@@ -24,6 +24,7 @@ namespace dynd {
 
 namespace ndt {
   DYND_API type make_fixed_dim(size_t dim_size, const type &element_tp);
+  template <> struct type::equivalent<nd::array>;
 } // namespace ndt;
 
 namespace nd {

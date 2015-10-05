@@ -1092,6 +1092,14 @@ namespace ndt {
     }
   };
 
+  template <>
+  struct type::equivalent<std::string> {
+    static type make()
+    {
+      return type(string_type_id);
+    }
+  };
+
   // The removal of const is a temporary solution until we decide if and how
   // types should support const
   template <typename T>

@@ -24,7 +24,7 @@ TYPED_TEST_CASE_P(ArrayIndex);
 
 TYPED_TEST_P(ArrayIndex, BasicInteger) {
     int i0[3][2] = {{1,2},{3,4},{5,6}};
-    nd::array a = TestFixture::To(i0);
+    nd::array a = TestFixture::To(nd::array(i0));
     nd::array b, c;
 
     // Indexing in two steps
@@ -65,7 +65,7 @@ TYPED_TEST_P(ArrayIndex, BasicInteger) {
     EXPECT_THROW(a(0,0,0), too_many_indices);
 
     int i1[2][2][2] = {{{1,2}, {3,4}}, {{5,6}, {7,8}}};
-    a = TestFixture::To(i1);
+    a = TestFixture::To(nd::array(i1));
 
     // Indexing in two steps
     b = a(0,0);
@@ -111,7 +111,7 @@ TYPED_TEST_P(ArrayIndex, BasicInteger) {
 
 TYPED_TEST_P(ArrayIndex, SimpleOneDimensionalRange) {
     int i0[] = {1,2,3,4,5,6};
-    nd::array a = TestFixture::To(i0), b;
+    nd::array a = TestFixture::To(nd::array(i0)), b;
 
     // full range
     b = a(irange());
@@ -147,7 +147,7 @@ TYPED_TEST_P(ArrayIndex, SimpleOneDimensionalRange) {
 
 TYPED_TEST_P(ArrayIndex, SteppedOneDimensionalRange) {
     int i0[] = {1,2,3,4,5,6};
-    nd::array a = TestFixture::To(i0), b;
+    nd::array a = TestFixture::To(nd::array(i0)), b;
 
     // different step
     b = a(irange().by(2));
@@ -205,7 +205,7 @@ TYPED_TEST_P(ArrayIndex, SteppedOneDimensionalRange) {
 
 TYPED_TEST_P(ArrayIndex, ExceptionsOneDimensionalRange) {
     int i0[] = {1,2,3,4,5,6};
-    nd::array a = TestFixture::To(i0), b;
+    nd::array a = TestFixture::To(nd::array(i0)), b;
 
     // exceptions for out-of-bounds ranges
     EXPECT_THROW(a(0,irange()), too_many_indices);

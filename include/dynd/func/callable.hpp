@@ -95,7 +95,7 @@ namespace nd {
     {
       intptr_t j = af_tp->get_kwd_index(name);
       if (j == -1) {
-        if (is_special_kwd(af_tp, dst, name, value)) {
+        if (is_special_kwd(af_tp, dst, name, nd::array(value))) {
           has_dst_tp = true;
         } else {
           std::stringstream ss;

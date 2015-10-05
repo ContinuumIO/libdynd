@@ -301,7 +301,7 @@ TYPED_TEST_P(Array, ThreeDimConstructor) {
 TEST(Array, IntScalarConstructor) {
     stringstream ss;
 
-    nd::array a = 3;
+    nd::array a{3};
     EXPECT_TRUE(a.is_scalar());
     EXPECT_EQ(ndt::type::make<int>(), a.get_type());
     ss.str(""); ss << a;
@@ -335,7 +335,7 @@ TEST(Array, IntScalarConstructor) {
 TEST(Array, UIntScalarConstructor) {
     stringstream ss;
 
-    nd::array a = (uint8_t)5;
+    nd::array a{(uint8_t)5};
     EXPECT_TRUE(a.is_scalar());
     EXPECT_EQ(ndt::type::make<uint8_t>(), a.get_type());
     ss.str(""); ss << a;
@@ -363,7 +363,7 @@ TEST(Array, UIntScalarConstructor) {
 TEST(Array, FloatScalarConstructor) {
     stringstream ss;
 
-    nd::array a = 3.25f;
+    nd::array a{3.25f};
     EXPECT_TRUE(a.is_scalar());
     EXPECT_EQ(ndt::type::make<float>(), a.get_type());
     ss.str(""); ss << a;
@@ -389,7 +389,7 @@ TEST(Array, StdVectorConstructor) {
     std::vector<float> v;
 
     // Empty vector
-    a = v;
+    a = nd::array(v);
     EXPECT_EQ(ndt::make_fixed_dim(0, ndt::type::make<float>()), a.get_type());
     EXPECT_EQ(1, a.get_type().get_ndim());
     EXPECT_EQ(1u, a.get_shape().size());
@@ -402,7 +402,7 @@ TEST(Array, StdVectorConstructor) {
     for (int i = 0; i < 10; ++i) {
         v.push_back(i/0.5f);
     }
-    a = v;
+    a = nd::array(v);
     EXPECT_EQ(ndt::make_fixed_dim(10, ndt::type::make<float>()), a.get_type());
     EXPECT_EQ(1, a.get_type().get_ndim());
     EXPECT_EQ(1u, a.get_shape().size());
@@ -420,7 +420,7 @@ TEST(Array, StdVectorStringConstructor) {
     std::vector<std::string> v;
 
     // Empty vector
-    a = v;
+    a = nd::array(v);
     EXPECT_EQ(ndt::type("0 * string"), a.get_type());
     EXPECT_EQ(1, a.get_type().get_ndim());
     EXPECT_EQ(1u, a.get_shape().size());
@@ -435,7 +435,7 @@ TEST(Array, StdVectorStringConstructor) {
     v.push_back("string");
     v.push_back("vectors");
     v.push_back("testing testing testing testing testing testing testing testing testing");
-    a = v;
+    a = nd::array(v);
     EXPECT_EQ(ndt::type("5 * string"), a.get_type());
     EXPECT_EQ(1, a.get_type().get_ndim());
     EXPECT_EQ(1u, a.get_shape().size());
@@ -452,7 +452,7 @@ TYPED_TEST_P(Array, AsScalar) {
     nd::array a;
 
     a = nd::empty(TestFixture::MakeType(ndt::type::make<float>()));
-    a.val_assign(3.14f);
+    a.vals() = 3.14f;
     EXPECT_EQ(3.14f, a.as<float>());
     EXPECT_EQ(3.14f, a.as<double>());
     if (!TestFixture::IsTypeID(cuda_device_type_id)) {
@@ -471,7 +471,7 @@ TYPED_TEST_P(Array, AsScalar) {
     EXPECT_EQ(true, a.as<bool>(assign_error_nocheck));
 
     a = nd::empty(TestFixture::MakeType(ndt::type::make<double>()));
-    a.val_assign(3.141592653589);
+    a.vals() = 3.141592653589;
     EXPECT_EQ(3.141592653589, a.as<double>());
     if (!TestFixture::IsTypeID(cuda_device_type_id)) {
         EXPECT_THROW(a.as<float>(assign_error_inexact), runtime_error);
@@ -603,7 +603,7 @@ TEST(Array, InitFromInitializerLists) {
 
 TEST(Array, InitFromNestedCArray) {
     int i0[2][3] = {{1,2,3}, {4,5,6}};
-    nd::array a = i0;
+    nd::array a{i0};
     EXPECT_EQ(ndt::type("2 * 3 * int"), a.get_type());
     EXPECT_JSON_EQ_ARR("[[1,2,3], [4,5,6]]", a);
 
@@ -615,7 +615,7 @@ TEST(Array, InitFromNestedCArray) {
 
 TEST(Array, Storage) {
     int i0[2][3] = {{1,2,3}, {4,5,6}};
-    nd::array a = i0;
+    nd::array a{i0};
 
     nd::array b = a.storage();
     EXPECT_EQ(ndt::make_fixed_dim(2, ndt::make_fixed_dim(3, ndt::type::make<int>())), a.get_type());
@@ -627,7 +627,7 @@ TEST(Array, Storage) {
 
 TEST(Array, SimplePrint) {
   int vals[3] = {1, 2, 3};
-  nd::array a = vals;
+  nd::array a{vals};
   stringstream ss;
   ss << a;
   EXPECT_EQ("array([1, 2, 3],\n      type=\"3 * int32\")", ss.str());
@@ -635,7 +635,7 @@ TEST(Array, SimplePrint) {
 
 TEST(Array, SimplePrintEmpty) {
   std::vector<float> v;
-  nd::array a = v;
+  nd::array a = nd::array(v);
   stringstream ss;
   ss << a;
   EXPECT_EQ("array([],\n      type=\"0 * float32\")", ss.str());

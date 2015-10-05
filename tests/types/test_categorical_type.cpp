@@ -21,9 +21,13 @@ using namespace dynd;
 
 TEST(CategoricalType, Create)
 {
+  cout << 1 << endl;
   const char *a_vals[] = {"foo", "bar", "baz"};
+  cout << 2 << endl;
   nd::array a = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  cout << 3 << endl;
   a.vals() = a_vals;
+  cout << 4 << endl;
 
   ndt::type d;
   d = ndt::categorical_type::make(a);
@@ -120,7 +124,7 @@ TEST(CategoricalType, Unique)
   EXPECT_THROW(ndt::categorical_type::make(a), std::runtime_error);
 
   int i_vals[] = {0, 10, 10};
-  nd::array i = i_vals;
+  nd::array i{i_vals};
 
   EXPECT_THROW(ndt::categorical_type::make(i), std::runtime_error);
 }
@@ -144,7 +148,7 @@ TEST(CategoricalType, FactorString)
 {
   const char *cats_vals[] = {"bar", "foo", "foot"};
   const char *a_vals[] = {"foo", "bar", "foot", "foo", "bar"};
-  nd::array cats = cats_vals, a = a_vals;
+  nd::array cats{cats_vals}, a{a_vals};
 
   ndt::type da = ndt::factor_categorical(a);
   EXPECT_EQ(ndt::categorical_type::make(cats), da);
@@ -158,8 +162,8 @@ TEST(CategoricalType, FactorStringLonger)
       "foo", "bar",                        "foot",                      "foo",
       "bar", "abcdefghijklmnopqrstuvwxyz", "foot",                      "foo",
       "z",   "a",                          "abcdefghijklmnopqrstuvwxyz"};
-  ndt::type da = ndt::factor_categorical(a_vals);
-  EXPECT_EQ(ndt::categorical_type::make(cats_vals), da);
+  ndt::type da{ndt::factor_categorical(nd::array(a_vals))};
+  EXPECT_EQ(ndt::categorical_type::make(nd::array(cats_vals)), da);
 }
 
 TEST(CategoricalType, FactorInt)
@@ -191,19 +195,19 @@ TEST(CategoricalType, Values)
   EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())
                     ->get_value_from_category(a(2)));
   EXPECT_EQ(0u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("foo"));
+                    ->get_value_from_category(nd::array("foo")));
   EXPECT_EQ(1u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("bar"));
+                    ->get_value_from_category(nd::array("bar")));
   EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("baz"));
+                    ->get_value_from_category(nd::array("baz")));
   EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("aaa"),
+                   ->get_value_from_category(nd::array("aaa")),
                std::runtime_error);
   EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("ddd"),
+                   ->get_value_from_category(nd::array("ddd")),
                std::runtime_error);
   EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("zzz"),
+                   ->get_value_from_category(nd::array("zzz")),
                std::runtime_error);
 }
 
@@ -219,15 +223,15 @@ TEST(CategoricalType, ValuesLonger)
   int cats_count = sizeof(cats_vals) / sizeof(cats_vals[0]);
   int a_count = sizeof(a_uints) / sizeof(a_uints[0]);
 
-  ndt::type dt = ndt::categorical_type::make(cats_vals);
-  nd::array a = nd::array(a_vals).ucast(dt).eval();
+  ndt::type dt = ndt::categorical_type::make(nd::array(cats_vals));
+  nd::array a = nd::array(nd::array(a_vals)).ucast(dt).eval();
   nd::array a_view = a.p("ints");
 
   // Check that the categories got the right values
   for (int i = 0; i < cats_count; ++i) {
     EXPECT_EQ((uint32_t)i,
               static_cast<const ndt::categorical_type *>(dt.extended())
-                  ->get_value_from_category(cats_vals[i]));
+                  ->get_value_from_category(nd::array(cats_vals[i])));
   }
   // Check that everything in 'a' is right
   for (int i = 0; i < a_count; ++i) {
@@ -270,7 +274,7 @@ TEST(CategoricalType, AssignFixedString)
 TEST(CategoricalType, AssignInt)
 {
   int32_t cat_vals[] = {10, 100, 1000};
-  nd::array cat = cat_vals;
+  nd::array cat{cat_vals};
 
   ndt::type dt = ndt::categorical_type::make(cat);
 
@@ -340,7 +344,7 @@ TEST(CategoricalType, CategoriesProperty)
 TEST(CategoricalType, AssignFromOther)
 {
   int cats_values[] = {3, 6, 100, 1000};
-  ndt::type cd = ndt::categorical_type::make(cats_values);
+  ndt::type cd = ndt::categorical_type::make(nd::array(cats_values));
   int16_t a_values[] = {6, 3, 100, 3, 1000, 100, 6, 1000};
   nd::array a = nd::array(a_values).ucast(cd);
   EXPECT_EQ(

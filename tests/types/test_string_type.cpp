@@ -91,7 +91,7 @@ TEST(StringType, ArrayCreation)
   // An array of UTF8 strings
   const char *i0[5] = {"this", "is", "a", "test",
                        "of strings that are various sizes"};
-  a = i0;
+  a = nd::array(i0);
   EXPECT_EQ(ndt::type("5 * string"), a.get_type());
   EXPECT_EQ(a.get_shape()[0], 5);
   EXPECT_EQ("this", a(0).as<string>());
@@ -656,7 +656,7 @@ static bool ascii_T_compare(const char *x, const T *y, intptr_t count)
 TEST(StringType, Iter)
 {
   const char *str = "This is a string for testing";
-  nd::array a = str;
+  nd::array a{str};
 
   dim_iter it;
   static_cast<const ndt::base_string_type *>(a.get_dtype().extended())

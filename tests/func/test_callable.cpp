@@ -136,7 +136,7 @@ TEST(Callable, DynamicCall)
 {
   nd::callable af;
 
-  nd::array values[3] = {7, 2.5, 5};
+  nd::array values[3] = {nd::array(7), nd::array(2.5), nd::array(5)};
   const char *names[3] = {"x", "y", "z"};
 
   af = nd::functional::apply([](int x, double y, int z) { return 2 * x - y + 3 * z; });
@@ -157,7 +157,7 @@ TEST(Callable, DecomposedDynamicCall)
   nd::callable af;
 
   ndt::type ret_tp;
-  nd::array values[3] = {7, 2.5, 5};
+  nd::array values[3] = {nd::array(7), nd::array(2.5), nd::array(5)};
   ndt::type types[3] = {values[0].get_type(), values[1].get_type(), values[2].get_type()};
   const char *const arrmetas[3] = {values[0].get_arrmeta(), values[1].get_arrmeta(), values[2].get_arrmeta()};
   char *const datas[3] = {values[0].get_ndo()->data.ptr, values[1].get_ndo()->data.ptr, values[2].get_ndo()->data.ptr};

@@ -98,7 +98,7 @@ else()
         endif()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20 -Wno-type-limits")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20 -stdlib=c++")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
     endif()
 endif()
 
@@ -107,7 +107,7 @@ add_subdirectory(thirdparty/cephes)
 add_subdirectory(thirdparty/datetime)
 include_directories(thirdparty/datetime/include)
 
-set(DYND_LINK_LIBS cephes datetime)
+set(DYND_LINK_LIBS c++abi cephes datetime)
 
 # Get the git revision
 include(GetGitRevisionDescriptionDyND)

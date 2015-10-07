@@ -37,8 +37,8 @@ TYPED_TEST_P(Arithmetic, SimpleBroadcast)
   // Two arrays with broadcasting
   const int v0[] = {1, 2, 3};
   const int v1[][3] = {{0, 1, 1}, {2, 5, -10}};
-  a = TestFixture::To(v0);
-  b = TestFixture::To(v1);
+  a = TestFixture::To(nd::array(v0));
+  b = TestFixture::To(nd::array(v1));
 
   c = a + b;
   EXPECT_EQ(ndt::type::make<int>(), c.get_dtype().without_memory_type());
@@ -81,8 +81,8 @@ TYPED_TEST_P(Arithmetic, StridedScalarBroadcast)
 
   // Two arrays with broadcasting
   const int v0[] = {2, 4, 6};
-  a = TestFixture::To(v0);
-  b = TestFixture::To(2);
+  a = TestFixture::To(nd::array(v0));
+  b = TestFixture::To(nd::array(2));
 
   c = a + b;
   EXPECT_EQ(ndt::type::make<int>(), c.get_dtype().without_memory_type());
@@ -197,22 +197,22 @@ TYPED_TEST_P(Arithmetic, ScalarOnTheRight)
   nd::array a, b, c;
 
   const int v0[] = {1, 2, 3};
-  a = TestFixture::To(v0);
+  a = TestFixture::To(nd::array(v0));
 
   // A scalar on the right
-  c = a + TestFixture::To(12);
+  c = a + TestFixture::To(nd::array(12));
   EXPECT_EQ(13, c(0).as<int>());
   EXPECT_EQ(14, c(1).as<int>());
   EXPECT_EQ(15, c(2).as<int>());
-  c = a - TestFixture::To(12);
+  c = a - TestFixture::To(nd::array(12));
   EXPECT_EQ(-11, c(0).as<int>());
   EXPECT_EQ(-10, c(1).as<int>());
   EXPECT_EQ(-9, c(2).as<int>());
-  c = a * TestFixture::To(3);
+  c = a * TestFixture::To(nd::array(3));
   EXPECT_EQ(3, c(0).as<int>());
   EXPECT_EQ(6, c(1).as<int>());
   EXPECT_EQ(9, c(2).as<int>());
-  c = a / TestFixture::To(2);
+  c = a / TestFixture::To(nd::array(2));
   EXPECT_EQ(0, c(0).as<int>());
   EXPECT_EQ(1, c(1).as<int>());
   EXPECT_EQ(1, c(2).as<int>());
@@ -223,22 +223,22 @@ TYPED_TEST_P(Arithmetic, ScalarOnTheLeft)
   nd::array a, b, c;
 
   const int v0[] = {1, 2, 3};
-  a = TestFixture::To(v0);
+  a = TestFixture::To(nd::array(v0));
 
   // A scalar on the left
-  c = TestFixture::To(-1) + a;
+  c = TestFixture::To(nd::array(-1)) + a;
   EXPECT_EQ(0, c(0).as<int>());
   EXPECT_EQ(1, c(1).as<int>());
   EXPECT_EQ(2, c(2).as<int>());
-  c = TestFixture::To(-1) - a;
+  c = TestFixture::To(nd::array(-1)) - a;
   EXPECT_EQ(-2, c(0).as<int>());
   EXPECT_EQ(-3, c(1).as<int>());
   EXPECT_EQ(-4, c(2).as<int>());
-  c = TestFixture::To(5) * a;
+  c = TestFixture::To(nd::array(5)) * a;
   EXPECT_EQ(5, c(0).as<int>());
   EXPECT_EQ(10, c(1).as<int>());
   EXPECT_EQ(15, c(2).as<int>());
-  c = TestFixture::To(-6) / a;
+  c = TestFixture::To(nd::array(-6)) / a;
   EXPECT_EQ(-6, c(0).as<int>());
   EXPECT_EQ(-3, c(1).as<int>());
   EXPECT_EQ(-2, c(2).as<int>());
@@ -250,14 +250,14 @@ TYPED_TEST_P(Arithmetic, ComplexScalar)
 
   // Two arrays with broadcasting
   int v0[] = {1, 2, 3};
-  a = TestFixture::To(v0);
+  a = TestFixture::To(nd::array(v0));
 
   // A complex scalar
-  c = a + TestFixture::To(dynd::complex<double>(1, 2));
+  c = a + TestFixture::To(nd::array(dynd::complex<double>(1, 2)));
   EXPECT_EQ(dynd::complex<double>(2, 2), c(0).as<dynd::complex<double>>());
   EXPECT_EQ(dynd::complex<double>(3, 2), c(1).as<dynd::complex<double>>());
   EXPECT_EQ(dynd::complex<double>(4, 2), c(2).as<dynd::complex<double>>());
-  c = TestFixture::To(dynd::complex<double>(0, -1)) * a;
+  c = TestFixture::To(nd::array(dynd::complex<double>(0, -1))) * a;
   EXPECT_EQ(dynd::complex<double>(0, -1), c(0).as<dynd::complex<double>>());
   EXPECT_EQ(dynd::complex<double>(0, -2), c(1).as<dynd::complex<double>>());
   EXPECT_EQ(dynd::complex<double>(0, -3), c(2).as<dynd::complex<double>>());

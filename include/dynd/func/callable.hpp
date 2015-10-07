@@ -95,7 +95,7 @@ namespace nd {
     {
       intptr_t j = af_tp->get_kwd_index(name);
       if (j == -1) {
-        if (is_special_kwd(af_tp, dst, name, value)) {
+        if (is_special_kwd(af_tp, dst, name, nd::array(value))) {
           has_dst_tp = true;
         } else {
           std::stringstream ss;
@@ -739,7 +739,7 @@ namespace nd {
       // ...
       std::vector<nd::array> kwds_as_vector(available.size() + missing.size());
       array kwds_as_array =
-          kwds.as_array(ndt::struct_type::make(self_tp->get_kwd_names(), kwd_tp), kwds_as_vector, available, missing);
+          kwds.as_array(ndt::struct_type::make(self_tp->get_kwd_names(), nd::array(kwd_tp)), kwds_as_vector, available, missing);
 
       ndt::type dst_tp;
       if (dst.is_null()) {

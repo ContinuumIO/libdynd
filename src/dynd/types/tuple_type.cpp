@@ -264,7 +264,7 @@ nd::array ndt::pack(intptr_t field_count, const nd::array *field_vals)
     field_types[i] = field_vals[i].get_type();
   }
 
-  nd::array res = nd::empty(ndt::tuple_type::make(field_types));
+  nd::array res = nd::empty(ndt::tuple_type::make(nd::array(field_types)));
   for (intptr_t i = 0; i < field_count; ++i) {
     res.vals_at(i) = field_vals[i];
   }

@@ -102,7 +102,7 @@ ndt::expr_type::apply_linear_index(intptr_t nindices, const irange *indices,
                                                  current_i, root_tp, false);
       }
     }
-    type result_operand_type = ndt::tuple_type::make(result_src_dt);
+    type result_operand_type = ndt::tuple_type::make(nd::array(result_src_dt));
     expr_kernel_generator_incref(m_kgen);
     return make_expr(result_value_dt, result_operand_type, m_kgen);
   } else {

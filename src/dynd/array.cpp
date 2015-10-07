@@ -2047,7 +2047,7 @@ nd::array nd::combine_into_tuple(size_t field_count, const array *field_values)
     flags &= field_values[i].get_flags();
   }
 
-  ndt::type result_type = ndt::tuple_type::make(field_types);
+  ndt::type result_type = ndt::tuple_type::make(nd::array(field_types));
   const ndt::tuple_type *fsd = result_type.extended<ndt::tuple_type>();
   char *data_ptr = NULL;
 

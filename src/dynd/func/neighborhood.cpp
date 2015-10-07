@@ -18,10 +18,10 @@ nd::callable nd::functional::neighborhood(const nd::callable &neighborhood_op,
       neighborhood_op.get_array_type().extended<ndt::callable_type>();
 
   nd::array arg_tp = nd::empty(3, ndt::make_type());
-  arg_tp(0).vals() = ndt::type("?" + std::to_string(nh_ndim) + " * int");
-  arg_tp(1).vals() = ndt::type("?" + std::to_string(nh_ndim) + " * int");
+  arg_tp(0).vals() = nd::array(ndt::type("?" + std::to_string(nh_ndim) + " * int"));
+  arg_tp(1).vals() = nd::array(ndt::type("?" + std::to_string(nh_ndim) + " * int"));
   arg_tp(2).vals() =
-      ndt::type("?Fixed**" + std::to_string(nh_ndim) + " * bool");
+      nd::array(ndt::type("?Fixed**" + std::to_string(nh_ndim) + " * bool"));
   std::vector<std::string> arg_names;
   arg_names.push_back("shape");
   arg_names.push_back("offset");
@@ -30,7 +30,7 @@ nd::callable nd::functional::neighborhood(const nd::callable &neighborhood_op,
                          .with_replaced_dtype(funcproto_tp->get_return_type());
   ndt::type self_tp =
       ndt::callable_type::make(ret_tp, funcproto_tp->get_pos_tuple(),
-                               ndt::struct_type::make(arg_names, arg_tp));
+                               ndt::struct_type::make(nd::array(arg_names), arg_tp));
 
   std::ostringstream oss;
   oss << "Fixed**" << nh_ndim;

@@ -27,11 +27,11 @@ TEST(GroupByDType, Basic)
   int data[] = {10, 20, 30};
   int by[] = {15, 16, 16};
   int groups[] = {15, 16};
-  nd::array g = nd::groupby(data, by, ndt::categorical_type::make(groups));
+  nd::array g = nd::groupby(nd::array(data), nd::array(by), ndt::categorical_type::make(nd::array(groups)));
   EXPECT_EQ(ndt::make_groupby(
                 ndt::make_fixed_dim(3, ndt::type::make<int>()),
                 ndt::make_fixed_dim(3, ndt::convert_type::make(
-                                           ndt::categorical_type::make(groups),
+                                           ndt::categorical_type::make(nd::array(groups)),
                                            ndt::type::make<int>()))),
             g.get_type());
   g = g.eval();
@@ -46,13 +46,13 @@ TEST(GroupByDType, BasicDeduceGroups)
 {
   const char *data[] = {"a", "test", "is", "here", "now"};
   const char *by[] = {"beta", "alpha", "beta", "beta", "alpha"};
-  nd::array g = nd::groupby(data, by);
+  nd::array g = nd::groupby(nd::array(data), nd::array(by));
   const char *expected_groups[] = {"alpha", "beta"};
   EXPECT_EQ(
       ndt::make_groupby(ndt::make_fixed_dim(5, ndt::string_type::make()),
                         ndt::make_fixed_dim(
                             5, ndt::convert_type::make(
-                                   ndt::categorical_type::make(expected_groups),
+                                   ndt::categorical_type::make(nd::array(expected_groups)),
                                    ndt::string_type::make()))),
       g.get_type());
   g = g.eval();
@@ -235,7 +235,7 @@ TEST(GroupByDType, MismatchedSizes)
   int data[] = {10, 20, 30};
   int by[] = {15, 16, 16, 15};
   int groups[] = {15, 16};
-  EXPECT_THROW(nd::groupby(data, by, ndt::categorical_type::make(groups)),
+  EXPECT_THROW(nd::groupby(nd::array(data), nd::array(by), ndt::categorical_type::make(nd::array(groups))),
                runtime_error);
 }
 

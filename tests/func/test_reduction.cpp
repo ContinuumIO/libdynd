@@ -40,15 +40,15 @@ TEST(Reduction, BuiltinSum_Lift1D_NoIdentity)
 {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
-  EXPECT_ARRAY_EQ(1.5 - 22.0 + 3.75 + 1.125 - 3.375, f(initializer_list<double>{1.5, -22.0, 3.75, 1.125, -3.375}));
-  EXPECT_ARRAY_EQ(3.75, f(initializer_list<double>{3.75}));
+  EXPECT_ARRAY_EQ(nd::array(1.5 - 22.0 + 3.75 + 1.125 - 3.375), f(initializer_list<double>{1.5, -22.0, 3.75, 1.125, -3.375}));
+  EXPECT_ARRAY_EQ(nd::array(3.75), f(initializer_list<double>{3.75}));
 }
 
 TEST(Reduction, BuiltinSum_Lift1D_WithIdentity)
 {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
-  EXPECT_ARRAY_EQ(100.0 + 1.5 - 22.0 + 3.75 + 1.125 - 3.375,
+  EXPECT_ARRAY_EQ(nd::array(100.0 + 1.5 - 22.0 + 3.75 + 1.125 - 3.375),
                   f(initializer_list<double>{1.5, -22., 3.75, 1.125, -3.375}, kwds("identity", 100.0)));
 }
 
@@ -56,9 +56,9 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce)
 {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
-  EXPECT_ARRAY_EQ(1.5 + 2.0 + 7.0 - 2.25 + 7.0 + 2.125,
+  EXPECT_ARRAY_EQ(nd::array(1.5 + 2.0 + 7.0 - 2.25 + 7.0 + 2.125),
                   f(initializer_list<initializer_list<double>>{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}));
-  EXPECT_ARRAY_EQ(1.5 - 2.0, f(initializer_list<initializer_list<double>>{{1.5, -2.0}}));
+  EXPECT_ARRAY_EQ(nd::array(1.5 - 2.0), f(initializer_list<initializer_list<double>>{{1.5, -2.0}}));
 }
 
 TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim)
@@ -119,7 +119,7 @@ TEST(Reduction, FixedVar)
   a(1).vals() = {3, 4, 5};
   a(2).vals() = {6, 7, 8, 9};
 
-  EXPECT_ARRAY_EQ(45.0, f(a));
+  EXPECT_ARRAY_EQ(nd::array(45.0), f(a));
 }
 
 TEST(Reduction, FixedVarWithAxes)
@@ -138,7 +138,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce)
 {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
-  EXPECT_ARRAY_EQ(1.5 - 2.375 + 2.0 + 1.25 + 7.0 - 0.5 - 2.25 + 1.0 + 7.0 + 2.125 + 0.25,
+  EXPECT_ARRAY_EQ(nd::array(1.5 - 2.375 + 2.0 + 1.25 + 7.0 - 0.5 - 2.25 + 1.0 + 7.0 + 2.125 + 0.25),
                   f(initializer_list<initializer_list<initializer_list<double>>>{{{1.5, -2.375}, {2, 1.25}, {7, -0.5}},
                                                                                  {{-2.25, 1}, {7, 0}, {2.125, 0.25}}}));
 }

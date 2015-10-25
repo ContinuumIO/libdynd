@@ -120,12 +120,13 @@ namespace nd {
                                                             index_sequence<J...>>,                                     \
                                           sizeof...(A)>,                                                               \
                               apply_arg<A, I>...,                                                                      \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+                              apply_kwd<K, J>... {                                                                     \
     typedef apply_function_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
                                                                                                                        \
-    __VA_ARGS__ apply_function_ck(apply_arg<A, I>... arg, kwds_type kwds) : apply_arg<A, I>(arg)..., kwds_type(kwds)   \
+    __VA_ARGS__ apply_function_ck(apply_arg<A, I>... arg, apply_kwd<K, J>... kwd)                                      \
+        : apply_arg<A, I>(arg)..., apply_kwd<K, J>(kwd)...                                                             \
     {                                                                                                                  \
     }                                                                                                                  \
                                                                                                                        \
@@ -157,11 +158,12 @@ namespace nd {
                                 char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,                               \
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),            \
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,   \
-                                kernel_request_t kernreq, const eval::eval_context *DYND_UNUSED(ectx), intptr_t nkwd,  \
-                                const nd::array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))   \
+                                kernel_request_t kernreq, const eval::eval_context *DYND_UNUSED(ectx),                 \
+                                intptr_t DYND_UNUSED(nkwd), const nd::array *kwds,                                     \
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))                          \
     {                                                                                                                  \
       self_type::make(ckb, kernreq, ckb_offset, apply_arg<A, I>(src_tp[I], src_arrmeta[I], kwds)...,                   \
-                      kwds_type(nkwd, kwds));                                                                          \
+                      apply_kwd<K, J>(kwds[J])...);                                                                    \
       return ckb_offset;                                                                                               \
     }                                                                                                                  \
   };                                                                                                                   \

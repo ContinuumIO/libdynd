@@ -3,45 +3,71 @@
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/func/option.hpp>
 #include <dynd/types/option_type.hpp>
+#include <dynd/kernels/apply.hpp>
 
 namespace dynd {
 namespace nd {
 
-  template <type_id_t I0>
-  struct plus_kernel : base_kernel<plus_kernel<I0>, 1> {
-    typedef typename type_of<I0>::type A0;
-    typedef decltype(+std::declval<A0>()) R;
+#define DYND_DEF_UNARY_OP_KERNEL(OP, NAME)                                                                            \
+namespace detail {                                                                                                    \
+  template <type_id_t Src0TypeID>                                                                                     \
+  struct inline_ ## NAME {                                                                                            \
+    static auto f(typename type_of<Src0TypeID>::type a) { return OP a; }                                              \
+  };                                                                                                                  \
+} /* namespace detail */                                                                                              \
+                                                                                                                      \
+  template <type_id_t Src0TypeID>                                                                                     \
+  struct NAME ## _kernel : functional::as_apply_function_ck<decltype(&detail::inline_ ## NAME <Src0TypeID>::f),       \
+                                                            &detail::inline_ ## NAME <Src0TypeID>::f> {};             \
 
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) = +*reinterpret_cast<A0 *>(src[0]);
-    }
+  DYND_DEF_UNARY_OP_KERNEL(+, plus)
+  DYND_ALLOW_UNSIGNED_UNARY_MINUS
+  DYND_DEF_UNARY_OP_KERNEL(-, minus)
+  DYND_END_ALLOW_UNSIGNED_UNARY_MINUS
+  DYND_DEF_UNARY_OP_KERNEL(!, logical_not)
+  DYND_DEF_UNARY_OP_KERNEL(~, bitwise_not)
+
+#undef DYND_DEF_UNARY_OP_KERNEL
+
+#define DYND_DEF_BINARY_OP_KERNEL(OP, NAME)                                                                           \
+namespace detail{                                                                                                     \
+  template<type_id_t Src0TypeID, type_id_t Src1TypeID>                                                                \
+  struct inline_ ## NAME {                                                                                            \
+    static auto f(typename type_of<Src0TypeID>::type a, typename type_of<Src1TypeID>::type b) { return a OP b; }      \
+  };                                                                                                                  \
+} /* namespace detail */                                                                                              \
+                                                                                                                      \
+  template<type_id_t Src0TypeID, type_id_t Src1TypeID>                                                                \
+  struct NAME ## _kernel : functional::as_apply_function_ck<                                                          \
+                                       decltype(&detail::inline_ ## NAME <Src0TypeID, Src1TypeID>::f),                \
+                                       &detail::inline_ ## NAME <Src0TypeID, Src1TypeID>::f> {};                      \
+
+  DYND_DEF_BINARY_OP_KERNEL(+, add)
+  DYND_DEF_BINARY_OP_KERNEL(-, subtract)
+  DYND_DEF_BINARY_OP_KERNEL(*, multiply)
+  DYND_DEF_BINARY_OP_KERNEL(/, divide)
+  DYND_DEF_BINARY_OP_KERNEL(%, mod)
+  DYND_DEF_BINARY_OP_KERNEL(&, bitwise_and)
+  DYND_DEF_BINARY_OP_KERNEL(&&, logical_and)
+  DYND_DEF_BINARY_OP_KERNEL(|, bitwise_or)
+  DYND_DEF_BINARY_OP_KERNEL(||, logical_or)
+  DYND_DEF_BINARY_OP_KERNEL(^, bitwise_xor)
+  DYND_DEF_BINARY_OP_KERNEL(<<, left_shift)
+  DYND_DEF_BINARY_OP_KERNEL(>>, right_shift)
+
+namespace detail{
+  template<type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct inline_logical_xor {
+    static auto f(typename type_of<Src0TypeID>::type a, typename type_of<Src1TypeID>::type b) { return (!a) ^ (!b); }
   };
+} // namespace detail
 
-  template <type_id_t I0>
-  struct minus_kernel : base_kernel<minus_kernel<I0>, 1> {
-    typedef typename type_of<I0>::type A0;
-    typedef decltype(-std::declval<A0>()) R;
+  template<type_id_t Src0TypeID, type_id_t Src1TypeID>
+  struct logical_xor_kernel : functional::as_apply_function_ck<
+                                              decltype(&detail::inline_logical_xor<Src0TypeID, Src1TypeID>::f),
+                                              &detail::inline_logical_xor<Src0TypeID, Src1TypeID>::f> {};
 
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) = -*reinterpret_cast<A0 *>(src[0]);
-    }
-  };
-
-  template <type_id_t I0, type_id_t I1>
-  struct add_kernel : base_kernel<add_kernel<I0, I1>, 2> {
-    typedef add_kernel self_type;
-    typedef typename type_of<I0>::type A0;
-    typedef typename type_of<I1>::type A1;
-    typedef decltype(std::declval<A0>() + std::declval<A1>()) R;
-
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) =
-          *reinterpret_cast<A0 *>(src[0]) + *reinterpret_cast<A1 *>(src[1]);
-    }
-  };
+#undef DYND_DeclBinopKernel
 
   template <typename FuncType, bool Src0IsOption, bool Src1IsOption>
   struct option_arithmetic_kernel;
@@ -404,96 +430,54 @@ namespace nd {
     }
   };
 
-  template <type_id_t I0, type_id_t I1>
-  struct subtract_kernel : base_kernel<subtract_kernel<I0, I1>, 2> {
-    typedef subtract_kernel self_type;
-    typedef typename type_of<I0>::type A0;
-    typedef typename type_of<I1>::type A1;
-    typedef decltype(std::declval<A0>() - std::declval<A1>()) R;
-
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) =
-          *reinterpret_cast<A0 *>(src[0]) - *reinterpret_cast<A1 *>(src[1]);
-    }
-  };
-
-  template <type_id_t I0, type_id_t I1>
-  struct multiply_kernel : base_kernel<multiply_kernel<I0, I1>, 2> {
-    typedef multiply_kernel self_type;
-    typedef typename type_of<I0>::type A0;
-    typedef typename type_of<I1>::type A1;
-    typedef decltype(std::declval<A0>() * std::declval<A1>()) R;
-
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) =
-          *reinterpret_cast<A0 *>(src[0]) * *reinterpret_cast<A1 *>(src[1]);
-    }
-  };
-
-  template <type_id_t I0, type_id_t I1>
-  struct divide_kernel : base_kernel<divide_kernel<I0, I1>, 2> {
-    typedef divide_kernel self_type;
-    typedef typename type_of<I0>::type A0;
-    typedef typename type_of<I1>::type A1;
-    typedef decltype(std::declval<A0>() / std::declval<A1>()) R;
-
-    DYND_CUDA_HOST_DEVICE void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<R *>(dst) =
-          *reinterpret_cast<A0 *>(src[0]) / *reinterpret_cast<A1 *>(src[1]);
-    }
-  };
-
 } // namespace dynd::nd
 
 namespace ndt {
 
-  template <type_id_t Src0TypeID>
-  struct type::equivalent<nd::plus_kernel<Src0TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef decltype(+std::declval<A0>()) R;
+#define DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT(NAME)                                                      \
+  template <type_id_t Src0TypeID>                                                                      \
+  struct type::equivalent<nd::NAME ## _kernel<Src0TypeID>> {                                           \
+    static type make() {                                                                               \
+      return ndt::type::make<decltype(dynd::nd::detail::inline_ ## NAME<Src0TypeID>::f)>();            \
+    }                                                                                                  \
+  };                                                                                                   \
 
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["R"] = ndt::type::make<R>();
+  DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT(plus)
+  DYND_ALLOW_UNSIGNED_UNARY_MINUS
+  DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT(minus)
+  DYND_END_ALLOW_UNSIGNED_UNARY_MINUS
+  DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT(logical_not)
+  DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT(bitwise_not)
 
-      return ndt::substitute(ndt::type("(A0) -> R"), tp_vars, true);
-    }
-  };
+#undef DYND_DEF_UNARY_OP_KERNEL_EQUIVALENT
 
-  template <type_id_t Src0TypeID>
-  struct type::equivalent<nd::minus_kernel<Src0TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef decltype(-std::declval<A0>()) R;
+#define DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(NAME)                                                               \
+  template <type_id_t Src0TypeID, type_id_t Src1TypeID>                                                          \
+  struct type::equivalent<nd::NAME ## _kernel<Src0TypeID, Src1TypeID>> {                                         \
+    static type make() {                                                                                         \
+      return ndt::type::make<decltype(dynd::nd::detail::inline_ ## NAME<Src0TypeID, Src1TypeID>::f)>();          \
+    }                                                                                                            \
+  };                                                                                                             \
 
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["R"] = ndt::type::make<R>();
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(add)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(subtract)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(multiply)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(divide)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(mod)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(bitwise_and)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(logical_and)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(bitwise_or)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(logical_or)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(bitwise_xor)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(left_shift)
+  DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT(right_shift)
 
-      return ndt::substitute(ndt::type("(A0) -> R"), tp_vars, true);
-    }
-  };
+#undef DYND_DEF_BINARY_OP_KERNEL_EQUIVALENT
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::equivalent<nd::add_kernel<Src0TypeID, Src1TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef typename dynd::type_of<Src1TypeID>::type A1;
-    typedef decltype(std::declval<A0>() + std::declval<A1>()) R;
-
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["A1"] = ndt::type::make<A1>();
-      tp_vars["R"] = ndt::type::make<R>();
-
-      return ndt::substitute(ndt::type("(A0, A1) -> R"), tp_vars, true);
+  struct type::equivalent<nd::logical_xor_kernel<Src0TypeID, Src1TypeID>> {
+    static type make() {
+      return ndt::type::make<decltype(&dynd::nd::detail::inline_logical_xor<Src0TypeID, Src1TypeID>::f)>();
     }
   };
 
@@ -515,57 +499,6 @@ namespace ndt {
   struct type::equivalent<nd::option_arithmetic_kernel<FuncType, true, true>> {
     static type make() {
       return type("(?Scalar, ?Scalar) -> ?Scalar");
-    }
-  };
-
-  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::equivalent<nd::subtract_kernel<Src0TypeID, Src1TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef typename dynd::type_of<Src1TypeID>::type A1;
-    typedef decltype(std::declval<A0>() - std::declval<A1>()) R;
-
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["A1"] = ndt::type::make<A1>();
-      tp_vars["R"] = ndt::type::make<R>();
-
-      return ndt::substitute(ndt::type("(A0, A1) -> R"), tp_vars, true);
-    }
-  };
-
-  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::equivalent<nd::multiply_kernel<Src0TypeID, Src1TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef typename dynd::type_of<Src1TypeID>::type A1;
-    typedef decltype(std::declval<A0>() * std::declval<A1>()) R;
-
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["A1"] = ndt::type::make<A1>();
-      tp_vars["R"] = ndt::type::make<R>();
-
-      return ndt::substitute(ndt::type("(A0, A1) -> R"), tp_vars, true);
-    }
-  };
-
-  template <type_id_t Src0TypeID, type_id_t Src1TypeID>
-  struct type::equivalent<nd::divide_kernel<Src0TypeID, Src1TypeID>> {
-    typedef typename dynd::type_of<Src0TypeID>::type A0;
-    typedef typename dynd::type_of<Src1TypeID>::type A1;
-    typedef decltype(std::declval<A0>() / std::declval<A1>()) R;
-
-    static type make()
-    {
-      std::map<std::string, ndt::type> tp_vars;
-      tp_vars["A0"] = ndt::type::make<A0>();
-      tp_vars["A1"] = ndt::type::make<A1>();
-      tp_vars["R"] = ndt::type::make<R>();
-
-      return ndt::substitute(ndt::type("(A0, A1) -> R"), tp_vars, true);
     }
   };
 

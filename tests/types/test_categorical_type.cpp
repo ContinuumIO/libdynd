@@ -22,7 +22,7 @@ using namespace dynd;
 TEST(CategoricalType, Create)
 {
   const char *a_vals[] = {"foo", "bar", "baz"};
-  nd::array a = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array a = nd::empty(3, ndt::string_type::make());
   a.vals() = a_vals;
 
   ndt::type d;
@@ -71,7 +71,7 @@ TEST(CategoricalType, Convert)
   a.vals() = a_vals;
 
   ndt::type cd = ndt::categorical_type::make(a);
-  ndt::type sd = ndt::string_type::make(string_encoding_utf_8);
+  ndt::type sd = ndt::string_type::make();
 
   // String conversions report false, so that assignments encodings
   // get validated on assignment
@@ -87,11 +87,11 @@ TEST(CategoricalType, Convert)
 TEST(CategoricalType, Compare)
 {
   const char *a_vals[] = {"foo", "bar", "baz"};
-  nd::array a = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array a = nd::empty(3, ndt::string_type::make());
   a.vals() = a_vals;
 
   const char *b_vals[] = {"foo", "bar"};
-  nd::array b = nd::empty(2, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array b = nd::empty(2, ndt::string_type::make());
   b.vals() = b_vals;
 
   ndt::type da = ndt::categorical_type::make(a);
@@ -128,12 +128,11 @@ TEST(CategoricalType, Unique)
 TEST(CategoricalType, FactorFixedString)
 {
   const char *string_cats_vals[] = {"bar", "foo"};
-  nd::array string_cats =
-      nd::empty(2, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array string_cats = nd::empty(2, ndt::string_type::make());
   string_cats.vals() = string_cats_vals;
 
   const char *a_vals[] = {"foo", "bar", "foo"};
-  nd::array a = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array a = nd::empty(3, ndt::string_type::make());
   a.vals() = a_vals;
 
   ndt::type da = ndt::factor_categorical(a);
@@ -152,12 +151,9 @@ TEST(CategoricalType, FactorString)
 
 TEST(CategoricalType, FactorStringLonger)
 {
-  const char *cats_vals[] = {"a",   "abcdefghijklmnopqrstuvwxyz", "bar",
-                             "foo", "foot",                       "z"};
-  const char *a_vals[] = {
-      "foo", "bar",                        "foot",                      "foo",
-      "bar", "abcdefghijklmnopqrstuvwxyz", "foot",                      "foo",
-      "z",   "a",                          "abcdefghijklmnopqrstuvwxyz"};
+  const char *cats_vals[] = {"a", "abcdefghijklmnopqrstuvwxyz", "bar", "foo", "foot", "z"};
+  const char *a_vals[] = {"foo",  "bar", "foot", "foo", "bar",                       "abcdefghijklmnopqrstuvwxyz",
+                          "foot", "foo", "z",    "a",   "abcdefghijklmnopqrstuvwxyz"};
   ndt::type da = ndt::factor_categorical(a_vals);
   EXPECT_EQ(ndt::categorical_type::make(cats_vals), da);
 }
@@ -184,37 +180,26 @@ TEST(CategoricalType, Values)
 
   ndt::type dt = ndt::categorical_type::make(a);
 
-  EXPECT_EQ(0u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category(a(0)));
-  EXPECT_EQ(1u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category(a(1)));
-  EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category(a(2)));
-  EXPECT_EQ(0u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("foo"));
-  EXPECT_EQ(1u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("bar"));
-  EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())
-                    ->get_value_from_category("baz"));
-  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("aaa"),
+  EXPECT_EQ(0u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category(a(0)));
+  EXPECT_EQ(1u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category(a(1)));
+  EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category(a(2)));
+  EXPECT_EQ(0u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("foo"));
+  EXPECT_EQ(1u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("bar"));
+  EXPECT_EQ(2u, static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("baz"));
+  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("aaa"),
                std::runtime_error);
-  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("ddd"),
+  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("ddd"),
                std::runtime_error);
-  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())
-                   ->get_value_from_category("zzz"),
+  EXPECT_THROW(static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category("zzz"),
                std::runtime_error);
 }
 
 TEST(CategoricalType, ValuesLonger)
 {
-  const char *cats_vals[] = {"foo", "abcdefghijklmnopqrstuvwxyz", "z",
-                             "bar", "a",                          "foot"};
-  const char *a_vals[] = {
-      "foo",  "z", "abcdefghijklmnopqrstuvwxyz", "z",   "bar", "a",
-      "foot", "a", "abcdefghijklmnopqrstuvwxyz", "foo", "bar", "foo",
-      "foot"};
+  const char *cats_vals[] = {"foo", "abcdefghijklmnopqrstuvwxyz", "z", "bar", "a", "foot"};
+  const char *a_vals[] = {"foo", "z",    "abcdefghijklmnopqrstuvwxyz", "z",                          "bar",
+                          "a",   "foot", "a",                          "abcdefghijklmnopqrstuvwxyz", "foo",
+                          "bar", "foo",  "foot"};
   uint32_t a_uints[] = {0, 2, 1, 2, 3, 4, 5, 4, 1, 0, 3, 0, 5};
   int cats_count = sizeof(cats_vals) / sizeof(cats_vals[0]);
   int a_count = sizeof(a_uints) / sizeof(a_uints[0]);
@@ -226,12 +211,11 @@ TEST(CategoricalType, ValuesLonger)
   // Check that the categories got the right values
   for (int i = 0; i < cats_count; ++i) {
     EXPECT_EQ((uint32_t)i,
-              static_cast<const ndt::categorical_type *>(dt.extended())
-                  ->get_value_from_category(cats_vals[i]));
+              static_cast<const ndt::categorical_type *>(dt.extended())->get_value_from_category(cats_vals[i]));
   }
   // Check that everything in 'a' is right
   for (int i = 0; i < a_count; ++i) {
-    EXPECT_EQ(a_vals[i], a(i).as<string>());
+    EXPECT_EQ(a_vals[i], a(i).as<std::string>());
     EXPECT_EQ(a_uints[i], a_view(i).as<uint32_t>());
   }
 }
@@ -239,32 +223,31 @@ TEST(CategoricalType, ValuesLonger)
 TEST(CategoricalType, AssignFixedString)
 {
   const char *cat_vals[] = {"foo", "bar", "baz"};
-  nd::array cat =
-      nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array cat = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
   cat.vals() = cat_vals;
 
   ndt::type dt = ndt::categorical_type::make(cat);
 
   nd::array a = nd::empty(3, dt);
   a.val_assign(cat);
-  EXPECT_EQ("foo", a(0).as<string>());
-  EXPECT_EQ("bar", a(1).as<string>());
-  EXPECT_EQ("baz", a(2).as<string>());
+  EXPECT_EQ("foo", a(0).as<std::string>());
+  EXPECT_EQ("bar", a(1).as<std::string>());
+  EXPECT_EQ("baz", a(2).as<std::string>());
   a(0).vals() = cat(2);
-  EXPECT_EQ("baz", a(0).as<string>());
+  EXPECT_EQ("baz", a(0).as<std::string>());
 
   cat(0).vals() = "zzz";
   EXPECT_THROW(a(0).vals() = cat(0), std::runtime_error);
 
   nd::array tmp = nd::empty(3, cat.get_type().at(0));
   tmp.val_assign(a);
-  EXPECT_EQ("baz", tmp(0).as<string>());
-  EXPECT_EQ("bar", tmp(1).as<string>());
-  EXPECT_EQ("baz", tmp(2).as<string>());
+  EXPECT_EQ("baz", tmp(0).as<std::string>());
+  EXPECT_EQ("bar", tmp(1).as<std::string>());
+  EXPECT_EQ("baz", tmp(2).as<std::string>());
   tmp(0).vals() = a(1);
-  EXPECT_EQ("bar", tmp(0).as<string>());
+  EXPECT_EQ("bar", tmp(0).as<std::string>());
   tmp(0).vals() = "foo";
-  EXPECT_EQ("foo", tmp(0).as<string>());
+  EXPECT_EQ("foo", tmp(0).as<std::string>());
 }
 
 TEST(CategoricalType, AssignInt)
@@ -298,8 +281,7 @@ TEST(CategoricalType, AssignInt)
 TEST(CategoricalType, AssignRange)
 {
   const char *cat_vals[] = {"foo", "bar", "baz"};
-  nd::array cat =
-      nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
+  nd::array cat = nd::empty(3, ndt::fixed_string_type::make(3, string_encoding_ascii));
   cat.vals() = cat_vals;
 
   ndt::type dt = ndt::categorical_type::make(cat);
@@ -313,15 +295,15 @@ TEST(CategoricalType, AssignRange)
   d.val_assign(cat(1));
   a(7).vals() = cat(2);
 
-  EXPECT_EQ("foo", a(0).as<string>());
-  EXPECT_EQ("bar", a(1).as<string>());
-  EXPECT_EQ("baz", a(2).as<string>());
-  EXPECT_EQ("foo", a(3).as<string>());
-  EXPECT_EQ("foo", a(4).as<string>());
-  EXPECT_EQ("foo", a(5).as<string>());
-  EXPECT_EQ("bar", a(6).as<string>());
-  EXPECT_EQ("baz", a(7).as<string>());
-  EXPECT_EQ("bar", a(8).as<string>());
+  EXPECT_EQ("foo", a(0).as<std::string>());
+  EXPECT_EQ("bar", a(1).as<std::string>());
+  EXPECT_EQ("baz", a(2).as<std::string>());
+  EXPECT_EQ("foo", a(3).as<std::string>());
+  EXPECT_EQ("foo", a(4).as<std::string>());
+  EXPECT_EQ("foo", a(5).as<std::string>());
+  EXPECT_EQ("bar", a(6).as<std::string>());
+  EXPECT_EQ("baz", a(7).as<std::string>());
+  EXPECT_EQ("bar", a(8).as<std::string>());
 }
 
 /*
@@ -343,9 +325,7 @@ TEST(CategoricalType, AssignFromOther)
   ndt::type cd = ndt::categorical_type::make(cats_values);
   int16_t a_values[] = {6, 3, 100, 3, 1000, 100, 6, 1000};
   nd::array a = nd::array(a_values).ucast(cd);
-  EXPECT_EQ(
-      ndt::make_fixed_dim(8, ndt::convert_type::make(cd, ndt::type::make<int16_t>())),
-      a.get_type());
+  EXPECT_EQ(ndt::make_fixed_dim(8, ndt::convert_type::make(cd, ndt::type::make<int16_t>())), a.get_type());
   a = a.eval();
   EXPECT_EQ(ndt::make_fixed_dim(8, cd), a.get_type());
   EXPECT_EQ(6, a(0).as<int>());

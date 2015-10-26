@@ -10,6 +10,25 @@
 
 namespace dynd {
 namespace nd {
+  namespace detail {
+
+    DYND_HAS_MEMBER(single);
+    DYND_HAS_MEMBER(metadata_single);
+
+    template <typename KernelType>
+    typename std::enable_if<has_member_metadata_single<KernelType>::value, expr_metadata_single_t>::type
+    get_metadata_single()
+    {
+      return KernelType::metadata_single_wrapper::func;
+    }
+
+    template <typename KernelType>
+    typename std::enable_if<!has_member_metadata_single<KernelType>::value, expr_metadata_single_t>::type
+    get_metadata_single()
+    {
+      return NULL;
+    }
+  }
 
   template <typename PrefixType, typename SelfType>
   struct kernel_prefix_wrapper : PrefixType {
@@ -156,6 +175,9 @@ namespace nd {
       case kernel_request_single:                                                                                      \
         self->function = reinterpret_cast<void *>(&SelfType::single_wrapper::func);                                    \
         break;                                                                                                         \
+      case kernel_request_metadata_single:                                                                             \
+        self->function = reinterpret_cast<void *>(detail::get_metadata_single<SelfType>());                            \
+        break;                                                                                                         \
       case kernel_request_strided:                                                                                     \
         self->function = reinterpret_cast<void *>(&SelfType::strided_wrapper);                                         \
         break;                                                                                                         \
@@ -174,6 +196,14 @@ namespace nd {
       }                                                                                                                \
                                                                                                                        \
       static const volatile char *DYND_USED(ir);                                                                       \
+    };                                                                                                                 \
+                                                                                                                       \
+    struct metadata_single_wrapper {                                                                                   \
+      __VA_ARGS__ static void DYND_EMIT_LLVM(func)(ckernel_prefix *self, char *dst_metadata, char **dst,               \
+                                                   char *const *src_metadata, char **const *src)                       \
+      {                                                                                                                \
+        return SelfType::get_self(self)->metadata_single(dst_metadata, dst, src_metadata, src);                        \
+      }                                                                                                                \
     };                                                                                                                 \
                                                                                                                        \
     __VA_ARGS__ static void strided_wrapper(ckernel_prefix *self, char *dst, intptr_t dst_stride, char *const *src,    \
@@ -226,7 +256,7 @@ namespace nd {
 } // namespace dynd::nd
 
 template <typename VariadicType, template <type_id_t, type_id_t, VariadicType...> class T>
-struct DYND_API bind {
+struct DYND_API _bind {
   template <type_id_t TypeID0, type_id_t TypeID1>
   using type = T<TypeID0, TypeID1>;
 };

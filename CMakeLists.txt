@@ -83,22 +83,22 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # -bigobj: Allow lots of symbols (assignment_kernels.cpp and assignment_kernels.cu need this flag)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -WX -EHsc -bigobj -wd4503")
 
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 18)
-        message(FATAL_ERROR "Only MSVC 2013 (Version 18.0) and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
+    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 19)
+        message(FATAL_ERROR "Only MSVC 2015 (Version 19.0) and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
     endif ()
 else()
     if(WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++14 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Wno-missing-field-initializers -fPIC -Wno-ignored-attributes -Werror")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Wno-missing-field-initializers -fPIC -Wno-ignored-attributes -Werror")
     endif()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        if ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.7)
-            message(FATAL_ERROR "Only GCC 4.7 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
+        if ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
+            message(FATAL_ERROR "Only GCC 4.9 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
         endif()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20 -Wno-type-limits")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fmax-errors=20 -Wno-type-limits")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -ferror-limit=20")
     endif()
 endif()
 
@@ -178,9 +178,7 @@ set(libdynd_SRC
     src/dynd/types/fixed_string_kind_type.cpp
     src/dynd/types/fixed_string_type.cpp
     src/dynd/types/callable_type.cpp
-    src/dynd/types/groupby_type.cpp
     src/dynd/types/int_kind_sym_type.cpp
-    src/dynd/types/json_type.cpp
     src/dynd/types/kind_sym_type.cpp
     src/dynd/types/ndarrayarg_type.cpp
     src/dynd/types/option_type.cpp
@@ -246,9 +244,7 @@ set(libdynd_SRC
     include/dynd/types/fixed_bytes_type.hpp
     include/dynd/types/fixed_string_kind_type.hpp
     include/dynd/types/fixed_string_type.hpp
-    include/dynd/types/groupby_type.hpp
     include/dynd/types/int_kind_sym_type.hpp
-    include/dynd/types/json_type.hpp
     include/dynd/types/kind_sym_type.hpp
     include/dynd/types/ndarrayarg_type.hpp
     include/dynd/types/option_type.hpp
@@ -299,6 +295,7 @@ set(libdynd_SRC
     src/dynd/func/reduction.cpp
     src/dynd/func/math.cpp
     src/dynd/func/max.cpp
+    src/dynd/func/min.cpp
     src/dynd/func/mean.cpp
     src/dynd/func/multidispatch.cpp
     src/dynd/func/neighborhood.cpp
@@ -310,6 +307,7 @@ set(libdynd_SRC
     src/dynd/func/sum.cpp
     src/dynd/func/take.cpp
     src/dynd/func/take_by_pointer.cpp
+    src/dynd/func/view.cpp
     include/dynd/func/arithmetic.hpp
     include/dynd/func/callable.hpp
     include/dynd/func/callable_registry.hpp
@@ -327,6 +325,7 @@ set(libdynd_SRC
     include/dynd/func/math.hpp
     include/dynd/func/max.hpp
     include/dynd/func/mean.hpp
+    include/dynd/func/min.hpp
     include/dynd/func/multidispatch.hpp
     include/dynd/func/neighborhood.hpp
     include/dynd/func/option.hpp
@@ -337,6 +336,7 @@ set(libdynd_SRC
     include/dynd/func/sum.hpp
     include/dynd/func/take.hpp
     include/dynd/func/take_by_pointer.hpp
+    include/dynd/func/view.hpp
     # GFunc
     src/dynd/gfunc/gcallable.cpp
     include/dynd/gfunc/gcallable.hpp
@@ -405,6 +405,8 @@ set(libdynd_SRC
     include/dynd/kernels/expression_comparison_kernels.hpp
     include/dynd/kernels/fft_kernel.hpp
     include/dynd/kernels/is_avail_kernel.hpp
+    include/dynd/kernels/max_kernel.hpp
+    include/dynd/kernels/min_kernel.hpp
     include/dynd/kernels/multidispatch_kernel.hpp
     include/dynd/kernels/ones_kernel.hpp
     include/dynd/kernels/option_assignment_kernels.hpp
@@ -423,6 +425,7 @@ set(libdynd_SRC
     include/dynd/kernels/uniform_kernel.hpp
     include/dynd/kernels/var_dim_assignment_kernels.hpp
     include/dynd/kernels/zeros_kernel.hpp
+    include/dynd/kernels/view_kernel.hpp
     # MemBlock
     src/dynd/memblock/memory_block.cpp
     src/dynd/memblock/executable_memory_block_windows_x64.cpp
@@ -453,6 +456,7 @@ set(libdynd_SRC
     src/dynd/float16.cpp
     src/dynd/float128.cpp
     src/dynd/int128.cpp
+    src/dynd/search.cpp
     src/dynd/type.cpp
     src/dynd/typed_data_assign.cpp
     src/dynd/type_promotion.cpp
@@ -465,7 +469,6 @@ set(libdynd_SRC
     src/dynd/parser_util.cpp
     src/dynd/shape_tools.cpp
     src/dynd/special.cpp
-    src/dynd/string.cpp
     src/dynd/string_encodings.cpp
     src/dynd/uint128.cpp
     src/dynd/view.cpp
@@ -564,7 +567,7 @@ if (DYND_CUDA)
     set(CUDA_SEPARABLE_COMPILATION ON)
 
     if(NOT WIN32)
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11;-Xcompiler;-fPIC;-Xcompiler;-O3)
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14;-Xcompiler;-fPIC;-Xcompiler;-O3)
     endif()
 
     # Make some warnings into errors and inhibit other warnings

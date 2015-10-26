@@ -48,6 +48,9 @@
 #define DYND_USED(NAME) NAME __attribute__((used))
 #define DYND_EMIT_LLVM(NAME) __attribute__((annotate("emit_llvm"))) NAME
 
+#define DYND_ALLOW_UNSIGNED_UNARY_MINUS
+#define DYND_END_ALLOW_UNSIGNED_UNARY_MINUS
+
 #elif defined(__GNUC__)
 
 // Hack trying to work around gcc isfinite problems
@@ -69,12 +72,21 @@
 #define DYND_ISSPACE isspace
 #define DYND_TOLOWER tolower
 
+#define DYND_ALLOW_UNSIGNED_UNARY_MINUS
+#define DYND_END_ALLOW_UNSIGNED_UNARY_MINUS
+
 #elif defined(_MSC_VER)
 
 #define DYND_ISSPACE isspace
 #define DYND_TOLOWER tolower
 #define DYND_USED(NAME) NAME
 #define DYND_EMIT_LLVM(NAME) NAME
+
+#define DYND_ALLOW_UNSIGNED_UNARY_MINUS     \
+__pragma(warning(push))                     \
+__pragma(warning(disable:4146))             \
+
+#define DYND_END_ALLOW_UNSIGNED_UNARY_MINUS __pragma(warning(pop))
 
 #include <float.h>
 
@@ -204,6 +216,16 @@ const ValueType &get_second_if_pair(const std::pair<KeyType, ValueType> &pair)
   return pair.second;
 }
 
+template <template <typename...> class T, typename U>
+struct is_instance {
+  static const bool value = false;
+};
+
+template <template <typename...> class T, typename... A>
+struct is_instance<T, T<A...>> {
+  static const bool value = true;
+};
+
 /**
  * Matches string literal arguments.
  */
@@ -299,11 +321,6 @@ struct integer_proxy<integer_sequence<T>> {
     size = 0
   };
 
-  template <typename... U, typename F, typename... A>
-  static void for_each(F, A &&...)
-  {
-  }
-
   template <typename R, typename... A>
   static R make(A &&...)
   {
@@ -316,12 +333,6 @@ struct integer_proxy<integer_sequence<T, I0>> {
   enum {
     size = 1
   };
-
-  template <typename... U, typename F, typename... A>
-  static void for_each(F f, A &&... a)
-  {
-    f.template on_each<I0, U...>(std::forward<A>(a)...);
-  }
 
   template <typename R, typename... A>
   static R make(A &&... a)
@@ -398,145 +409,10 @@ struct integer_proxy<integer_sequence<T, I0, I...>> {
                     std::forward<A4>(a4), std::forward<A5>(a5), std::forward<A6>(a6))...);
   }
 #endif
-
-  template <typename... U, typename F, typename... A>
-  static void for_each(F f, A &&... a)
-  {
-    f.template on_each<I0, U...>(std::forward<A>(a)...);
-    integer_proxy<integer_sequence<T, I...>>::template for_each<U...>(f, std::forward<A>(a)...);
-  }
 };
 
 template <typename I>
 using index_proxy = integer_proxy<I>;
-
-/*
-template <typename I>
-struct index_proxy;
-
-template <>
-struct index_proxy<index_sequence<>> {
-  enum { size = 0 };
-
-  template <typename F, typename... A>
-  static void for_each(F, A &&...)
-  {
-  }
-
-  template <typename R, typename... A>
-  static R make(A &&...)
-  {
-    return R();
-  }
-};
-
-template <size_t I0>
-struct index_proxy<index_sequence<I0>> {
-  enum { size = 1 };
-
-  template <typename F, typename... A>
-  static void for_each(F f, A &&... a)
-  {
-    f.template on_each<I0>(std::forward<A>(a)...);
-  }
-
-  template <typename R, typename... A>
-  static R make(A &&... a)
-  {
-    return R(get<I0>(std::forward<A>(a)...));
-  }
-};
-
-template <size_t I0, size_t... I>
-struct index_proxy<index_sequence<I0, I...>> {
-  enum { size = index_sequence<I0, I...>::size };
-
-#if !(defined(_MSC_VER) && (_MSC_VER == 1800))
-  template <typename R, typename... A>
-  static R make(A &&... a)
-  {
-    return R(get<I0>(std::forward<A>(a)...), get<I>(std::forward<A>(a)...)...);
-  }
-#else
-  // Workaround for MSVC 2013 compiler bug reported here:
-  //
-https://connect.microsoft.com/VisualStudio/feedback/details/1045260/unpacking-std-forward-a-a-fails-when-nested-with-another-unpacking
-  template <typename R>
-  static R make()
-  {
-    return R();
-  }
-  template <typename R, typename A0>
-  static R make(A0 &&a0)
-  {
-    return R(get<I0>(std::forward<A0>(a0)));
-  }
-  template <typename R, typename A0, typename A1>
-  static R make(A0 &&a0, A1 &&a1)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1))...);
-  }
-  template <typename R, typename A0, typename A1, typename A2>
-  static R make(A0 &&a0, A1 &&a1, A2 &&a2)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1),
-                     std::forward<A2>(a2)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1),
-                    std::forward<A2>(a2))...);
-  }
-  template <typename R, typename A0, typename A1, typename A2, typename A3>
-  static R make(A0 &&a0, A1 &&a1, A2 &&a2, A3 &&a3)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1),
-                     std::forward<A2>(a2), std::forward<A3>(a3)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1),
-                    std::forward<A2>(a2), std::forward<A3>(a3))...);
-  }
-  template <typename R, typename A0, typename A1, typename A2, typename A3,
-            typename A4>
-  static R make(A0 &&a0, A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1),
-                     std::forward<A2>(a2), std::forward<A3>(a3),
-                     std::forward<A4>(a4)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1),
-                    std::forward<A2>(a2), std::forward<A3>(a3),
-                    std::forward<A4>(a4))...);
-  }
-  template <typename R, typename A0, typename A1, typename A2, typename A3,
-            typename A4, typename A5>
-  static R make(A0 &&a0, A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1),
-                     std::forward<A2>(a2), std::forward<A3>(a3),
-                     std::forward<A4>(a4), std::forward<A5>(a5)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1),
-                    std::forward<A2>(a2), std::forward<A3>(a3),
-                    std::forward<A4>(a4), std::forward<A5>(a5))...);
-  }
-  template <typename R, typename A0, typename A1, typename A2, typename A3,
-            typename A4, typename A5, typename A6>
-  static R make(A0 &&a0, A1 &&a1, A2 &&a2, A3 &&a3, A4 &&a4, A5 &&a5, A6 &&a6)
-  {
-    return R(get<I0>(std::forward<A0>(a0), std::forward<A1>(a1),
-                     std::forward<A2>(a2), std::forward<A3>(a3),
-                     std::forward<A4>(a4), std::forward<A5>(a5)),
-             get<I>(std::forward<A0>(a0), std::forward<A1>(a1),
-                    std::forward<A2>(a2), std::forward<A3>(a3),
-                    std::forward<A4>(a4), std::forward<A5>(a5),
-                    std::forward<A6>(a6))...);
-  }
-#endif
-
-  template <typename F, typename... A>
-  static void for_each(F f, A &&... a)
-  {
-    f.template on_each<I0>(std::forward<A>(a)...);
-    index_proxy<index_sequence<I...>>::for_each(f, std::forward<A>(a)...);
-  }
-};
-*/
 
 } // namespace dynd
 
@@ -602,8 +478,6 @@ extern DYND_API const char dynd_version_string[];
 #endif
 #endif
 
-// This doesn't work if there are multiple methods enabled via a template
-// parameter, need to fix that
 #define DYND_HAS(NAME)                                                                                                 \
   template <typename...>                                                                                               \
   class has_##NAME;                                                                                                    \
@@ -626,6 +500,35 @@ extern DYND_API const char dynd_version_string[];
     template <typename U,                                                                                              \
               typename = typename std::enable_if<!std::is_member_pointer<decltype(&U::NAME)>::value &&                 \
                                                  std::is_same<decltype(U::NAME), StaticMemberType>::value>::type>      \
+    static std::true_type test(int);                                                                                   \
+                                                                                                                       \
+    template <typename>                                                                                                \
+    static std::false_type test(...);                                                                                  \
+                                                                                                                       \
+  public:                                                                                                              \
+    static const bool value = decltype(test<T>(0))::value;                                                             \
+  }
+
+#define DYND_HAS_MEMBER(NAME)                                                                                          \
+  template <typename...>                                                                                               \
+  class has_member_##NAME;                                                                                             \
+                                                                                                                       \
+  template <typename T>                                                                                                \
+  class has_member_##NAME<T> {                                                                                         \
+    template <typename U, typename = typename std::enable_if<std::is_member_pointer<decltype(&U::NAME)>::value>::type> \
+    static std::true_type test(int);                                                                                   \
+                                                                                                                       \
+    template <typename>                                                                                                \
+    static std::false_type test(...);                                                                                  \
+                                                                                                                       \
+  public:                                                                                                              \
+    static const bool value = decltype(test<T>(0))::value;                                                             \
+  };                                                                                                                   \
+                                                                                                                       \
+  template <typename T, typename MemberType>                                                                           \
+  class has_member_##NAME<T, MemberType> {                                                                             \
+    template <typename U, typename = typename std::enable_if<std::is_member_pointer<                                   \
+                              decltype(&U::NAME)>::value &&std::is_same<decltype(U::NAME), MemberType>::value>::type>  \
     static std::true_type test(int);                                                                                   \
                                                                                                                        \
     template <typename>                                                                                                \
@@ -770,6 +673,24 @@ T floor(T value)
 {
   return std::floor(value);
 }
+
+namespace detail {
+  // Use these declarations before includeing bool1, int128, uint128, etc. so they are usable there.
+  // Helper to use for determining if a type is in a given list of unique types.
+  template <typename T, typename... Types>
+  struct TypeSetCheckInternal : std::is_same<T, Types>... {
+  };
+
+  // Determine if a type is in a given list of unique types.
+  template <typename T, typename... Types>
+  struct TypeSetCheck : std::is_base_of<std::true_type, TypeSetCheckInternal<T, Types...>>::type {
+  };
+
+  // Enable a given template only for a given list of unique types.
+  template <typename T, typename... Types>
+  struct enable_for : std::enable_if<TypeSetCheck<T, Types...>::value, int> {
+  };
+} // namespace dynd::detail
 
 } // namespace dynd
 

@@ -31,7 +31,6 @@ namespace nd {
     {
 
       char *src0 = src[0];
-      std::cout << *reinterpret_cast<src0_type *>(src0) << std::endl;
       intptr_t src0_stride = src_stride[0];
       for (size_t i = 0; i < count; ++i) {
         if (*reinterpret_cast<src0_type *>(src0) >

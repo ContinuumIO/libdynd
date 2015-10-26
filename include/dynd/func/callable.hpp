@@ -12,11 +12,42 @@
 #include <dynd/types/base_type.hpp>
 #include <dynd/types/callable_type.hpp>
 #include <dynd/kernels/ckernel_builder.hpp>
+#include <dynd/kernels/base_kernel.hpp>
 #include <dynd/types/struct_type.hpp>
 #include <dynd/types/substitute_typevars.hpp>
 #include <dynd/types/type_type.hpp>
 
 namespace dynd {
+
+/**
+ * TODO: This `as_array` metafunction should either go somewhere better (this
+ *       file is for callable), or be in a detail:: namespace.
+ */
+template <typename T>
+struct as_array {
+  typedef nd::array type;
+};
+
+template <>
+struct as_array<nd::array> {
+  typedef nd::array type;
+};
+
+template <>
+struct as_array<const nd::array> {
+  typedef const nd::array type;
+};
+
+template <>
+struct as_array<const nd::array &> {
+  typedef const nd::array &type;
+};
+
+template <>
+struct as_array<nd::array &> {
+  typedef nd::array &type;
+};
+
 namespace nd {
   namespace detail {
 
@@ -100,116 +131,25 @@ namespace nd {
                                      const std::vector<intptr_t> &available, const std::vector<intptr_t> &missing,
                                      std::map<std::string, ndt::type> &tp_vars);
 
-    inline char *data_of(array &value)
+    inline void set_data(char *&data, array &value)
     {
-      return const_cast<char *>(value.get_readonly_originptr());
+      data = const_cast<char *>(value.get_readonly_originptr());
     }
 
-    inline char *data_of(const array &value)
+    inline void set_data(char *&data, const array &value)
     {
-      return const_cast<char *>(value.get_readonly_originptr());
+      data = const_cast<char *>(value.get_readonly_originptr());
     }
 
-    /** A holder class for the array arguments */
-    template <typename... A>
-    class args {
-      std::tuple<A...> m_values;
-      const char *m_arrmeta[sizeof...(A)];
+    inline void set_data(char **&data, array &value)
+    {
+      data = &value.get_ndo()->data.ptr;
+    }
 
-    public:
-      args(A &&... a) : m_values(std::forward<A>(a)...)
-      {
-        validate_types.self = this;
-      }
-
-      std::size_t size() const
-      {
-        return sizeof...(A);
-      }
-
-      struct {
-        args *self;
-
-        template <size_t I>
-        void on_each(const ndt::callable_type *af_tp, std::vector<ndt::type> &src_tp,
-                     std::vector<const char *> &src_arrmeta, std::vector<char *> &src_data,
-                     std::map<std::string, ndt::type> &tp_vars) const
-        {
-          auto value = std::get<I>(self->m_values);
-          const ndt::type &tp = ndt::type::make(value);
-          const char *arrmeta = value.get_arrmeta();
-
-          check_arg(af_tp, I, tp, arrmeta, tp_vars);
-
-          src_tp.push_back(tp);
-          src_arrmeta.push_back(arrmeta);
-          src_data.push_back(data_of(value));
-        }
-
-        void operator()(const ndt::callable_type *af_tp, std::vector<ndt::type> &src_tp,
-                        std::vector<const char *> &src_arrmeta, std::vector<char *> &src_data,
-                        std::map<std::string, ndt::type> &tp_vars) const
-        {
-          check_narg(af_tp, sizeof...(A));
-
-          typedef make_index_sequence<sizeof...(A)> I;
-          index_proxy<I>::for_each(*this, af_tp, src_tp, src_arrmeta, src_data, tp_vars);
-        }
-      } validate_types;
-    };
-
-    template <>
-    class args<> {
-    public:
-      std::size_t size() const
-      {
-        return 0;
-      }
-
-      void validate_types(const ndt::callable_type *af_tp, std::vector<ndt::type> &DYND_UNUSED(src_tp),
-                          std::vector<const char *> &DYND_UNUSED(src_arrmeta),
-                          std::vector<char *> &DYND_UNUSED(src_data),
-                          std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars)) const
-      {
-        check_narg(af_tp, 0);
-      }
-    };
-
-    /** A way to pass a run-time array of array arguments */
-    template <>
-    class args<std::size_t, array *> {
-      std::size_t m_size;
-      array *m_values;
-
-    public:
-      args(std::size_t size, array *values) : m_size(size), m_values(values)
-      {
-      }
-
-      std::size_t size() const
-      {
-        return m_size;
-      }
-
-      void validate_types(const ndt::callable_type *af_tp, std::vector<ndt::type> &src_tp,
-                          std::vector<const char *> &src_arrmeta, std::vector<char *> &src_data,
-                          std::map<std::string, ndt::type> &tp_vars) const
-      {
-        check_narg(af_tp, m_size);
-
-        for (std::size_t i = 0; i < m_size; ++i) {
-          array &value = m_values[i];
-          const ndt::type &tp = value.get_type();
-          const char *arrmeta = value.get_arrmeta();
-
-          check_arg(af_tp, i, tp, arrmeta, tp_vars);
-
-          src_tp.push_back(tp);
-          src_arrmeta.push_back(arrmeta);
-          src_data.push_back(data_of(value));
-        }
-      }
-    };
+    inline void set_data(char **&data, const array &value)
+    {
+      data = &value.get_ndo()->data.ptr;
+    }
 
     /** A holder class for the keyword arguments */
     template <typename... K>
@@ -277,7 +217,7 @@ namespace nd {
         void operator()(typename as_<K, const char *>::type... names)
         {
           typedef make_index_sequence<sizeof...(K)> I;
-          index_proxy<I>::for_each(*this, names...);
+          for_each<I>(*this, names...);
         }
       } set_names;
 
@@ -302,7 +242,7 @@ namespace nd {
                         const std::vector<intptr_t> &available) const
         {
           typedef make_index_sequence<sizeof...(K)> I;
-          index_proxy<I>::for_each(*this, tp, arrmeta, arrmeta_offsets, data, data_offsets, kwds_as_vector, available);
+          for_each<I>(*this, tp, arrmeta, arrmeta_offsets, data, data_offsets, kwds_as_vector, available);
         }
       } fill_available_values;
 
@@ -329,7 +269,7 @@ namespace nd {
 
         template <size_t I>
         void on_each(const ndt::callable_type *af_tp, array &dst, bool &has_dst_tp, std::vector<ndt::type> &kwd_tp,
-                     std::vector<intptr_t> &available)
+                     std::vector<intptr_t> &available) const
         {
           check_name(af_tp, dst, self->m_names[I], std::get<I>(self->m_values), has_dst_tp, kwd_tp.data(), available);
         }
@@ -340,7 +280,7 @@ namespace nd {
           bool has_dst_tp = false;
 
           typedef make_index_sequence<sizeof...(K)> I;
-          index_proxy<I>::for_each(*this, af_tp, dst, has_dst_tp, tp, available);
+          for_each<I>(*this, af_tp, dst, has_dst_tp, tp, available);
 
           intptr_t nkwd = sizeof...(K);
           if (has_dst_tp) {
@@ -449,31 +389,6 @@ namespace nd {
       }
     };
 
-    template <typename T>
-    struct is_kwds {
-      static const bool value = false;
-    };
-
-    template <typename... K>
-    struct is_kwds<nd::detail::kwds<K...>> {
-      static const bool value = true;
-    };
-
-    template <typename... K>
-    struct is_kwds<const nd::detail::kwds<K...>> {
-      static const bool value = true;
-    };
-
-    template <typename... K>
-    struct is_kwds<const nd::detail::kwds<K...> &> {
-      static const bool value = true;
-    };
-
-    template <typename... K>
-    struct is_kwds<nd::detail::kwds<K...> &> {
-      static const bool value = true;
-    };
-
     template <typename... T>
     struct is_variadic_kwds {
       enum {
@@ -538,35 +453,6 @@ inline nd::detail::kwds<> kwds()
   return nd::detail::kwds<>();
 }
 
-/**
- * TODO: This `as_array` metafunction should either go somewhere better (this
- *       file is for callable), or be in a detail:: namespace.
- */
-template <typename T>
-struct as_array {
-  typedef nd::array type;
-};
-
-template <>
-struct as_array<nd::array> {
-  typedef nd::array type;
-};
-
-template <>
-struct as_array<const nd::array> {
-  typedef const nd::array type;
-};
-
-template <>
-struct as_array<const nd::array &> {
-  typedef const nd::array &type;
-};
-
-template <>
-struct as_array<nd::array &> {
-  typedef nd::array &type;
-};
-
 namespace nd {
   namespace detail {
 
@@ -577,6 +463,18 @@ namespace nd {
     DYND_HAS(static_data_free);
 
     DYND_GET(static_data_free, callable_static_data_free_t, NULL);
+
+    template <typename KernelType>
+    typename std::enable_if<!has_member_metadata_single<KernelType>::value, kernel_request_t>::type get_kernreq()
+    {
+      return kernel_request_single;
+    }
+
+    template <typename KernelType>
+    typename std::enable_if<has_member_metadata_single<KernelType>::value, kernel_request_t>::type get_kernreq()
+    {
+      return kernel_request_metadata_single;
+    }
 
     template <typename KernelType>
     single_t get_single()
@@ -688,7 +586,13 @@ namespace nd {
    * providing some more direct convenient interface.
    */
   class DYND_API callable {
-    nd::array m_value;
+    template <typename DataType, typename... A>
+    class args;
+
+    template <typename... A>
+    struct has_kwds;
+
+    array m_value;
 
   public:
     callable() = default;
@@ -698,22 +602,23 @@ namespace nd {
       new (m_value.get_readwrite_originptr()) callable_type_data(single, strided);
     }
 
-    callable(const ndt::type &self_tp, single_t single, std::size_t data_size, callable_data_init_t data_init,
-             callable_resolve_dst_type_t resolve_dst_type, callable_instantiate_t instantiate)
-        : m_value(empty(self_tp))
-    {
-      new (m_value.get_readwrite_originptr())
-          callable_type_data(single, data_size, data_init, resolve_dst_type, instantiate);
-    }
-
-    template <typename T>
-    callable(const ndt::type &self_tp, single_t single, T &&static_data, std::size_t data_size,
+    callable(const ndt::type &self_tp, kernel_request_t kernreq, single_t single, std::size_t data_size,
              callable_data_init_t data_init, callable_resolve_dst_type_t resolve_dst_type,
              callable_instantiate_t instantiate)
         : m_value(empty(self_tp))
     {
       new (m_value.get_readwrite_originptr())
-          callable_type_data(single, std::forward<T>(static_data), data_size, data_init, resolve_dst_type, instantiate);
+          callable_type_data(kernreq, single, data_size, data_init, resolve_dst_type, instantiate);
+    }
+
+    template <typename T>
+    callable(const ndt::type &self_tp, kernel_request_t kernreq, single_t single, T &&static_data,
+             std::size_t data_size, callable_data_init_t data_init, callable_resolve_dst_type_t resolve_dst_type,
+             callable_instantiate_t instantiate)
+        : m_value(empty(self_tp))
+    {
+      new (m_value.get_readwrite_originptr()) callable_type_data(kernreq, single, std::forward<T>(static_data),
+                                                                 data_size, data_init, resolve_dst_type, instantiate);
     }
 
     callable(const callable &rhs) : m_value(rhs.m_value)
@@ -805,8 +710,8 @@ namespace nd {
     }
 
     /** Implements the general call operator which returns an array */
-    template <typename A, typename K>
-    array call(const A &args, const K &kwds)
+    template <typename ArgsType, typename KwdsType>
+    array call(const ArgsType &args, const KwdsType &kwds, std::map<std::string, ndt::type> &tp_vars)
     {
       const ndt::callable_type *self_tp = get_type();
 
@@ -816,14 +721,6 @@ namespace nd {
       std::vector<ndt::type> kwd_tp(self_tp->get_nkwd());
       std::vector<intptr_t> available, missing;
       kwds.validate_names(self_tp, dst, kwd_tp, available, missing);
-
-      std::map<std::string, ndt::type> tp_vars;
-      std::vector<ndt::type> arg_tp;
-      std::vector<const char *> arg_arrmeta;
-      std::vector<char *> arg_data;
-
-      // Validate the array arguments
-      args.validate_types(self_tp, arg_tp, arg_arrmeta, arg_data, tp_vars);
 
       // Validate the destination type, if it was provided
       if (!dst.is_null()) {
@@ -847,73 +744,73 @@ namespace nd {
       ndt::type dst_tp;
       if (dst.is_null()) {
         dst_tp = self_tp->get_return_type();
-        return (*get())(dst_tp, arg_tp.size(), arg_tp.empty() ? NULL : arg_tp.data(),
-                        arg_arrmeta.empty() ? NULL : arg_arrmeta.data(), arg_data.empty() ? NULL : arg_data.data(),
-                        kwds_as_vector.size(), kwds_as_vector.data(), tp_vars);
+        return (*get())(dst_tp, args.size(), args.types(), args.arrmeta(), args.data(), kwds_as_vector.size(),
+                        kwds_as_vector.data(), tp_vars);
       }
 
       dst_tp = dst.get_type();
-      (*get())(dst_tp, dst.get_arrmeta(), dst.get_readwrite_originptr(), arg_tp.size(),
-               arg_tp.empty() ? NULL : arg_tp.data(), arg_arrmeta.empty() ? NULL : arg_arrmeta.data(),
-               arg_data.empty() ? NULL : arg_data.data(), kwds_as_vector.size(), kwds_as_vector.data(), tp_vars);
+      (*get())(dst_tp, dst.get_arrmeta(), dst.get_readwrite_originptr(), args.size(), args.types(), args.arrmeta(),
+               args.data(), kwds_as_vector.size(), kwds_as_vector.data(), tp_vars);
       return dst;
-    }
-
-    /**
-     * operator()()
-     */
-    nd::array operator()()
-    {
-      return call(detail::args<>(), detail::kwds<>());
     }
 
     /**
     * operator()(kwds<...>(...))
     */
-    template <typename... K>
-    array operator()(detail::kwds<K...> &&k)
+    template <template <typename...> class ArgsType, typename AT0, typename... K>
+    array _call(detail::kwds<K...> &&k)
     {
-      return call(detail::args<>(), std::forward<detail::kwds<K...>>(k));
+      std::map<std::string, ndt::type> tp_vars;
+      return call(ArgsType<AT0>(tp_vars, get_type()), std::forward<detail::kwds<K...>>(k), tp_vars);
     }
 
     /**
      * operator()(a0, a1, ..., an, kwds<...>(...))
      */
-    template <typename... T>
-    typename std::enable_if<sizeof...(T) != 3 && detail::is_kwds<typename back<type_sequence<T...>>::type>::value,
+    template <template <typename...> class ArgsType, typename AT0, typename... T>
+    typename std::enable_if<sizeof...(T) != 3, array>::type _call(T &&... a)
+    {
+      std::map<std::string, ndt::type> tp_vars;
+
+      typedef typename instantiate<ArgsType, typename to<type_sequence<AT0, T...>, sizeof...(T)>::type>::type args_type;
+      typedef make_index_sequence<sizeof...(T) + 1> I;
+      return call(index_proxy<I>::template make<args_type>(tp_vars, get_type(), std::forward<T>(a)...),
+                  dynd::get<sizeof...(T) - 1>(std::forward<T>(a)...), tp_vars);
+    }
+
+    template <template <typename...> class ArgsType, typename AT0, typename A0, typename A1, typename... K>
+    typename std::enable_if<!std::is_convertible<A0 &&, size_t>::value || !std::is_convertible<A1 &&, array *>::value,
                             array>::type
-    operator()(T &&... a)
+    _call(A0 &&a0, A1 &&a1, const detail::kwds<K...> &kwds)
     {
-      typedef make_index_sequence<sizeof...(T) - 1> I;
-      typedef typename instantiate<detail::args, typename to<type_sequence<typename as_array<T>::type...>,
-                                                             sizeof...(T) - 1>::type>::type args_type;
-
-      args_type arr = index_proxy<I>::template make<args_type>(std::forward<T>(a)...);
-      return call(arr, dynd::get<sizeof...(T) - 1>(std::forward<T>(a)...));
+      std::map<std::string, ndt::type> tp_vars;
+      return call(
+          ArgsType<AT0, array, array>(tp_vars, get_type(), array(std::forward<A0>(a0)), array(std::forward<A1>(a1))),
+          kwds, tp_vars);
     }
 
-    template <typename A0, typename A1, typename... K>
-    typename std::enable_if<
-        !std::is_convertible<A0 &&, std::size_t>::value || !std::is_convertible<A1 &&, array *>::value, array>::type
-    operator()(A0 &&a0, A1 &&a1, const detail::kwds<K...> &kwds)
-    {
-      return call(detail::args<array, array>(array(std::forward<A0>(a0)), array(std::forward<A1>(a1))), kwds);
-    }
-
-    template <typename A0, typename A1, typename... K>
-    typename std::enable_if<std::is_convertible<A0 &&, std::size_t>::value &&std::is_convertible<A1 &&, array *>::value,
+    template <template <typename...> class ArgsType, typename AT0, typename A0, typename A1, typename... K>
+    typename std::enable_if<std::is_convertible<A0 &&, size_t>::value &&std::is_convertible<A1 &&, array *>::value,
                             array>::type
-    operator()(A0 &&a0, A1 &&a1, const detail::kwds<K...> &kwds)
+    _call(A0 &&a0, A1 &&a1, const detail::kwds<K...> &kwds)
     {
-      return call(detail::args<std::size_t, array *>(std::forward<A0>(a0), std::forward<A1>(a1)), kwds);
+      std::map<std::string, ndt::type> tp_vars;
+      return call(ArgsType<AT0, size_t, array *>(tp_vars, get_type(), std::forward<A0>(a0), std::forward<A1>(a1)), kwds,
+                  tp_vars);
     }
 
-    /**
-     * operator()(a0, a1, ..., an)
-     */
     template <typename... A>
-    typename std::enable_if<!detail::is_kwds<typename back<type_sequence<A...>>::type>::value, array>::type
-    operator()(A &&... a)
+    typename std::enable_if<has_kwds<A...>::value, array>::type operator()(A &&... a)
+    {
+      if (get()->kernreq == kernel_request_single) {
+        return _call<args, char *>(std::forward<A>(a)...);
+      }
+
+      return _call<args, char **>(std::forward<A>(a)...);
+    }
+
+    template <typename... A>
+    typename std::enable_if<!has_kwds<A...>::value, array>::type operator()(A &&... a)
     {
       return (*this)(std::forward<A>(a)..., kwds());
     }
@@ -923,8 +820,8 @@ namespace nd {
         ndt::type::has_equivalent<KernelType>::value &&detail::has_data_size<KernelType>::value, callable>::type
     make()
     {
-      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_single<KernelType>(),
-                      KernelType::data_size, detail::get_data_init<KernelType>(),
+      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_kernreq<KernelType>(),
+                      detail::get_single<KernelType>(), KernelType::data_size, detail::get_data_init<KernelType>(),
                       detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
     }
 
@@ -933,10 +830,10 @@ namespace nd {
         ndt::type::has_equivalent<KernelType>::value &&detail::has_data_size<KernelType>::value, callable>::type
     make(StaticDataType &&static_data)
     {
-      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_single<KernelType>(),
-                      std::forward<StaticDataType>(static_data), KernelType::data_size,
-                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
-                      detail::get_instantiate<KernelType>());
+      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_kernreq<KernelType>(),
+                      detail::get_single<KernelType>(), std::forward<StaticDataType>(static_data),
+                      KernelType::data_size, detail::get_data_init<KernelType>(),
+                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType>
@@ -944,9 +841,9 @@ namespace nd {
         ndt::type::has_equivalent<KernelType>::value && !detail::has_data_size<KernelType>::value, callable>::type
     make(std::size_t data_size)
     {
-      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_single<KernelType>(), data_size,
-                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
-                      detail::get_instantiate<KernelType>());
+      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_kernreq<KernelType>(),
+                      detail::get_single<KernelType>(), data_size, detail::get_data_init<KernelType>(),
+                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType, typename StaticDataType>
@@ -954,9 +851,10 @@ namespace nd {
         ndt::type::has_equivalent<KernelType>::value && !detail::has_data_size<KernelType>::value, callable>::type
     make(StaticDataType &&static_data, std::size_t data_size)
     {
-      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_single<KernelType>(),
-                      std::forward<StaticDataType>(static_data), data_size, detail::get_data_init<KernelType>(),
-                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
+      return callable(ndt::type::equivalent<KernelType>::make(), detail::get_kernreq<KernelType>(),
+                      detail::get_single<KernelType>(), std::forward<StaticDataType>(static_data), data_size,
+                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
+                      detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType>
@@ -964,9 +862,9 @@ namespace nd {
         !ndt::type::has_equivalent<KernelType>::value && detail::has_data_size<KernelType>::value, callable>::type
     make(const ndt::type &self_tp)
     {
-      return callable(self_tp, detail::get_single<KernelType>(), KernelType::data_size,
-                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
-                      detail::get_instantiate<KernelType>());
+      return callable(self_tp, detail::get_kernreq<KernelType>(), detail::get_single<KernelType>(),
+                      KernelType::data_size, detail::get_data_init<KernelType>(),
+                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType, typename StaticDataType>
@@ -974,9 +872,10 @@ namespace nd {
         !ndt::type::has_equivalent<KernelType>::value && detail::has_data_size<KernelType>::value, callable>::type
     make(const ndt::type &self_tp, StaticDataType &&static_data)
     {
-      return callable(self_tp, detail::get_single<KernelType>(), std::forward<StaticDataType>(static_data),
-                      KernelType::data_size, detail::get_data_init<KernelType>(),
-                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
+      return callable(self_tp, detail::get_kernreq<KernelType>(), detail::get_single<KernelType>(),
+                      std::forward<StaticDataType>(static_data), KernelType::data_size,
+                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
+                      detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType>
@@ -984,8 +883,9 @@ namespace nd {
         !ndt::type::has_equivalent<KernelType>::value && !detail::has_data_size<KernelType>::value, callable>::type
     make(const ndt::type &self_tp, std::size_t data_size)
     {
-      return callable(self_tp, detail::get_single<KernelType>(), data_size, detail::get_data_init<KernelType>(),
-                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
+      return callable(self_tp, detail::get_kernreq<KernelType>(), detail::get_single<KernelType>(), data_size,
+                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
+                      detail::get_instantiate<KernelType>());
     }
 
     template <typename KernelType, typename StaticDataType>
@@ -993,9 +893,9 @@ namespace nd {
         !ndt::type::has_equivalent<KernelType>::value && !detail::has_data_size<KernelType>::value, callable>::type
     make(const ndt::type &self_tp, StaticDataType &&static_data, std::size_t data_size)
     {
-      return callable(self_tp, detail::get_single<KernelType>(), std::forward<StaticDataType>(static_data), data_size,
-                      detail::get_data_init<KernelType>(), detail::get_resolve_dst_type<KernelType>(),
-                      detail::get_instantiate<KernelType>());
+      return callable(self_tp, detail::get_kernreq<KernelType>(), detail::get_single<KernelType>(),
+                      std::forward<StaticDataType>(static_data), data_size, detail::get_data_init<KernelType>(),
+                      detail::get_resolve_dst_type<KernelType>(), detail::get_instantiate<KernelType>());
     }
 
     template <template <int> class CKT, typename T>
@@ -1041,6 +941,149 @@ namespace nd {
 
       return callables;
     }
+  };
+
+  template <typename DataType>
+  class callable::args<DataType> {
+  public:
+    args(std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars), const ndt::callable_type *self_tp)
+    {
+      detail::check_narg(self_tp, 0);
+    }
+
+    size_t size() const
+    {
+      return 0;
+    }
+
+    const ndt::type *types() const
+    {
+      return NULL;
+    }
+
+    const char *const *arrmeta() const
+    {
+      return NULL;
+    }
+
+    DataType const *data() const
+    {
+      return NULL;
+    }
+  };
+
+  /** A holder class for the array arguments */
+  template <typename DataType, typename... A>
+  class callable::args {
+    struct init {
+      template <size_t I>
+      void on_each(const args *self, const ndt::callable_type *af_tp, ndt::type *src_tp, const char **src_arrmeta,
+                   DataType *src_data, std::map<std::string, ndt::type> &tp_vars) const
+      {
+        auto value = std::get<I>(self->m_values);
+        const ndt::type &tp = ndt::type::make(value);
+        const char *arrmeta = value.get_arrmeta();
+
+        detail::check_arg(af_tp, I, tp, arrmeta, tp_vars);
+
+        src_tp[I] = tp;
+        src_arrmeta[I] = arrmeta;
+        detail::set_data(src_data[I], value);
+      }
+    };
+
+    std::tuple<typename as_array<A>::type...> m_values;
+    ndt::type m_tp[sizeof...(A)];
+    const char *m_arrmeta[sizeof...(A)];
+    DataType m_data[sizeof...(A)];
+
+  public:
+    args(std::map<std::string, ndt::type> &tp_vars, const ndt::callable_type *self_tp, A &&... a)
+        : m_values(std::forward<A>(a)...)
+    {
+      detail::check_narg(self_tp, sizeof...(A));
+
+      typedef make_index_sequence<sizeof...(A)> I;
+      for_each<I>(init(), this, self_tp, m_tp, m_arrmeta, m_data, tp_vars);
+    }
+
+    size_t size() const
+    {
+      return sizeof...(A);
+    }
+
+    const ndt::type *types() const
+    {
+      return m_tp;
+    }
+
+    const char *const *arrmeta() const
+    {
+      return m_arrmeta;
+    }
+
+    DataType const *data() const
+    {
+      return m_data;
+    }
+  };
+
+  /** A way to pass a run-time array of array arguments */
+  template <typename DataType>
+  class callable::args<DataType, size_t, array *> {
+    size_t m_size;
+    std::vector<ndt::type> m_tp;
+    std::vector<const char *> m_arrmeta;
+    std::vector<DataType> m_data;
+
+  public:
+    args(std::map<std::string, ndt::type> &tp_vars, const ndt::callable_type *self_tp, size_t size, array *values)
+        : m_size(size), m_tp(m_size), m_arrmeta(m_size), m_data(m_size)
+    {
+      detail::check_narg(self_tp, m_size);
+
+      for (std::size_t i = 0; i < m_size; ++i) {
+        array &value = values[i];
+        const char *arrmeta = value.get_arrmeta();
+        const ndt::type &tp = value.get_type();
+
+        detail::check_arg(self_tp, i, tp, arrmeta, tp_vars);
+
+        m_tp[i] = tp;
+        m_arrmeta[i] = arrmeta;
+        detail::set_data(m_data[i], value);
+      }
+    }
+
+    size_t size() const
+    {
+      return m_size;
+    }
+
+    const ndt::type *types() const
+    {
+      return m_tp.data();
+    }
+
+    const char *const *arrmeta() const
+    {
+      return m_arrmeta.data();
+    }
+
+    DataType const *data() const
+    {
+      return m_data.data();
+    }
+  };
+
+  template <>
+  struct callable::has_kwds<> {
+    static const bool value = false;
+  };
+
+  template <typename A0, typename... A>
+  struct callable::has_kwds<A0, A...> {
+    static const bool value = is_instance<detail::kwds, typename std::decay<A0>::type>::value || has_kwds<A...>::value;
   };
 
   namespace detail {
@@ -1128,7 +1171,8 @@ namespace nd {
  * \param src_tp  The type of the source.
  * \param errmode  The error mode to use for the assignment.
  */
-DYND_API nd::callable make_callable_from_assignment(const ndt::type &dst_tp, const ndt::type &src_tp, assign_error_mode errmode);
+DYND_API nd::callable make_callable_from_assignment(const ndt::type &dst_tp, const ndt::type &src_tp,
+                                                    assign_error_mode errmode);
 
 /**
  * Creates an callable which does the assignment from

@@ -81,15 +81,16 @@ static intptr_t instantiate_int_offset_callable(
 template <class Tsrc, class Tdst>
 nd::callable make_int_offset_callable(Tdst offset, const ndt::type &func_proto)
 {
-  return nd::callable(func_proto, single_t(), offset, 0, NULL, NULL, &instantiate_int_offset_callable<Tsrc, Tdst>);
+  return nd::callable(func_proto, kernel_request_single, single_t(), offset, 0, NULL, NULL,
+                      &instantiate_int_offset_callable<Tsrc, Tdst>);
 }
 } // anonymous namespace
 
-bool dynd::make_date_adapter_callable(const ndt::type &operand_tp, const nd::string &op, nd::callable &out_forward,
+bool dynd::make_date_adapter_callable(const ndt::type &operand_tp, const std::string &op, nd::callable &out_forward,
                                       nd::callable &out_reverse)
 {
   int32_t epoch_date;
-  if (parse_days_since(op.begin(), op.end(), epoch_date)) {
+  if (parse_days_since(op.c_str(), op.c_str() + op.size(), epoch_date)) {
     switch (operand_tp.get_type_id()) {
     case int32_type_id:
       out_forward = make_int_offset_callable<int32_t, int32_t>(

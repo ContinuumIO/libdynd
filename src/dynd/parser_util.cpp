@@ -466,29 +466,40 @@ uint128 parse::checked_string_to_uint128(const char *begin, const char *end, boo
   return checked_string_to_uint<uint128>(begin, end, out_overflow, out_badparse);
 }
 
-intptr_t parse::checked_string_to_intptr(const char *begin, const char *end)
+template <class T>
+static T checked_string_to_signed_int(const char *begin, const char *end)
 {
   bool negative = false, overflow = false, badparse = false;
   if (begin < end && *begin == '-') {
     negative = true;
     ++begin;
   }
-  uint64_t uvalue = checked_string_to_uint64(begin, end, overflow, badparse);
-  if (overflow || overflow_check<intptr_t>::is_overflow(uvalue, negative)) {
+  uint64_t uvalue = parse::checked_string_to_uint64(begin, end, overflow, badparse);
+  if (overflow || parse::overflow_check<T>::is_overflow(uvalue, negative)) {
     stringstream ss;
     ss << "overflow converting string ";
     ss.write(begin, end - begin);
-    ss << " to intptr";
+    ss << " to " << ndt::type::make<T>();
     throw overflow_error(ss.str());
   } else if (badparse) {
     stringstream ss;
     ss << "parse error converting string ";
     ss.write(begin, end - begin);
-    ss << " to intptr";
+    ss << " to" << ndt::type::make<T>();
     throw invalid_argument(ss.str());
   } else {
-    return negative ? -static_cast<intptr_t>(uvalue) : static_cast<intptr_t>(uvalue);
+    return negative ? -static_cast<T>(uvalue) : static_cast<T>(uvalue);
   }
+}
+
+intptr_t parse::checked_string_to_intptr(const char *begin, const char *end)
+{
+  return checked_string_to_signed_int<intptr_t>(begin, end);
+}
+
+int64_t parse::checked_string_to_int64(const char *begin, const char *end)
+{
+  return checked_string_to_signed_int<int64_t>(begin, end);
 }
 
 uint64_t parse::unchecked_string_to_uint64(const char *begin, const char *end)
@@ -552,7 +563,7 @@ double parse::checked_string_to_float64(const char *begin, const char *end, assi
 
   // TODO: use http://www.netlib.org/fp/dtoa.c
   char *end_ptr;
-  string s(begin, end);
+  std::string s(begin, end);
   double value = strtod(s.c_str(), &end_ptr);
   if (errmode != assign_error_nocheck && (size_t)(end_ptr - s.c_str()) != s.size()) {
     stringstream ss;
@@ -953,4 +964,45 @@ bool parse::matches_option_type_na_token(const char *begin, const char *end)
   }
 
   return false;
+}
+
+int dynd::parse_uint64(uint64_t &res, const char *begin, const char *end)
+{
+  bool out_overflow = false, out_badparse = false;
+  res = parse::checked_string_to_uint64(begin, end, out_overflow, out_badparse);
+
+  return out_overflow || out_badparse;
+}
+
+int dynd::parse_int64(int64_t &res, const char *begin, const char *end)
+{
+  bool negative = false;
+  if (begin < end && *begin == '-') {
+    negative = true;
+    ++begin;
+  }
+
+  uint64_t ures;
+  int val = parse_uint64(ures, begin, end);
+
+  res = ures;
+  if (negative) {
+    res = -res;
+  }
+
+  return val;
+}
+
+int dynd::parse_double(double &res, const char *begin, const char *end)
+{
+  try
+  {
+    res = parse::checked_string_to_float64(begin, end, assign_error_nocheck);
+  }
+  catch (...)
+  {
+    return 1;
+  }
+
+  return 0;
 }

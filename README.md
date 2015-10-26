@@ -6,8 +6,8 @@ The DyND Library
 TravisCI: [![Build Status](https://api.travis-ci.org/libdynd/libdynd.svg?branch=master)](https://travis-ci.org/libdynd/libdynd) AppVeyor: [![Build status](https://ci.appveyor.com/api/projects/status/92o89tiw6wwliuxy/branch/master?svg=true)](https://ci.appveyor.com/project/libdynd/libdynd/branch/master)
 
 The core DyND developer team consists of
-[Mark Wiebe](https://github.com/mwiebe) and
-[Irwin Zaid](https://github.com/izaid). Much of the funding that made this
+[Mark Wiebe](https://github.com/mwiebe),
+[Irwin Zaid](https://github.com/izaid), and [Ian Henriksen](https://github.com/insertinterestingnamehere). Much of the funding that made this
 project possible came through [Continuum Analytics](http://continuum.io/)
 and [DARPA-BAA-12-38](https://www.fbo.gov/index?s=opportunity&mode=form&id=7a77846c73ffc5cb22f9295ffe6cdd55&tab=core&_cview=0),
 part of [XDATA](http://www.darpa.mil/Our_Work/I2O/Programs/XDATA.aspx).
@@ -76,8 +76,8 @@ The build system of this library is based on CMake. See
 the [build instructions](BUILD.md) for details about how
 to build the library.
 
-DyND requires a C++11 compiler, the minimum versions supported are gcc 4.7,
-MSVC 2013 Update 4, and Clang 3.4. The last release to support C++98 was DyND 0.6.6.
+DyND requires a C++11 compiler, the minimum versions supported are gcc 4.9,
+MSVC 2015, and Clang 3.4. The last release to support C++98 was DyND 0.6.6.
 An example improvement C++11 brings is a roughly factor of two compile time
 improvement and increased generality by using variadic templates instead of
 preprocessor metaprogramming. Many excellent projects such as [LLVM](http://llvm.org/)

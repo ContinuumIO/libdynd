@@ -42,8 +42,6 @@ set(tests_SRC
     types/test_fixed_bytes_type.cpp
     types/test_fixed_string_kind_type.cpp
     types/test_fixed_string_type.cpp
-    types/test_groupby_type.cpp
-    types/test_json_type.cpp
     types/test_option_type.cpp
     types/test_pointer_type.cpp
     types/test_scalar_kind_type.cpp
@@ -56,6 +54,7 @@ set(tests_SRC
     types/test_type_type.cpp
     types/test_type_assign.cpp
     types/test_type_casting.cpp
+    types/test_type_registry.cpp
     types/test_type_substitute.cpp
     types/test_type_pattern_match.cpp
 #    types/test_type_promotion.cpp
@@ -83,10 +82,12 @@ set(tests_SRC
     func/test_reduction.cpp
     func/test_registry.cpp
     func/test_rolling.cpp
+    func/test_search.cpp
     func/test_special.cpp
     func/test_sum.cpp
     func/test_take.cpp
     func/test_take_by_pointer.cpp
+    func/test_view.cpp
     gfunc/test_callable.cpp
     array/test_array.cpp
     array/test_array_range.cpp

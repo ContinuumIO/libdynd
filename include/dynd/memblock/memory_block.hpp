@@ -89,7 +89,7 @@ struct DYND_API memory_block_data {
   /**
    * Returns a pointer to a static API for the type of the memory block.
    */
-  DYND_API api *get_api();
+  api *get_api();
 };
 
 namespace detail {

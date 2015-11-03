@@ -93,18 +93,6 @@ struct DYND_API memory_block_data {
   api *get_api();
 };
 
-/**
- * Returns a pointer to a static POD memory allocator API,
- * for the type of the memory block.
- */
-DYND_API memory_block_data::api *get_memory_block_pod_allocator_api(memory_block_data *memblock);
-
-/**
- * Returns a pointer to a static objectarray memory allocator API,
- * for the type of the memory block.
- */
-DYND_API memory_block_data::api *get_memory_block_objectarray_allocator_api(memory_block_data *memblock);
-
 namespace detail {
   /**
    * Frees the data for a memory block. Is called

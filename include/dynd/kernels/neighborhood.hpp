@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <dynd/kernels/base_kernel.hpp>
 #include <dynd/types/substitute_shape.hpp>
 
@@ -12,204 +14,172 @@ namespace dynd {
 namespace nd {
   namespace functional {
 
-    struct DYND_API neighborhood_data {
-      callable op;
-      start_stop_t *start_stop;
-
-      neighborhood_data(const callable &neighborhood_op, intptr_t ndim)
-      {
-        op = neighborhood_op;
-        start_stop = static_cast<start_stop_t *>(
-            std::malloc(ndim * sizeof(start_stop_t)));
-      }
-
-      ~neighborhood_data()
-      {
-        std::free(start_stop);
-      }
-    };
-
     template <int N>
-    struct neighborhood_ck : base_kernel<neighborhood_ck<N>, N> {
-      typedef neighborhood_ck<N> self_type;
+    struct neighborhood_kernel : base_kernel<neighborhood_kernel<N>, N> {
+      typedef neighborhood_kernel<N> self_type;
+
+      struct data_type {
+        intptr_t ndim;
+        intptr_t *shape;
+        int *offset;
+
+        data_type(intptr_t ndim, intptr_t *shape, int *offset) : ndim(ndim), shape(shape), offset(offset)
+        {
+        }
+      };
 
       intptr_t dst_stride;
-      intptr_t src_offset[N];
-      intptr_t src_stride[N];
+      intptr_t src0_offset;
+      intptr_t src0_stride;
       intptr_t count[3];
       intptr_t nh_size;
-      start_stop_t *nh_start_stop;
+      intptr_t src0_size;
+      intptr_t nh_offset;
 
-      // local index of first in of bounds element in the neighborhood
-      // local index of first out of bounds element in the neighborhood
-
-      void single(char *dst, char *const *src)
+      neighborhood_kernel(intptr_t dst_size, intptr_t dst_stride, intptr_t src0_size, intptr_t src0_stride,
+                          intptr_t size, intptr_t offset)
+          : dst_stride(dst_stride), src0_offset(offset * src0_stride), src0_stride(src0_stride), nh_size(size),
+            src0_size(src0_size), nh_offset(offset)
       {
-        ckernel_prefix *child = self_type::get_child();
-        expr_single_t child_fn = child->get_function<expr_single_t>();
-
-        char *src_copy[N];
-        memcpy(src_copy, src, sizeof(src_copy));
-        for (intptr_t j = 0; j < N; ++j) {
-          src_copy[j] += src_offset[j];
+        count[0] = -offset;
+        if (count[0] < 0) {
+          count[0] = 0;
+        } else if (count[0] > dst_size) {
+          count[0] = dst_size;
         }
 
-        nh_start_stop->start = count[0];
-        nh_start_stop->stop = nh_size; // min(nh_size, dst_size)
-        for (intptr_t i = 0; i < count[0]; ++i) {
-          child_fn(child, dst, src_copy);
-          --(nh_start_stop->start);
-          dst += dst_stride;
-          for (intptr_t j = 0; j < N; ++j) {
-            src_copy[j] += src_stride[j];
-          }
+        count[2] = size + offset - 1;
+        if (count[2] < 0) {
+          count[2] = 0;
+        } else if (count[2] > (dst_size - count[0])) {
+          count[2] = dst_size - count[0];
         }
+
+        count[1] = dst_size - count[0] - count[2];
+      }
+
+      void single(char *, char *const *)
+      {
+        //        ckernel_prefix *child = self_type::get_child();
+        //      char *src0_copy = src[0] + src0_offset;
+
+        // 0 < i < src0_size
+        // offset < i + offset < src0_size + offset
+        // offset < i + offset
+
+        std::cout << "left" << std::endl;
+        intptr_t i = nh_offset;
+        while (i < std::min((intptr_t)0, src0_size + nh_offset)) {
+          std::cout << i << std::endl;
+          ++i;
+        };
+
+        std::cout << "middle" << std::endl;
+        while (i < std::min(src0_size + nh_offset, src0_size - nh_size + 1)) {
+          std::cout << i << std::endl;
+          ++i;
+        }
+
+        std::cout << "right" << std::endl;
+        while (i < (src0_size + nh_offset)) {
+          std::cout << i << std::endl;
+          ++i;
+        }
+
+        /*
+                nh_start_stop->start = count[0];
+                nh_start_stop->stop = nh_size; // min(nh_size, dst_size)
+                for (intptr_t i = 0; i < count[0]; ++i) {
+                  child_fn(child, dst, src_copy);
+                  --(nh_start_stop->start);
+                  dst += dst_stride;
+                  for (intptr_t j = 0; j < N; ++j) {
+                    src_copy[j] += src_stride[j];
+                  }
+                }
+        */
+
         //  *nh_start = 0;
         //    *nh_stop = nh_size;
-        for (intptr_t i = 0; i < count[1]; ++i) {
-          child_fn(child, dst, src_copy);
-          dst += dst_stride;
-          for (intptr_t j = 0; j < N; ++j) {
-            src_copy[j] += src_stride[j];
-          }
-        }
-        //      *nh_start = 0;
-        //        *nh_stop = count[2]; // 0 if count[2] >
-        for (intptr_t i = 0; i < count[2]; ++i) {
-          --(nh_start_stop->stop);
-          child_fn(child, dst, src_copy);
-          dst += dst_stride;
-          for (intptr_t j = 0; j < N; ++j) {
-            src_copy[j] += src_stride[j];
-          }
-        }
-      }
+        //        for (intptr_t i = 0; i < count[1]; ++i) {
+        //        child->single(dst, &src0_copy);
+        //      dst += dst_stride;
+        //    src0_copy += src0_stride;
+        //  }
 
-      static intptr_t
-      instantiate(char *static_data, size_t DYND_UNUSED(data_size),
-                  char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
-                  const ndt::type &dst_tp, const char *dst_arrmeta,
-                  intptr_t nsrc, const ndt::type *src_tp,
-                  const char *const *src_arrmeta, kernel_request_t kernreq,
-                  const eval::eval_context *ectx, intptr_t nkwd,
-                  const nd::array *kwds,
-                  const std::map<std::string, ndt::type> &tp_vars)
+        /*
+                for (intptr_t i = 0; i < count[2]; ++i) {
+                  --(nh_start_stop->stop);
+                  child_fn(child, dst, src_copy);
+                  dst += dst_stride;
+                  for (intptr_t j = 0; j < N; ++j) {
+                    src_copy[j] += src_stride[j];
+                  }
+                }
+        */
+      }
+      static void data_init(char *DYND_UNUSED(static_data), size_t DYND_UNUSED(data_size), char *data,
+                            const ndt::type &DYND_UNUSED(dst_tp), intptr_t DYND_UNUSED(nsrc),
+                            const ndt::type *DYND_UNUSED(src_tp), intptr_t DYND_UNUSED(nkwd), const array *kwds,
+                            const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
       {
-        std::shared_ptr<neighborhood_data> nh =
-            *reinterpret_cast<std::shared_ptr<neighborhood_data> *>(
-                 static_data);
-        nd::callable nh_op = nh->op;
-
-        nd::array shape = kwds[0];
-        if (shape.is_missing()) {
-          const nd::array &mask = kwds[2];
-          shape = nd::array(mask.get_shape());
-        }
-        intptr_t ndim = shape.get_dim_size();
-
-        nd::array offset;
-        if (!kwds[1].is_missing()) {
-          offset = kwds[1];
-        }
-
-        // Process the dst array striding/types
-        const size_stride_t *dst_shape;
-        ndt::type nh_dst_tp;
-        const char *nh_dst_arrmeta;
-        if (!dst_tp.get_as_strided(dst_arrmeta, ndim, &dst_shape, &nh_dst_tp,
-                                   &nh_dst_arrmeta)) {
-          std::stringstream ss;
-          ss << "neighborhood callable dst must be a strided array, not "
-             << dst_tp;
-          throw std::invalid_argument(ss.str());
-        }
-
-        // Process the src[0] array striding/type
-        const size_stride_t *src0_shape;
-        ndt::type src0_el_tp;
-        const char *src0_el_arrmeta;
-        if (!src_tp[0].get_as_strided(src_arrmeta[0], ndim, &src0_shape,
-                                      &src0_el_tp, &src0_el_arrmeta)) {
-          std::stringstream ss;
-          ss << "neighborhood callable argument 1 must be a 2D strided array, "
-                "not " << src_tp[0];
-          throw std::invalid_argument(ss.str());
-        }
-
-        // Synthesize the arrmeta for the src[0] passed to the neighborhood op
-        ndt::type nh_src_tp[1];
-        nh_src_tp[0] = ndt::make_fixed_dim_kind(src0_el_tp, ndim);
-        arrmeta_holder nh_arrmeta;
-        arrmeta_holder(nh_src_tp[0]).swap(nh_arrmeta);
-        size_stride_t *nh_src0_arrmeta =
-            reinterpret_cast<size_stride_t *>(nh_arrmeta.get());
-        for (intptr_t i = 0; i < ndim; ++i) {
-          nh_src0_arrmeta[i].dim_size = shape(i).as<intptr_t>();
-          nh_src0_arrmeta[i].stride = src0_shape[i].stride;
-        }
-        const char *nh_src_arrmeta[1] = {nh_arrmeta.get()};
-
-        for (intptr_t i = 0; i < ndim; ++i) {
-          typedef dynd::nd::functional::neighborhood_ck<N> self_type;
-          self_type *self = self_type::make(ckb, kernreq, ckb_offset);
-
-          self->dst_stride = dst_shape[i].stride;
-          for (intptr_t j = 0; j < N; ++j) {
-            self->src_offset[j] =
-                offset.is_null()
-                    ? 0
-                    : (offset(i).as<intptr_t>() * src0_shape[i].stride);
-            self->src_stride[j] = src0_shape[i].stride;
-          }
-
-          self->count[0] = offset.is_null() ? 0 : -offset(i).as<intptr_t>();
-          if (self->count[0] < 0) {
-            self->count[0] = 0;
-          } else if (self->count[0] > dst_shape[i].dim_size) {
-            self->count[0] = dst_shape[i].dim_size;
-          }
-          self->count[2] = shape(i).as<intptr_t>() +
-                           (offset.is_null() ? 0 : offset(i).as<intptr_t>()) -
-                           1;
-          if (self->count[2] < 0) {
-            self->count[2] = 0;
-          } else if (self->count[2] >
-                     (dst_shape[i].dim_size - self->count[0])) {
-            self->count[2] = dst_shape[i].dim_size - self->count[0];
-          }
-          self->count[1] =
-              dst_shape[i].dim_size - self->count[0] - self->count[2];
-
-          self->nh_size = shape(i).as<intptr_t>();
-          self->nh_start_stop = nh->start_stop + i;
-        }
-
-        std::vector<array> new_kwds(nkwd + 1);
-        for (int i = 0; i < nkwd; ++i) {
-          new_kwds[i] = kwds[i];
-        }
-        new_kwds[nkwd] = reinterpret_cast<intptr_t>(nh->start_stop);
-
-        ckb_offset = nh_op.get()->instantiate(
-            nh_op.get()->static_data, 0, NULL, ckb, ckb_offset, nh_dst_tp,
-            nh_dst_arrmeta, nsrc, nh_src_tp, nh_src_arrmeta,
-            kernel_request_single, ectx, nkwd + 1, new_kwds.data(), tp_vars);
-
-        return ckb_offset;
+        new (data) data_type(kwds[0].get_dim_size(), reinterpret_cast<intptr_t *>(kwds[0].get_readwrite_originptr()),
+                             kwds[1].is_missing() ? NULL : reinterpret_cast<int *>(kwds[1].get_readwrite_originptr()));
       }
 
-      static void resolve_dst_type(
-          char *DYND_UNUSED(static_data), size_t DYND_UNUSED(data_size),
-          char *DYND_UNUSED(data), ndt::type &dst_tp,
-          intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
-          intptr_t DYND_UNUSED(nkwd), const array *DYND_UNUSED(kwds),
-          const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+      static void resolve_dst_type(char *DYND_UNUSED(static_data), size_t DYND_UNUSED(data_size),
+                                   char *DYND_UNUSED(data), ndt::type &dst_tp, intptr_t DYND_UNUSED(nsrc),
+                                   const ndt::type *src_tp, intptr_t DYND_UNUSED(nkwd), const array *DYND_UNUSED(kwds),
+                                   const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
       {
         // swap in the input dimension values for the Fixed**N
         intptr_t ndim = src_tp[0].get_ndim();
         dimvector shape(ndim);
         src_tp[0].extended()->get_shape(ndim, 0, shape.get(), NULL, NULL);
         dst_tp = ndt::substitute_shape(dst_tp, ndim, shape.get());
+      }
+
+      static intptr_t instantiate(char *static_data, size_t data_size, char *data, void *ckb, intptr_t ckb_offset,
+                                  const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
+                                  const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
+                                  const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
+                                  const std::map<std::string, ndt::type> &tp_vars)
+      {
+        neighborhood_kernel::make(
+            ckb, kernreq, ckb_offset, reinterpret_cast<const fixed_dim_type_arrmeta *>(dst_arrmeta)->dim_size,
+            reinterpret_cast<const fixed_dim_type_arrmeta *>(dst_arrmeta)->stride,
+            reinterpret_cast<const fixed_dim_type_arrmeta *>(src_arrmeta[0])->dim_size,
+            reinterpret_cast<const fixed_dim_type_arrmeta *>(src_arrmeta[0])->stride,
+            reinterpret_cast<data_type *>(data)->shape[0],
+            (reinterpret_cast<data_type *>(data)->offset == NULL) ? 0 : reinterpret_cast<data_type *>(data)->offset[0]);
+
+        const ndt::type &child_dst_tp = dst_tp.extended<ndt::fixed_dim_type>()->get_element_type();
+        const char *child_dst_arrmeta = dst_arrmeta + sizeof(fixed_dim_type_arrmeta);
+
+        ndt::type child_src_tp[N];
+        const char *child_src_arrmeta[N];
+        for (int i = 0; i < N; ++i) {
+          child_src_tp[i] = src_tp[i].extended<ndt::fixed_dim_type>()->get_element_type();
+          child_src_arrmeta[i] = src_arrmeta[i] + sizeof(fixed_dim_type_arrmeta);
+        }
+
+        reinterpret_cast<data_type *>(data)->ndim -= 1;
+        reinterpret_cast<data_type *>(data)->shape += 1;
+        if (reinterpret_cast<data_type *>(data)->offset != NULL) {
+          reinterpret_cast<data_type *>(data)->offset += 1;
+        }
+
+        if (reinterpret_cast<data_type *>(data)->ndim == 0) {
+          reinterpret_cast<data_type *>(data)->~data_type();
+
+          const callable &child = *reinterpret_cast<callable *>(static_data);
+          return child.get()->instantiate(child.get()->static_data, child.get()->data_size, NULL, ckb, ckb_offset,
+                                          child_dst_tp, child_dst_arrmeta, nsrc, child_src_tp, child_src_arrmeta,
+                                          kernel_request_single, ectx, nkwd - 3, kwds + 3, tp_vars);
+        }
+
+        return instantiate(static_data, data_size, data, ckb, ckb_offset, child_dst_tp, child_dst_arrmeta, nsrc,
+                           child_src_tp, child_src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
       }
     };
 

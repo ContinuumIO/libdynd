@@ -58,6 +58,11 @@ public:
   {
   }
 
+  void set_data(char *data)
+  {
+    this->m_data = data;
+  }
+
   template <typename... IndexType>
   decltype(auto) operator()(IndexType... index)
   {

@@ -95,8 +95,7 @@ namespace nd {
     callable apply(T &&... names)
     {
       typedef as_construct_then_apply_callable_ck<func_type, K...> kernel_type;
-      return callable::make<kernel_type>(
-          ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...), 0);
+      return callable::make<kernel_type>(ndt::type::make<kernel_type>(std::forward<T>(names)...), 0);
     }
 
     /**

@@ -7,6 +7,7 @@
 
 #include <dynd/func/callable.hpp>
 #include <dynd/kernels/apply.hpp>
+#include <dynd/kernels/construct_then_apply_callable_kernel.hpp>
 
 namespace dynd {
 namespace nd {
@@ -93,11 +94,9 @@ namespace nd {
     template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
     callable apply(T &&... names)
     {
-      typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;
-
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...);
-
-      return callable::make<ck_type>(self_tp, 0);
+      typedef as_construct_then_apply_callable_ck<func_type, K...> kernel_type;
+      return callable::make<kernel_type>(
+          ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...), 0);
     }
 
     /**

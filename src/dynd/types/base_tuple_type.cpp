@@ -45,12 +45,12 @@ ndt::base_tuple_type::base_tuple_type(type_id_t type_id, const nd::array &field_
       data_alignment = (uint8_t)field_alignment;
     }
     // Inherit any operand flags from the fields
-    m_members.flags |= (ft.get_flags() & type_flags_operand_inherited);
+    this->flags |= (ft.get_flags() & type_flags_operand_inherited);
     // Calculate the arrmeta offsets
     arrmeta_offsets[i] = arrmeta_offset;
     arrmeta_offset += ft.get_arrmeta_size();
   }
-  m_members.arrmeta_size = arrmeta_offset;
+  arrmeta_size = arrmeta_offset;
 
   m_arrmeta_offsets.flag_as_immutable();
 }

@@ -273,7 +273,7 @@ ndt::categorical_type::categorical_type(const nd::array &categories, bool presor
   } else {
     m_storage_type = type::make<uint32_t>();
   }
-  m_members.data_size = m_storage_type.get_data_size();
+  data_size = m_storage_type.get_data_size();
   data_alignment = (uint8_t)m_storage_type.get_data_alignment();
 }
 

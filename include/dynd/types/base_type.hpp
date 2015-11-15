@@ -85,29 +85,6 @@ struct DYND_API iterdata_common {
 
 namespace ndt {
 
-  struct DYND_API base_type_members {
-    typedef uint32_t flags_type;
-
-    /** The flags */
-    uint32_t flags;
-    /** The size of one instance of the type, or 0 if there is not one fixed
-     * size.
-     */
-    size_t data_size;
-    /** The size of a arrmeta instance for the type. */
-    size_t arrmeta_size;
-    /** The number of array dimensions this type has */
-    int8_t ndim;
-    /** The number of strided dimensions (strided/fixed/cfixed) in a row
-     *  with no pointers, var dims, etc in between. */
-    int8_t strided_ndim;
-
-    base_type_members(uint32_t flags_, size_t data_size_, size_t arrmeta_size_, int8_t ndim_, int8_t strided_ndim_)
-        : flags(flags_), data_size(data_size_), arrmeta_size(arrmeta_size_), ndim(ndim_), strided_ndim(strided_ndim_)
-    {
-    }
-  };
-
   /**
    * This is the virtual base class for defining new types which are not so
    *basic
@@ -130,10 +107,13 @@ namespace ndt {
       uint16_t type_id;       // The type id (type_id_t is the enum)
       uint8_t kind;           // The kind (type_kind_t is the enum)
       uint8_t data_alignment; // The data alignment
+      uint32_t flags;         // The flags
+      size_t data_size;       // The size of one instance of the type, or 0 if there is not one fixed size
+      size_t arrmeta_size;    // The size of a arrmeta instance for the type
+      int8_t ndim;            // The number of array dimensions this type has
+      int8_t strided_ndim;    // The number of strided dimensions (strided/fixed/cfixed) in a row with no pointers, var
+                              // dims, etc in between
     };
-
-    /// Standard dynd type data
-    base_type_members m_members;
 
   protected:
     // Helper function for array dimension types
@@ -147,8 +127,8 @@ namespace ndt {
     inline base_type(type_id_t type_id, type_kind_t kind, size_t data_size, size_t alignment, uint32_t flags,
                      size_t arrmeta_size, size_t ndim, size_t strided_ndim)
         : m_use_count(1), type_id(static_cast<uint16_t>(type_id)), kind(static_cast<uint8_t>(kind)),
-          data_alignment(static_cast<uint8_t>(alignment)),
-          m_members(flags, data_size, arrmeta_size, static_cast<uint8_t>(ndim), static_cast<uint8_t>(strided_ndim))
+          data_alignment(static_cast<uint8_t>(alignment)), flags(flags), data_size(data_size),
+          arrmeta_size(arrmeta_size), ndim(static_cast<uint8_t>(ndim)), strided_ndim(static_cast<uint8_t>(strided_ndim))
     {
     }
 
@@ -158,12 +138,6 @@ namespace ndt {
     inline int32_t get_use_count() const
     {
       return m_use_count;
-    }
-
-    /** Returns the struct of data common to all types. */
-    inline const base_type_members &get_base_type_members() const
-    {
-      return m_members;
     }
 
     /** The type's type id */
@@ -176,12 +150,14 @@ namespace ndt {
     {
       return static_cast<type_kind_t>(kind);
     }
+
     /** The size of one instance of the type, or 0 if there is not one fixed
      * size. */
     inline size_t get_data_size() const
     {
-      return m_members.data_size;
+      return data_size;
     }
+
     /** The type's data alignment. Every data pointer for this type _must_ be
      * aligned. */
     inline size_t get_data_alignment() const
@@ -191,16 +167,16 @@ namespace ndt {
     /** The number of array dimensions this type has */
     inline intptr_t get_ndim() const
     {
-      return m_members.ndim;
+      return ndim;
     }
     /** The number of outer strided dimensions this type has in a row */
     inline intptr_t get_strided_ndim() const
     {
-      return m_members.strided_ndim;
+      return strided_ndim;
     }
     inline uint32_t get_flags() const
     {
-      return m_members.flags;
+      return flags;
     }
     virtual size_t get_default_data_size() const;
 
@@ -222,7 +198,7 @@ namespace ndt {
 
     inline bool is_indexable() const
     {
-      return (m_members.flags & type_flag_indexable) != 0;
+      return (flags & type_flag_indexable) != 0;
     }
 
     /**
@@ -234,7 +210,7 @@ namespace ndt {
      */
     bool is_scalar() const
     {
-      return m_members.ndim == 0 && (m_members.flags & type_flag_variadic) == 0;
+      return ndim == 0 && (flags & type_flag_variadic) == 0;
     }
 
     /**
@@ -446,10 +422,11 @@ namespace ndt {
     virtual bool operator==(const base_type &rhs) const = 0;
 
     /** The size of the nd::array arrmeta for this type */
-    inline size_t get_arrmeta_size() const
+    size_t get_arrmeta_size() const
     {
-      return m_members.arrmeta_size;
+      return arrmeta_size;
     }
+
     /**
      * Constructs the nd::array arrmeta for this type using default settings.
      * The element size of the result must match that from

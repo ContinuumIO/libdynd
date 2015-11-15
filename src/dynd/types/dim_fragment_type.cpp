@@ -19,7 +19,7 @@ ndt::dim_fragment_type::dim_fragment_type(intptr_t ndim,
                     0, type_flag_symbolic, false),
       m_tagged_dims(ndim, tagged_dims)
 {
-  m_members.ndim = static_cast<uint8_t>(ndim);
+  this->ndim = static_cast<uint8_t>(ndim);
 }
 
 static inline ndt::type get_tagged_dims_from_type(intptr_t ndim,
@@ -100,7 +100,7 @@ ndt::dim_fragment_type::dim_fragment_type(intptr_t ndim, const type &tp)
     throw type_error(ss.str());
   }
   get_tagged_dims_from_type(ndim, tp, m_tagged_dims.get());
-  m_members.ndim = static_cast<uint8_t>(ndim);
+  this->ndim = static_cast<uint8_t>(ndim);
 }
 
 ndt::type ndt::dim_fragment_type::broadcast_with_type(intptr_t ndim,

@@ -23,7 +23,7 @@ ndt::fixed_dim_kind_type::fixed_dim_kind_type(const type &element_tp)
                     type_flag_symbolic, true)
 {
   // Propagate the inherited flags from the element
-  m_members.flags |= (element_tp.get_flags() & (type_flags_operand_inherited | type_flags_value_inherited));
+  m_flags |= (element_tp.get_flags() & (type_flags_operand_inherited | type_flags_value_inherited));
 }
 
 ndt::fixed_dim_kind_type::~fixed_dim_kind_type()
@@ -144,18 +144,18 @@ void ndt::fixed_dim_kind_type::arrmeta_default_construct(char *DYND_UNUSED(arrme
   throw runtime_error(ss.str());
 }
 
-void ndt::fixed_dim_kind_type::arrmeta_copy_construct(char *DYND_UNUSED(dst_arrmeta),
-                                                      const char *DYND_UNUSED(src_arrmeta),
-                                                      const intrusive_ptr<memory_block_data> &DYND_UNUSED(embedded_reference)) const
+void ndt::fixed_dim_kind_type::arrmeta_copy_construct(
+    char *DYND_UNUSED(dst_arrmeta), const char *DYND_UNUSED(src_arrmeta),
+    const intrusive_ptr<memory_block_data> &DYND_UNUSED(embedded_reference)) const
 {
   stringstream ss;
   ss << "Cannot copy construct arrmeta for symbolic type " << type(this, true);
   throw runtime_error(ss.str());
 }
 
-size_t ndt::fixed_dim_kind_type::arrmeta_copy_construct_onedim(char *DYND_UNUSED(dst_arrmeta),
-                                                               const char *DYND_UNUSED(src_arrmeta),
-                                                               const intrusive_ptr<memory_block_data> &DYND_UNUSED(embedded_reference)) const
+size_t ndt::fixed_dim_kind_type::arrmeta_copy_construct_onedim(
+    char *DYND_UNUSED(dst_arrmeta), const char *DYND_UNUSED(src_arrmeta),
+    const intrusive_ptr<memory_block_data> &DYND_UNUSED(embedded_reference)) const
 {
   stringstream ss;
   ss << "Cannot copy construct arrmeta for symbolic type " << type(this, true);

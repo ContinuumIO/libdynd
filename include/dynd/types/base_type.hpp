@@ -88,14 +88,8 @@ namespace ndt {
   struct DYND_API base_type_members {
     typedef uint32_t flags_type;
 
-    /** The type id (type_id_t is the enum) */
-    uint16_t type_id;
-    /** The kind (type_kind_t is the enum) */
-    uint8_t kind;
-    /** The data alignment */
-    uint8_t data_alignment;
     /** The flags */
-    flags_type flags;
+    uint32_t flags;
     /** The size of one instance of the type, or 0 if there is not one fixed
      * size.
      */
@@ -108,10 +102,8 @@ namespace ndt {
      *  with no pointers, var dims, etc in between. */
     int8_t strided_ndim;
 
-    base_type_members(uint16_t type_id_, uint8_t kind_, uint8_t data_alignment_, flags_type flags_, size_t data_size_,
-                      size_t arrmeta_size_, int8_t ndim_, int8_t strided_ndim_)
-        : type_id(type_id_), kind(kind_), data_alignment(data_alignment_), flags(flags_), data_size(data_size_),
-          arrmeta_size(arrmeta_size_), ndim(ndim_), strided_ndim(strided_ndim_)
+    base_type_members(uint32_t flags_, size_t data_size_, size_t arrmeta_size_, int8_t ndim_, int8_t strided_ndim_)
+        : flags(flags_), data_size(data_size_), arrmeta_size(arrmeta_size_), ndim(ndim_), strided_ndim(strided_ndim_)
     {
     }
   };
@@ -134,6 +126,12 @@ namespace ndt {
     mutable atomic_refcount m_use_count;
 
   protected:
+    struct {
+      uint16_t type_id;       // The type id (type_id_t is the enum)
+      uint8_t kind;           // The kind (type_kind_t is the enum)
+      uint8_t data_alignment; // The data alignment
+    };
+
     /// Standard dynd type data
     base_type_members m_members;
 
@@ -143,14 +141,14 @@ namespace ndt {
                                              std::vector<std::pair<std::string, gfunc::callable>> &out_functions) const;
 
   public:
-    typedef base_type_members::flags_type flags_type;
+    typedef uint32_t flags_type;
 
     /** Starts off the extended type instance with a use count of 1. */
-    inline base_type(type_id_t type_id, type_kind_t kind, size_t data_size, size_t alignment, flags_type flags,
+    inline base_type(type_id_t type_id, type_kind_t kind, size_t data_size, size_t alignment, uint32_t flags,
                      size_t arrmeta_size, size_t ndim, size_t strided_ndim)
-        : m_use_count(1),
-          m_members(static_cast<uint16_t>(type_id), static_cast<uint8_t>(kind), static_cast<uint8_t>(alignment), flags,
-                    data_size, arrmeta_size, static_cast<uint8_t>(ndim), static_cast<uint8_t>(strided_ndim))
+        : m_use_count(1), type_id(static_cast<uint16_t>(type_id)), kind(static_cast<uint8_t>(kind)),
+          data_alignment(static_cast<uint8_t>(alignment)),
+          m_members(flags, data_size, arrmeta_size, static_cast<uint8_t>(ndim), static_cast<uint8_t>(strided_ndim))
     {
     }
 
@@ -171,12 +169,12 @@ namespace ndt {
     /** The type's type id */
     inline type_id_t get_type_id() const
     {
-      return static_cast<type_id_t>(m_members.type_id);
+      return static_cast<type_id_t>(type_id);
     }
     /** The type's kind */
     inline type_kind_t get_kind() const
     {
-      return static_cast<type_kind_t>(m_members.kind);
+      return static_cast<type_kind_t>(kind);
     }
     /** The size of one instance of the type, or 0 if there is not one fixed
      * size. */
@@ -188,7 +186,7 @@ namespace ndt {
      * aligned. */
     inline size_t get_data_alignment() const
     {
-      return m_members.data_alignment;
+      return data_alignment;
     }
     /** The number of array dimensions this type has */
     inline intptr_t get_ndim() const
@@ -200,7 +198,7 @@ namespace ndt {
     {
       return m_members.strided_ndim;
     }
-    inline base_type_members::flags_type get_flags() const
+    inline uint32_t get_flags() const
     {
       return m_members.flags;
     }

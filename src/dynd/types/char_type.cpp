@@ -116,7 +116,7 @@ intptr_t ndt::char_type::make_assignment_kernel(
     if (dst_tp == src_tp) {
       // If the types are the same, it's a POD assignment
       return make_pod_typed_data_assignment_kernel(
-          ckb, ckb_offset, m_members.data_size, m_members.data_alignment,
+          ckb, ckb_offset, m_members.data_size, data_alignment,
           kernreq);
     }
     switch (src_tp.get_type_id()) {

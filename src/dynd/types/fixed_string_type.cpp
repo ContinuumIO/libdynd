@@ -24,16 +24,16 @@ ndt::fixed_string_type::fixed_string_type(intptr_t stringsize,
   case string_encoding_ascii:
   case string_encoding_utf_8:
     m_members.data_size = m_stringsize;
-    m_members.data_alignment = 1;
+    data_alignment = 1;
     break;
   case string_encoding_ucs_2:
   case string_encoding_utf_16:
     m_members.data_size = m_stringsize * 2;
-    m_members.data_alignment = 2;
+    data_alignment = 2;
     break;
   case string_encoding_utf_32:
     m_members.data_size = m_stringsize * 4;
-    m_members.data_alignment = 4;
+    data_alignment = 4;
     break;
   default:
     throw runtime_error(

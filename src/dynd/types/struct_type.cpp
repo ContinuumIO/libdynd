@@ -351,7 +351,7 @@ ndt::struct_type::struct_type(int, int)
   //    m_data_offsets = m_arrmeta_offsets;
   // Inherit any operand flags from the fields
   m_members.flags |= (make_ndarrayarg().get_flags() & type_flags_operand_inherited);
-  m_members.data_alignment = sizeof(void *);
+  data_alignment = sizeof(void *);
   m_members.arrmeta_size = 0;
   m_members.data_size = sizeof(void *);
   // Leave m_array_properties so there is no reference loop

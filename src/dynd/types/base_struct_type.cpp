@@ -38,7 +38,7 @@ ndt::base_struct_type::base_struct_type(type_id_t type_id, const nd::array &fiel
     throw invalid_argument(ss.str());
   }
 
-  kind = variadic ? kind_kind : struct_kind;
+  m_kind = variadic ? kind_kind : struct_kind;
 }
 
 ndt::base_struct_type::~base_struct_type()

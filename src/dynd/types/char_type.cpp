@@ -106,7 +106,7 @@ intptr_t ndt::char_type::make_assignment_kernel(void *ckb, intptr_t ckb_offset, 
   if (this == dst_tp.extended()) {
     if (dst_tp == src_tp) {
       // If the types are the same, it's a POD assignment
-      return make_pod_typed_data_assignment_kernel(ckb, ckb_offset, data_size, data_alignment, kernreq);
+      return make_pod_typed_data_assignment_kernel(ckb, ckb_offset, m_data_size, m_data_alignment, kernreq);
     }
     switch (src_tp.get_type_id()) {
     case char_type_id: {

@@ -30,7 +30,7 @@ ndt::property_type::property_type(const type &operand_type, const std::string &p
     m_value_tp = get_builtin_type_elwise_property_type(operand_type.value_type().get_type_id(), m_property_index,
                                                        m_readable, m_writable);
   }
-  flags = inherited_flags(m_value_tp.get_flags(), m_operand_tp.get_flags());
+  m_flags = inherited_flags(m_value_tp.get_flags(), m_operand_tp.get_flags());
 }
 
 ndt::property_type::property_type(const type &value_tp, const type &operand_tp, const std::string &property_name,
@@ -65,7 +65,7 @@ ndt::property_type::property_type(const type &value_tp, const type &operand_tp, 
   if (m_operand_tp.value_type() != property_dt) {
     m_operand_tp = convert_type::make(property_dt, m_operand_tp);
   }
-  flags = inherited_flags(m_value_tp.get_flags(), m_operand_tp.get_flags());
+  m_flags = inherited_flags(m_value_tp.get_flags(), m_operand_tp.get_flags());
 }
 
 ndt::property_type::~property_type()

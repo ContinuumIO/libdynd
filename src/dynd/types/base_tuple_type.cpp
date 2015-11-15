@@ -36,21 +36,21 @@ ndt::base_tuple_type::base_tuple_type(type_id_t type_id, const nd::array &field_
     arrmeta_offset = get_field_count() * sizeof(size_t);
   }
   uintptr_t *arrmeta_offsets = reinterpret_cast<uintptr_t *>(m_arrmeta_offsets.data());
-  data_alignment = 1;
+  m_data_alignment = 1;
   for (intptr_t i = 0, i_end = get_field_count(); i != i_end; ++i) {
     const type &ft = get_field_type(i);
     size_t field_alignment = ft.get_data_alignment();
     // Accumulate the biggest field alignment as the type alignment
-    if (field_alignment > data_alignment) {
-      data_alignment = (uint8_t)field_alignment;
+    if (field_alignment > m_data_alignment) {
+      m_data_alignment = (uint8_t)field_alignment;
     }
     // Inherit any operand flags from the fields
-    this->flags |= (ft.get_flags() & type_flags_operand_inherited);
+    m_flags |= (ft.get_flags() & type_flags_operand_inherited);
     // Calculate the arrmeta offsets
     arrmeta_offsets[i] = arrmeta_offset;
     arrmeta_offset += ft.get_arrmeta_size();
   }
-  arrmeta_size = arrmeta_offset;
+  m_arrmeta_size = arrmeta_offset;
 
   m_arrmeta_offsets.flag_as_immutable();
 }
@@ -110,7 +110,7 @@ size_t ndt::base_tuple_type::get_default_data_size() const
       s += ft.get_data_size();
     }
   }
-  s = inc_to_alignment(s, data_alignment);
+  s = inc_to_alignment(s, m_data_alignment);
   return s;
 }
 

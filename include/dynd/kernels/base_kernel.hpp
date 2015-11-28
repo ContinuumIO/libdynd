@@ -106,8 +106,8 @@ namespace nd {
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
                                 const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t kernreq,
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
-                                const nd::array *DYND_UNUSED(kwds),
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),
+                                intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
                                 const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
     {
       SelfType::make(ckb, kernreq, ckb_offset);

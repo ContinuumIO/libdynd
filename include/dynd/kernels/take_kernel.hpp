@@ -16,18 +16,15 @@ namespace nd {
     const char *m_dst_meta;
     intptr_t m_dim_size, m_src0_stride, m_mask_stride;
 
-    ~masked_take_ck()
-    {
-      get_child()->destroy();
-    }
+    ~masked_take_ck() { get_child()->destroy(); }
 
     void single(char *dst, char *const *src);
 
     static intptr_t instantiate(char *static_data, char *data, void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                                 const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
                                 const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars);
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);
   };
 
   /**
@@ -38,18 +35,15 @@ namespace nd {
     intptr_t m_dst_dim_size, m_dst_stride, m_index_stride;
     intptr_t m_src0_dim_size, m_src0_stride;
 
-    ~indexed_take_ck()
-    {
-      get_child()->destroy();
-    }
+    ~indexed_take_ck() { get_child()->destroy(); }
 
     void single(char *dst, char *const *src);
 
     static intptr_t instantiate(char *static_data, char *data, void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                                 const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
                                 const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars);
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);
   };
 
   struct DYND_API take_ck : base_virtual_kernel<take_ck> {
@@ -60,8 +54,8 @@ namespace nd {
     static intptr_t instantiate(char *static_data, char *data, void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
                                 const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp,
                                 const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars);
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);
   };
 
 } // namespace dynd::nd

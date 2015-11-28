@@ -12,8 +12,8 @@ using namespace dynd;
 intptr_t nd::equal_kernel<tuple_type_id, tuple_type_id>::instantiate(
     char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
     const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-    kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-    const std::map<std::string, ndt::type> &tp_vars)
+    kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+    const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
 {
   intptr_t root_ckb_offset = ckb_offset;
   auto bsd = src_tp->extended<ndt::base_tuple_type>();
@@ -40,9 +40,9 @@ intptr_t nd::equal_kernel<tuple_type_id, tuple_type_id>::instantiate(
     const char *field_arrmeta = src_arrmeta[0] + arrmeta_offsets[i];
     ndt::type child_src_tp[2] = {ft, ft};
     const char *child_src_arrmeta[2] = {field_arrmeta, field_arrmeta};
-    ckb_offset =
-        equal::get().get()->instantiate(equal::get().get()->static_data(), NULL, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                        nsrc, child_src_tp, child_src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
+    ckb_offset = equal::get().get()->instantiate(equal::get().get()->static_data(), NULL, ckb, ckb_offset, dst_tp,
+                                                 dst_arrmeta, nsrc, child_src_tp, child_src_arrmeta, kernreq, NULL,
+                                                 ectx, nkwd, kwds, tp_vars);
   }
   return ckb_offset;
 }
@@ -50,8 +50,8 @@ intptr_t nd::equal_kernel<tuple_type_id, tuple_type_id>::instantiate(
 intptr_t nd::not_equal_kernel<tuple_type_id, tuple_type_id>::instantiate(
     char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset, const ndt::type &dst_tp,
     const char *dst_arrmeta, intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-    kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-    const std::map<std::string, ndt::type> &tp_vars)
+    kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+    const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
 {
   intptr_t root_ckb_offset = ckb_offset;
   auto bsd = src_tp->extended<ndt::base_tuple_type>();
@@ -80,7 +80,7 @@ intptr_t nd::not_equal_kernel<tuple_type_id, tuple_type_id>::instantiate(
     const char *child_src_arrmeta[2] = {field_arrmeta, field_arrmeta};
     ckb_offset = not_equal::get().get()->instantiate(not_equal::get().get()->static_data(), NULL, ckb, ckb_offset,
                                                      dst_tp, dst_arrmeta, nsrc, child_src_tp, child_src_arrmeta,
-                                                     kernreq, ectx, nkwd, kwds, tp_vars);
+                                                     kernreq, NULL, ectx, nkwd, kwds, tp_vars);
   }
   return ckb_offset;
 }

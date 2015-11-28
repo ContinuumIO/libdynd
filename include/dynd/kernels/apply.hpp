@@ -22,10 +22,7 @@ namespace nd {
       {
       }
 
-      DYND_CUDA_HOST_DEVICE D &get(char *data)
-      {
-        return *reinterpret_cast<D *>(data);
-      }
+      DYND_CUDA_HOST_DEVICE D &get(char *data) { return *reinterpret_cast<D *>(data); }
     };
 
     template <typename T, int N, size_t I>
@@ -40,7 +37,8 @@ namespace nd {
         const nd::array &mask = kwds[2];
         if (mask.is_missing()) {
           m_vals.set_mask(NULL);
-        } else {
+        }
+        else {
           m_vals.set_mask(mask.cdata(), reinterpret_cast<const size_stride_t *>(mask.get()->metadata()));
         }
       }
@@ -92,15 +90,13 @@ namespace nd {
       {
         if (val.get_type().get_type_id() == pointer_type_id) {
           m_val = val.f("dereference").as<T>();
-        } else {
+        }
+        else {
           m_val = val.as<T>();
         }
       }
 
-      DYND_CUDA_HOST_DEVICE T get()
-      {
-        return m_val;
-      }
+      DYND_CUDA_HOST_DEVICE T get() { return m_val; }
     };
 
     template <typename K, typename J = make_index_sequence<K::size>>
@@ -108,16 +104,12 @@ namespace nd {
 
     template <>
     struct apply_kwds<type_sequence<>, index_sequence<>> {
-      apply_kwds(intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds))
-      {
-      }
+      apply_kwds(intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds)) {}
     };
 
     template <typename... K, size_t... J>
     struct apply_kwds<type_sequence<K...>, index_sequence<J...>> : apply_kwd<K, J>... {
-      apply_kwds(intptr_t DYND_UNUSED(nkwd), const nd::array *kwds) : apply_kwd<K, J>(kwds[J])...
-      {
-      }
+      apply_kwds(intptr_t DYND_UNUSED(nkwd), const nd::array *kwds) : apply_kwd<K, J>(kwds[J])... {}
     };
 
     template <typename func_type, int N>
@@ -129,21 +121,18 @@ namespace nd {
 
 #define APPLY_FUNCTION_CK(...)                                                                                         \
   template <typename func_type, func_type func, typename R, typename... A, size_t... I, typename... K, size_t... J>    \
-  struct apply_function_ck<                                                                                            \
-      func_type, func, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                              \
-      index_sequence<J...>> : base_kernel<apply_function_ck<func_type, func, R, type_sequence<A...>,                   \
-                                                            index_sequence<I...>, type_sequence<K...>,                 \
-                                                            index_sequence<J...>>,                                     \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_function_ck<func_type, func, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,         \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_function_ck<func_type, func, R, type_sequence<A...>, index_sequence<I...>,                   \
+                                      type_sequence<K...>, index_sequence<J...>>,                                      \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_function_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
                                                                                                                        \
-    __VA_ARGS__ apply_function_ck(args_type args, kwds_type kwds) : args_type(args), kwds_type(kwds)                   \
-    {                                                                                                                  \
-    }                                                                                                                  \
+    __VA_ARGS__ apply_function_ck(args_type args, kwds_type kwds) : args_type(args), kwds_type(kwds) {}                \
                                                                                                                        \
     __VA_ARGS__ void single(char *dst, char *const *DYND_IGNORE_UNUSED(src))                                           \
     {                                                                                                                  \
@@ -173,7 +162,8 @@ namespace nd {
                                 intptr_t ckb_offset, const ndt::type &DYND_UNUSED(dst_tp),                             \
                                 const char *DYND_UNUSED(dst_arrmeta), intptr_t DYND_UNUSED(nsrc),                      \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t nkwd, const nd::array *kwds,     \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),   \
+                                intptr_t nkwd, const nd::array *kwds,                                                  \
                                 const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))                          \
     {                                                                                                                  \
       self_type::make(ckb, kernreq, ckb_offset, args_type(src_tp, src_arrmeta, kwds), kwds_type(nkwd, kwds));          \
@@ -182,21 +172,18 @@ namespace nd {
   };                                                                                                                   \
                                                                                                                        \
   template <typename func_type, func_type func, typename... A, size_t... I, typename... K, size_t... J>                \
-  struct apply_function_ck<                                                                                            \
-      func_type, func, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                           \
-      index_sequence<J...>> : base_kernel<apply_function_ck<func_type, func, void, type_sequence<A...>,                \
-                                                            index_sequence<I...>, type_sequence<K...>,                 \
-                                                            index_sequence<J...>>,                                     \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_function_ck<func_type, func, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,      \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_function_ck<func_type, func, void, type_sequence<A...>, index_sequence<I...>,                \
+                                      type_sequence<K...>, index_sequence<J...>>,                                      \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_function_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
                                                                                                                        \
-    __VA_ARGS__ apply_function_ck(args_type args, kwds_type kwds) : args_type(args), kwds_type(kwds)                   \
-    {                                                                                                                  \
-    }                                                                                                                  \
+    __VA_ARGS__ apply_function_ck(args_type args, kwds_type kwds) : args_type(args), kwds_type(kwds) {}                \
                                                                                                                        \
     __VA_ARGS__ void single(char *DYND_UNUSED(dst), char *const *DYND_IGNORE_UNUSED(src))                              \
     {                                                                                                                  \
@@ -225,7 +212,8 @@ namespace nd {
                                 intptr_t ckb_offset, const ndt::type &DYND_UNUSED(dst_tp),                             \
                                 const char *DYND_UNUSED(dst_arrmeta), intptr_t DYND_UNUSED(nsrc),                      \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t nkwd, const nd::array *kwds,     \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),   \
+                                intptr_t nkwd, const nd::array *kwds,                                                  \
                                 const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))                          \
     {                                                                                                                  \
       self_type::make(ckb, kernreq, ckb_offset, args_type(src_tp, src_arrmeta, kwds), kwds_type(nkwd, kwds));          \
@@ -248,14 +236,13 @@ namespace nd {
 
 #define APPLY_MEMBER_FUNCTION_CK(...)                                                                                  \
   template <typename T, typename mem_func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>    \
-  struct apply_member_function_ck<                                                                                     \
-      T *, mem_func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                           \
-      index_sequence<J...>> : base_kernel<apply_member_function_ck<T *, mem_func_type, R, type_sequence<A...>,         \
-                                                                   index_sequence<I...>, type_sequence<K...>,          \
-                                                                   index_sequence<J...>>,                              \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_member_function_ck<T *, mem_func_type, R, type_sequence<A...>, index_sequence<I...>,                    \
+                                  type_sequence<K...>, index_sequence<J...>>                                           \
+      : base_kernel<apply_member_function_ck<T *, mem_func_type, R, type_sequence<A...>, index_sequence<I...>,         \
+                                             type_sequence<K...>, index_sequence<J...>>,                               \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_member_function_ck self_type;                                                                        \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -311,19 +298,18 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   };                                                                                                                   \
                                                                                                                        \
   template <typename T, typename mem_func_type, typename... A, size_t... I, typename... K, size_t... J>                \
-  struct apply_member_function_ck<                                                                                     \
-      T *, mem_func_type, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                        \
-      index_sequence<J...>> : base_kernel<apply_member_function_ck<T *, mem_func_type, void, type_sequence<A...>,      \
-                                                                   index_sequence<I...>, type_sequence<K...>,          \
-                                                                   index_sequence<J...>>,                              \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_member_function_ck<T *, mem_func_type, void, type_sequence<A...>, index_sequence<I...>,                 \
+                                  type_sequence<K...>, index_sequence<J...>>                                           \
+      : base_kernel<apply_member_function_ck<T *, mem_func_type, void, type_sequence<A...>, index_sequence<I...>,      \
+                                             type_sequence<K...>, index_sequence<J...>>,                               \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_member_function_ck self_type;                                                                        \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -378,8 +364,8 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   }
 
     APPLY_MEMBER_FUNCTION_CK();
@@ -392,6 +378,7 @@ namespace nd {
                                                                 const char *dst_arrmeta, intptr_t nsrc,
                                                                 const ndt::type *src_tp, const char *const *src_arrmeta,
                                                                 kernel_request_t kernreq,
+                                                                kernel_targets_t *DYND_UNUSED(targets),
                                                                 const eval::eval_context *ectx, intptr_t nkwd,
                                                                 const nd::array *kwds,
                                                                 const std::map<std::string, ndt::type> &tp_vars)
@@ -408,6 +395,7 @@ namespace nd {
                                                                 const char *dst_arrmeta, intptr_t nsrc,
                                                                 const ndt::type *src_tp, const char *const *src_arrmeta,
                                                                 kernel_request_t kernreq,
+                                                                kernel_targets_t *DYND_UNUSED(targets),
                                                                 const eval::eval_context *ectx, intptr_t nkwd,
                                                                 const nd::array *kwds,
                                                                 const std::map<std::string, ndt::type> &tp_vars)
@@ -430,13 +418,13 @@ namespace nd {
 
 #define APPLY_CALLABLE_CK(...)                                                                                         \
   template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>                    \
-  struct apply_callable_ck<                                                                                            \
-      func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                                    \
-      index_sequence<J...>> : base_kernel<apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>,   \
-                                                            type_sequence<K...>, index_sequence<J...>>,                \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,               \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,    \
+                                      index_sequence<J...>>,                                                           \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_callable_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -490,19 +478,18 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   };                                                                                                                   \
                                                                                                                        \
   template <typename func_type, typename... A, size_t... I, typename... K, size_t... J>                                \
-  struct apply_callable_ck<                                                                                            \
-      func_type, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                                 \
-      index_sequence<J...>> : base_kernel<apply_callable_ck<func_type, void, type_sequence<A...>,                      \
-                                                            index_sequence<I...>, type_sequence<K...>,                 \
-                                                            index_sequence<J...>>,                                     \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_callable_ck<func_type, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,            \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_callable_ck<func_type, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>, \
+                                      index_sequence<J...>>,                                                           \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_callable_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -555,22 +542,24 @@ namespace nd {
     static intptr_t instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,            \
                                 const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,                       \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   }
 
     APPLY_CALLABLE_CK();
 
     template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>
-    intptr_t
-    apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
-                      index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
-                                                         intptr_t ckb_offset, const ndt::type &dst_tp,
-                                                         const char *dst_arrmeta, intptr_t nsrc,
-                                                         const ndt::type *src_tp, const char *const *src_arrmeta,
-                                                         kernel_request_t kernreq, const eval::eval_context *ectx,
-                                                         intptr_t nkwd, const nd::array *kwds,
-                                                         const std::map<std::string, ndt::type> &tp_vars)
+    intptr_t apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
+                               index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
+                                                                  intptr_t ckb_offset, const ndt::type &dst_tp,
+                                                                  const char *dst_arrmeta, intptr_t nsrc,
+                                                                  const ndt::type *src_tp,
+                                                                  const char *const *src_arrmeta,
+                                                                  kernel_request_t kernreq,
+                                                                  kernel_targets_t *DYND_UNUSED(targets),
+                                                                  const eval::eval_context *ectx, intptr_t nkwd,
+                                                                  const nd::array *kwds,
+                                                                  const std::map<std::string, ndt::type> &tp_vars)
     {
       return instantiate_without_cuda_launch(static_data, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp,
                                              src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
@@ -580,13 +569,13 @@ namespace nd {
 
 #define APPLY_CALLABLE_CK(...)                                                                                         \
   template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>                    \
-  struct apply_callable_ck<                                                                                            \
-      func_type *, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                                  \
-      index_sequence<J...>> : base_kernel<apply_callable_ck<func_type *, R, type_sequence<A...>, index_sequence<I...>, \
-                                                            type_sequence<K...>, index_sequence<J...>>,                \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_callable_ck<func_type *, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,             \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_callable_ck<func_type *, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,  \
+                                      index_sequence<J...>>,                                                           \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_callable_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -640,19 +629,18 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   };                                                                                                                   \
                                                                                                                        \
   template <typename func_type, typename... A, size_t... I, typename... K, size_t... J>                                \
-  struct apply_callable_ck<                                                                                            \
-      func_type *, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                               \
-      index_sequence<J...>> : base_kernel<apply_callable_ck<func_type *, void, type_sequence<A...>,                    \
-                                                            index_sequence<I...>, type_sequence<K...>,                 \
-                                                            index_sequence<J...>>,                                     \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>>,                                   \
-                              apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                  \
+  struct apply_callable_ck<func_type *, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,          \
+                           index_sequence<J...>>                                                                       \
+      : base_kernel<apply_callable_ck<func_type *, void, type_sequence<A...>, index_sequence<I...>,                    \
+                                      type_sequence<K...>, index_sequence<J...>>,                                      \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>>,                                                         \
+        apply_kwds<type_sequence<K...>, index_sequence<J...>> {                                                        \
     typedef apply_callable_ck self_type;                                                                               \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -705,37 +693,41 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   }
 
     APPLY_CALLABLE_CK();
 
     template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>
-    intptr_t
-    apply_callable_ck<func_type *, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
-                      index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
-                                                         intptr_t ckb_offset, const ndt::type &dst_tp,
-                                                         const char *dst_arrmeta, intptr_t nsrc,
-                                                         const ndt::type *src_tp, const char *const *src_arrmeta,
-                                                         kernel_request_t kernreq, const eval::eval_context *ectx,
-                                                         intptr_t nkwd, const nd::array *kwds,
-                                                         const std::map<std::string, ndt::type> &tp_vars)
+    intptr_t apply_callable_ck<func_type *, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
+                               index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
+                                                                  intptr_t ckb_offset, const ndt::type &dst_tp,
+                                                                  const char *dst_arrmeta, intptr_t nsrc,
+                                                                  const ndt::type *src_tp,
+                                                                  const char *const *src_arrmeta,
+                                                                  kernel_request_t kernreq,
+                                                                  kernel_targets_t *DYND_UNUSED(targets),
+                                                                  const eval::eval_context *ectx, intptr_t nkwd,
+                                                                  const nd::array *kwds,
+                                                                  const std::map<std::string, ndt::type> &tp_vars)
     {
       return instantiate_without_cuda_launch(static_data, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp,
                                              src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
     }
 
     template <typename func_type, typename... A, size_t... I, typename... K, size_t... J>
-    intptr_t
-    apply_callable_ck<func_type *, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
-                      index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
-                                                         intptr_t ckb_offset, const ndt::type &dst_tp,
-                                                         const char *dst_arrmeta, intptr_t nsrc,
-                                                         const ndt::type *src_tp, const char *const *src_arrmeta,
-                                                         kernel_request_t kernreq, const eval::eval_context *ectx,
-                                                         intptr_t nkwd, const nd::array *kwds,
-                                                         const std::map<std::string, ndt::type> &tp_vars)
+    intptr_t apply_callable_ck<func_type *, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
+                               index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb,
+                                                                  intptr_t ckb_offset, const ndt::type &dst_tp,
+                                                                  const char *dst_arrmeta, intptr_t nsrc,
+                                                                  const ndt::type *src_tp,
+                                                                  const char *const *src_arrmeta,
+                                                                  kernel_request_t kernreq,
+                                                                  kernel_targets_t *DYND_UNUSED(targets),
+                                                                  const eval::eval_context *ectx, intptr_t nkwd,
+                                                                  const nd::array *kwds,
+                                                                  const std::map<std::string, ndt::type> &tp_vars)
     {
       return instantiate_without_cuda_launch(static_data, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp,
                                              src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
@@ -754,13 +746,12 @@ namespace nd {
 
 #define CONSTRUCT_THEN_APPLY_CALLABLE_CK(...)                                                                          \
   template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>                    \
-  struct construct_then_apply_callable_ck<                                                                             \
-      func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                                    \
-      index_sequence<J...>> : base_kernel<construct_then_apply_callable_ck<func_type, R, type_sequence<A...>,          \
-                                                                           index_sequence<I...>, type_sequence<K...>,  \
-                                                                           index_sequence<J...>>,                      \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>> {                                  \
+  struct construct_then_apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>,                     \
+                                          type_sequence<K...>, index_sequence<J...>>                                   \
+      : base_kernel<construct_then_apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>,          \
+                                                     type_sequence<K...>, index_sequence<J...>>,                       \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>> {                                                        \
     typedef construct_then_apply_callable_ck self_type;                                                                \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -811,18 +802,17 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   };                                                                                                                   \
                                                                                                                        \
   template <typename func_type, typename... A, size_t... I, typename... K, size_t... J>                                \
-  struct construct_then_apply_callable_ck<                                                                             \
-      func_type, void, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,                                 \
-      index_sequence<J...>> : base_kernel<construct_then_apply_callable_ck<func_type, void, type_sequence<A...>,       \
-                                                                           index_sequence<I...>, type_sequence<K...>,  \
-                                                                           index_sequence<J...>>,                      \
-                                          sizeof...(A)>,                                                               \
-                              apply_args<type_sequence<A...>, index_sequence<I...>> {                                  \
+  struct construct_then_apply_callable_ck<func_type, void, type_sequence<A...>, index_sequence<I...>,                  \
+                                          type_sequence<K...>, index_sequence<J...>>                                   \
+      : base_kernel<construct_then_apply_callable_ck<func_type, void, type_sequence<A...>, index_sequence<I...>,       \
+                                                     type_sequence<K...>, index_sequence<J...>>,                       \
+                    sizeof...(A)>,                                                                                     \
+        apply_args<type_sequence<A...>, index_sequence<I...>> {                                                        \
     typedef construct_then_apply_callable_ck self_type;                                                                \
     typedef apply_args<type_sequence<A...>, index_sequence<I...>> args_type;                                           \
     typedef apply_kwds<type_sequence<K...>, index_sequence<J...>> kwds_type;                                           \
@@ -871,20 +861,26 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,                    \
                                 intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,  \
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,     \
-                                const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,                  \
-                                const std::map<std::string, ndt::type> &tp_vars);                                      \
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd, \
+                                const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars);               \
   }
 
     CONSTRUCT_THEN_APPLY_CALLABLE_CK();
 
     template <typename func_type, typename R, typename... A, size_t... I, typename... K, size_t... J>
-    intptr_t construct_then_apply_callable_ck<
-        func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
-        index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
-                                           const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
-                                           const ndt::type *src_tp, const char *const *src_arrmeta,
-                                           kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t nkwd,
-                                           const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
+    intptr_t
+    construct_then_apply_callable_ck<func_type, R, type_sequence<A...>, index_sequence<I...>, type_sequence<K...>,
+                                     index_sequence<J...>>::instantiate(char *static_data, char *DYND_UNUSED(data),
+                                                                        void *ckb, intptr_t ckb_offset,
+                                                                        const ndt::type &dst_tp,
+                                                                        const char *dst_arrmeta, intptr_t nsrc,
+                                                                        const ndt::type *src_tp,
+                                                                        const char *const *src_arrmeta,
+                                                                        kernel_request_t kernreq,
+                                                                        kernel_targets_t *DYND_UNUSED(targets),
+                                                                        const eval::eval_context *ectx, intptr_t nkwd,
+                                                                        const nd::array *kwds,
+                                                                        const std::map<std::string, ndt::type> &tp_vars)
     {
       return instantiate_without_cuda_launch(static_data, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp,
                                              src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);

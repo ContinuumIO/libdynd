@@ -46,7 +46,8 @@ size_t dynd::make_pod_typed_data_assignment_kernel(void *ckb, intptr_t ckb_offse
       nd::unaligned_copy_ck::make(ckb, kernreq, ckb_offset, data_size);
       return ckb_offset;
     }
-  } else {
+  }
+  else {
     // Unaligned specialization tables
     switch (data_size) {
     case 2:
@@ -73,12 +74,14 @@ intptr_t dynd::make_assignment_kernel(void *ckb, intptr_t ckb_offset, const ndt:
     if (src_tp.is_builtin()) {
       nd::callable &child = nd::assign::overload(dst_tp, src_tp);
       return child.get()->instantiate(NULL, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, 1, &src_tp, &src_arrmeta,
-                                      kernreq, ectx, 0, NULL, std::map<std::string, ndt::type>());
-    } else {
+                                      kernreq, NULL, ectx, 0, NULL, std::map<std::string, ndt::type>());
+    }
+    else {
       return src_tp.extended()->make_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta,
                                                        kernreq, ectx);
     }
-  } else {
+  }
+  else {
     return dst_tp.extended()->make_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp, src_arrmeta, kernreq,
                                                      ectx);
   }
@@ -90,12 +93,10 @@ static const expr_strided_t wrap_single_as_strided_fixedcount[7] = {
     &nd::wrap_single_as_strided_fixedcount_ck<0>::strided, &nd::wrap_single_as_strided_fixedcount_ck<1>::strided,
     &nd::wrap_single_as_strided_fixedcount_ck<2>::strided, &nd::wrap_single_as_strided_fixedcount_ck<3>::strided,
     &nd::wrap_single_as_strided_fixedcount_ck<4>::strided, &nd::wrap_single_as_strided_fixedcount_ck<5>::strided,
-    &nd::wrap_single_as_strided_fixedcount_ck<6>::strided, };
+    &nd::wrap_single_as_strided_fixedcount_ck<6>::strided,
+};
 
-static void simple_wrapper_kernel_destruct(ckernel_prefix *self)
-{
-  self->get_child(sizeof(ckernel_prefix))->destroy();
-}
+static void simple_wrapper_kernel_destruct(ckernel_prefix *self) { self->get_child(sizeof(ckernel_prefix))->destroy(); }
 
 } // anonymous namespace
 
@@ -113,7 +114,8 @@ size_t dynd::make_kernreq_to_single_kernel_adapter(void *ckb, intptr_t ckb_offse
       e->function = reinterpret_cast<void *>(wrap_single_as_strided_fixedcount[nsrc]);
       e->destructor = &simple_wrapper_kernel_destruct;
       return ckb_offset;
-    } else {
+    }
+    else {
       nd::wrap_single_as_strided_ck *e = reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb)
                                              ->alloc_ck<nd::wrap_single_as_strided_ck>(ckb_offset);
       e->base.function = reinterpret_cast<void *>(&nd::wrap_single_as_strided_ck::strided);
@@ -223,15 +225,18 @@ size_t dynd::make_cuda_pod_typed_data_assignment_kernel(void *out, intptr_t offs
     if (src_device) {
       nd::cuda_device_to_device_copy_ck::make(out, kernreq, offset_out, data_size);
       return offset_out;
-    } else {
+    }
+    else {
       nd::cuda_host_to_device_copy_ck::make(out, kernreq, offset_out, data_size);
       return offset_out;
     }
-  } else {
+  }
+  else {
     if (src_device) {
       nd::cuda_device_to_host_copy_ck::make(out, kernreq, offset_out, data_size);
       return offset_out;
-    } else {
+    }
+    else {
       return make_pod_typed_data_assignment_kernel(out, offset_out, data_size, data_alignment, kernreq);
     }
   }

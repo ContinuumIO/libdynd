@@ -18,19 +18,11 @@ namespace nd {
 
       char *data;
 
-      constant_kernel(char *data) : data(data)
-      {
-      }
+      constant_kernel(char *data) : data(data) {}
 
-      ~constant_kernel()
-      {
-        get_child()->destroy();
-      }
+      ~constant_kernel() { get_child()->destroy(); }
 
-      void single(char *dst, char *const *DYND_UNUSED(src))
-      {
-        get_child()->single(dst, &data);
-      }
+      void single(char *dst, char *const *DYND_UNUSED(src)) { get_child()->single(dst, &data); }
 
       void strided(char *dst, intptr_t dst_stride, char *const *DYND_UNUSED(src),
                    const intptr_t *DYND_UNUSED(src_stride), size_t count)
@@ -43,7 +35,8 @@ namespace nd {
       static intptr_t instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
                                   const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc),
                                   const ndt::type *DYND_UNUSED(src_tp), const char *const *DYND_UNUSED(src_arrmeta),
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
+                                  kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets),
+                                  const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
                                   const nd::array *DYND_UNUSED(kwds),
                                   const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
       {

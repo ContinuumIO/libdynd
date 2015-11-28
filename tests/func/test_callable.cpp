@@ -50,7 +50,7 @@ TEST(Callable, Assignment)
   ckernel_builder<kernel_request_host> ckb;
   af.get()->instantiate(af.get()->static_data(), NULL, &ckb, 0, af.get_type()->get_return_type(), NULL,
                         af.get_type()->get_npos(), af.get_type()->get_pos_types_raw(), src_arrmeta,
-                        kernel_request_single, &eval::default_eval_context, 0, NULL,
+                        kernel_request_single,NULL, &eval::default_eval_context, 0, NULL,
                         std::map<std::string, ndt::type>());
   int int_out = 0;
   char str_in[16] = "3251";
@@ -63,7 +63,7 @@ TEST(Callable, Assignment)
   ckb.reset();
   af.get()->instantiate(af.get()->static_data(), NULL, &ckb, 0, af.get_type()->get_return_type(), NULL,
                         af.get_type()->get_npos(), af.get_type()->get_pos_types_raw(), src_arrmeta,
-                        kernel_request_strided, &eval::default_eval_context, 0, NULL,
+                        kernel_request_strided, NULL, &eval::default_eval_context, 0, NULL,
                         std::map<std::string, ndt::type>());
   int ints_out[3] = {0, 0, 0};
   char strs_in[3][16] = {"123", "4567", "891029"};
@@ -263,7 +263,7 @@ TEST(Callable, Property)
   ckernel_builder<kernel_request_host> ckb;
   af.get()->instantiate(af.get()->static_data(), NULL, &ckb, 0, af.get_type()->get_return_type(), NULL,
                         af.get_type()->get_npos(), af.get_type()->get_pos_types_raw(), src_arrmeta,
-                        kernel_request_single, &eval::default_eval_context, 0, NULL,
+                        kernel_request_single, NULL, &eval::default_eval_context, 0, NULL,
                         std::map<std::string, ndt::type>());
   int int_out = 0;
   int date_in = date_ymd::to_days(2013, 12, 30);
@@ -289,7 +289,7 @@ TEST(Callable, AssignmentAsExpr)
   ckernel_builder<kernel_request_host> ckb;
   af.get()->instantiate(af.get()->static_data(), NULL, &ckb, 0, af.get_type()->get_return_type(), NULL,
                         af.get_type()->get_npos(), af.get_type()->get_pos_types_raw(), src_arrmeta,
-                        kernel_request_single, &eval::default_eval_context, 0, NULL,
+                        kernel_request_single, NULL, &eval::default_eval_context, 0, NULL,
                         std::map<std::string, ndt::type>());
   int int_out = 0;
   char str_in[16] = "3251";
@@ -302,7 +302,7 @@ TEST(Callable, AssignmentAsExpr)
   ckb.reset();
   af.get()->instantiate(af.get()->static_data(), NULL, &ckb, 0, af.get_type()->get_return_type(), NULL,
                         af.get_type()->get_npos(), af.get_type()->get_pos_types_raw(), src_arrmeta,
-                        kernel_request_strided, &eval::default_eval_context, 0, NULL,
+                        kernel_request_strided,NULL, &eval::default_eval_context, 0, NULL,
                         std::map<std::string, ndt::type>());
   int ints_out[3] = {0, 0, 0};
   char strs_in[3][16] = {"123", "4567", "891029"};

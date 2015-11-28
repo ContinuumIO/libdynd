@@ -25,21 +25,16 @@ namespace nd {
       struct uniform_kernel;
 
       template <type_id_t DstTypeID, typename GeneratorType>
-      struct uniform_kernel<DstTypeID, sint_kind,
-                            GeneratorType> : base_kernel<uniform_kernel<DstTypeID, sint_kind, GeneratorType>, 0> {
+      struct uniform_kernel<DstTypeID, sint_kind, GeneratorType>
+          : base_kernel<uniform_kernel<DstTypeID, sint_kind, GeneratorType>, 0> {
         typedef typename type_of<DstTypeID>::type R;
 
         GeneratorType &g;
         std::uniform_int_distribution<R> d;
 
-        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d(a, b)
-        {
-        }
+        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d(a, b) {}
 
-        void single(char *dst, char *const *DYND_UNUSED(src))
-        {
-          *reinterpret_cast<R *>(dst) = d(g);
-        }
+        void single(char *dst, char *const *DYND_UNUSED(src)) { *reinterpret_cast<R *>(dst) = d(g); }
 
         /*
             static void
@@ -69,23 +64,25 @@ namespace nd {
                                     intptr_t ckb_offset, const ndt::type &DYND_UNUSED(dst_tp),
                                     const char *DYND_UNUSED(dst_arrmeta), intptr_t DYND_UNUSED(nsrc),
                                     const ndt::type *DYND_UNUSED(src_tp), const char *const *DYND_UNUSED(src_arrmeta),
-                                    kernel_request_t kernreq, const eval::eval_context *DYND_UNUSED(ectx),
-                                    intptr_t DYND_UNUSED(nkwd), const nd::array *kwds,
-                                    const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                    kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets),
+                                    const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
+                                    const nd::array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
         {
           std::shared_ptr<GeneratorType> g = get_random_device();
 
           R a;
           if (kwds[0].is_missing()) {
             a = 0;
-          } else {
+          }
+          else {
             a = kwds[0].as<R>();
           }
 
           R b;
           if (kwds[1].is_missing()) {
             b = std::numeric_limits<R>::max();
-          } else {
+          }
+          else {
             b = kwds[1].as<R>();
           }
 
@@ -99,21 +96,16 @@ namespace nd {
       };
 
       template <type_id_t DstTypeID, typename GeneratorType>
-      struct uniform_kernel<DstTypeID, real_kind,
-                            GeneratorType> : base_kernel<uniform_kernel<DstTypeID, real_kind, GeneratorType>, 0> {
+      struct uniform_kernel<DstTypeID, real_kind, GeneratorType>
+          : base_kernel<uniform_kernel<DstTypeID, real_kind, GeneratorType>, 0> {
         typedef typename type_of<DstTypeID>::type R;
 
         GeneratorType &g;
         std::uniform_real_distribution<R> d;
 
-        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d(a, b)
-        {
-        }
+        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d(a, b) {}
 
-        void single(char *dst, char *const *DYND_UNUSED(src))
-        {
-          *reinterpret_cast<R *>(dst) = d(g);
-        }
+        void single(char *dst, char *const *DYND_UNUSED(src)) { *reinterpret_cast<R *>(dst) = d(g); }
 
         /*
             static void
@@ -143,23 +135,25 @@ namespace nd {
                                     intptr_t ckb_offset, const ndt::type &DYND_UNUSED(dst_tp),
                                     const char *DYND_UNUSED(dst_arrmeta), intptr_t DYND_UNUSED(nsrc),
                                     const ndt::type *DYND_UNUSED(src_tp), const char *const *DYND_UNUSED(src_arrmeta),
-                                    kernel_request_t kernreq, const eval::eval_context *DYND_UNUSED(ectx),
-                                    intptr_t DYND_UNUSED(nkwd), const nd::array *kwds,
-                                    const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                    kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets),
+                                    const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
+                                    const nd::array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
         {
           std::shared_ptr<GeneratorType> g = get_random_device();
 
           R a;
           if (kwds[0].is_missing()) {
             a = 0;
-          } else {
+          }
+          else {
             a = kwds[0].as<R>();
           }
 
           R b;
           if (kwds[1].is_missing()) {
             b = 1;
-          } else {
+          }
+          else {
             b = kwds[1].as<R>();
           }
 
@@ -169,22 +163,17 @@ namespace nd {
       };
 
       template <type_id_t DstTypeID, typename GeneratorType>
-      struct uniform_kernel<DstTypeID, complex_kind,
-                            GeneratorType> : base_kernel<uniform_kernel<DstTypeID, complex_kind, GeneratorType>, 0> {
+      struct uniform_kernel<DstTypeID, complex_kind, GeneratorType>
+          : base_kernel<uniform_kernel<DstTypeID, complex_kind, GeneratorType>, 0> {
         typedef typename type_of<DstTypeID>::type R;
 
         GeneratorType &g;
         std::uniform_real_distribution<typename R::value_type> d_real;
         std::uniform_real_distribution<typename R::value_type> d_imag;
 
-        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d_real(a.real(), b.real()), d_imag(a.imag(), b.imag())
-        {
-        }
+        uniform_kernel(GeneratorType *g, R a, R b) : g(*g), d_real(a.real(), b.real()), d_imag(a.imag(), b.imag()) {}
 
-        void single(char *dst, char *const *DYND_UNUSED(src))
-        {
-          *reinterpret_cast<R *>(dst) = R(d_real(g), d_imag(g));
-        }
+        void single(char *dst, char *const *DYND_UNUSED(src)) { *reinterpret_cast<R *>(dst) = R(d_real(g), d_imag(g)); }
 
         /*
             static void
@@ -214,23 +203,25 @@ namespace nd {
                                     intptr_t ckb_offset, const ndt::type &DYND_UNUSED(dst_tp),
                                     const char *DYND_UNUSED(dst_arrmeta), intptr_t DYND_UNUSED(nsrc),
                                     const ndt::type *DYND_UNUSED(src_tp), const char *const *DYND_UNUSED(src_arrmeta),
-                                    kernel_request_t kernreq, const eval::eval_context *DYND_UNUSED(ectx),
-                                    intptr_t DYND_UNUSED(nkwd), const nd::array *kwds,
-                                    const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                    kernel_request_t kernreq, kernel_targets_t *DYND_UNUSED(targets),
+                                    const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
+                                    const nd::array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
         {
           std::shared_ptr<GeneratorType> g = get_random_device();
 
           R a;
           if (kwds[0].is_missing()) {
             a = R(0, 0);
-          } else {
+          }
+          else {
             a = kwds[0].as<R>();
           }
 
           R b;
           if (kwds[1].is_missing()) {
             b = R(1, 1);
-          } else {
+          }
+          else {
             b = kwds[1].as<R>();
           }
 

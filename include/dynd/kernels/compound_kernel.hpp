@@ -38,8 +38,8 @@ namespace nd {
       static intptr_t instantiate(char *static_data, char *data, void *ckb, intptr_t ckb_offset,
                                   const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                   const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                  const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                  const std::map<std::string, ndt::type> &tp_vars)
+                                  kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                  const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
       {
         callable &child = *reinterpret_cast<callable *>(static_data);
         make(ckb, kernreq, ckb_offset);
@@ -47,7 +47,8 @@ namespace nd {
         ndt::type child_src_tp[2] = {dst_tp, src_tp[0]};
         const char *child_src_arrmeta[2] = {dst_arrmeta, src_arrmeta[0]};
         return child.get()->instantiate(child.get()->static_data(), data, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                        nsrc + 1, child_src_tp, child_src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
+                                        nsrc + 1, child_src_tp, child_src_arrmeta, kernreq, &child.get()->targets, ectx,
+                                        nkwd, kwds, tp_vars);
       }
     };
 
@@ -77,8 +78,8 @@ namespace nd {
       static intptr_t instantiate(char *static_data, char *data, void *ckb, intptr_t ckb_offset,
                                   const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                   const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                  const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                  const std::map<std::string, ndt::type> &tp_vars)
+                                  kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                  const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
       {
         callable &child = *reinterpret_cast<callable *>(static_data);
         make(ckb, kernreq, ckb_offset);
@@ -86,7 +87,8 @@ namespace nd {
         ndt::type child_src_tp[2] = {src_tp[0], dst_tp};
         const char *child_src_arrmeta[2] = {src_arrmeta[0], dst_arrmeta};
         return child.get()->instantiate(child.get()->static_data(), data, ckb, ckb_offset, dst_tp, dst_arrmeta,
-                                        nsrc + 1, child_src_tp, child_src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
+                                        nsrc + 1, child_src_tp, child_src_arrmeta, kernreq, &child.get()->targets, ectx,
+                                        nkwd, kwds, tp_vars);
       }
     };
 

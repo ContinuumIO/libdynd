@@ -76,8 +76,9 @@ namespace nd {
   typedef intptr_t (*callable_instantiate_t)(char *static_data, char *data, void *ckb, intptr_t ckb_offset,
                                              const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                              const ndt::type *src_tp, const char *const *src_arrmeta,
-                                             kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t nkwd,
-                                             const array *kwds, const std::map<std::string, ndt::type> &tp_vars);
+                                             kernel_request_t kernreq, kernel_targets_t *targets,
+                                             const eval::eval_context *ectx, intptr_t nkwd, const array *kwds,
+                                             const std::map<std::string, ndt::type> &tp_vars);
 
   /**
    * A function which deallocates the memory behind data_ptr after
@@ -124,6 +125,7 @@ namespace nd {
     ndt::type tp;
     kernel_request_t kernreq;
     single_t single;
+    kernel_targets_t targets;
     callable_data_init_t data_init;
     callable_resolve_dst_type_t resolve_dst_type;
     callable_instantiate_t instantiate;
@@ -131,8 +133,9 @@ namespace nd {
     base_callable() : use_count(0), data_init(NULL), resolve_dst_type(NULL), instantiate(NULL) {}
 
     base_callable(const ndt::type &tp, expr_single_t single, expr_strided_t strided)
-        : use_count(0), tp(tp), kernreq(kernel_request_single), data_init(&ckernel_prefix::data_init),
-          resolve_dst_type(NULL), instantiate(&ckernel_prefix::instantiate)
+        : use_count(0), tp(tp), kernreq(kernel_request_single),
+          targets{reinterpret_cast<void *>(single), reinterpret_cast<void *>(strided)},
+          data_init(&ckernel_prefix::data_init), resolve_dst_type(NULL), instantiate(&ckernel_prefix::instantiate)
     {
       typedef void *static_data_type[2];
       static_assert(scalar_align_of<static_data_type>::value <= scalar_align_of<std::uint64_t>::value,

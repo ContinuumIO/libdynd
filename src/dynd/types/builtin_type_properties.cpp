@@ -19,14 +19,9 @@ namespace nd {
 
     array self;
 
-    complex_real_kernel(const array &self) : self(self)
-    {
-    }
+    complex_real_kernel(const array &self) : self(self) {}
 
-    void single(array *dst, array *const *DYND_UNUSED(src))
-    {
-      *dst = helper(self);
-    }
+    void single(array *dst, array *const *DYND_UNUSED(src)) { *dst = helper(self); }
 
     static void resolve_dst_type(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), ndt::type &dst_tp,
                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
@@ -40,8 +35,9 @@ namespace nd {
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
                                 const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t kernreq,
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
-                                const array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),
+                                intptr_t DYND_UNUSED(nkwd), const array *kwds,
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
     {
       complex_real_kernel::make(ckb, kernreq, ckb_offset, kwds[0]);
       return ckb_offset;
@@ -58,14 +54,9 @@ namespace nd {
 
     array self;
 
-    complex_imag_kernel(const array &self) : self(self)
-    {
-    }
+    complex_imag_kernel(const array &self) : self(self) {}
 
-    void single(array *dst, array *const *DYND_UNUSED(src))
-    {
-      *dst = helper(self);
-    }
+    void single(array *dst, array *const *DYND_UNUSED(src)) { *dst = helper(self); }
 
     static void resolve_dst_type(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), ndt::type &dst_tp,
                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
@@ -79,8 +70,9 @@ namespace nd {
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
                                 const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t kernreq,
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
-                                const array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),
+                                intptr_t DYND_UNUSED(nkwd), const array *kwds,
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
     {
       complex_imag_kernel::make(ckb, kernreq, ckb_offset, kwds[0]);
       return ckb_offset;
@@ -97,14 +89,9 @@ namespace nd {
 
     array self;
 
-    complex_conj_kernel(const array &self) : self(self)
-    {
-    }
+    complex_conj_kernel(const array &self) : self(self) {}
 
-    void single(array *dst, array *const *DYND_UNUSED(src))
-    {
-      *dst = helper(self);
-    }
+    void single(array *dst, array *const *DYND_UNUSED(src)) { *dst = helper(self); }
 
     static void resolve_dst_type(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), ndt::type &dst_tp,
                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
@@ -118,8 +105,9 @@ namespace nd {
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
                                 const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t kernreq,
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
-                                const array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),
+                                intptr_t DYND_UNUSED(nkwd), const array *kwds,
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
     {
       complex_conj_kernel::make(ckb, kernreq, ckb_offset, kwds[0]);
       return ckb_offset;
@@ -137,26 +125,17 @@ namespace ndt {
 
   template <>
   struct type::equivalent<nd::complex_real_kernel> {
-    static type make()
-    {
-      return type("(self: Any) -> Any");
-    }
+    static type make() { return type("(self: Any) -> Any"); }
   };
 
   template <>
   struct type::equivalent<nd::complex_imag_kernel> {
-    static type make()
-    {
-      return type("(self: Any) -> Any");
-    }
+    static type make() { return type("(self: Any) -> Any"); }
   };
 
   template <>
   struct type::equivalent<nd::complex_conj_kernel> {
-    static type make()
-    {
-      return type("(self: Any) -> Any");
-    }
+    static type make() { return type("(self: Any) -> Any"); }
   };
 
 } // namespace dynd::ndt
@@ -180,10 +159,7 @@ static nd::array property_complex_conj(const nd::array &n)
   return f(kwds("self", n));
 }
 
-static size_t complex_array_properties_size()
-{
-  return 3;
-}
+static size_t complex_array_properties_size() { return 3; }
 
 static const pair<std::string, gfunc::callable> *complex_array_properties()
 {
@@ -219,9 +195,11 @@ size_t dynd::get_builtin_type_elwise_property_index(type_id_t builtin_type_id, c
   case complex_float64_type_id:
     if (property_name == "real") {
       return 0;
-    } else if (property_name == "imag") {
+    }
+    else if (property_name == "imag") {
       return 1;
-    } else if (property_name == "conj") {
+    }
+    else if (property_name == "conj") {
       return 2;
     }
   default:

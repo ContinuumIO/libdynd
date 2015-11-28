@@ -51,8 +51,8 @@ intptr_t nd::masked_take_ck::instantiate(char *DYND_UNUSED(static_data), char *D
                                          intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
                                          intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
                                          const char *const *src_arrmeta, kernel_request_t kernreq,
-                                         const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                         const nd::array *DYND_UNUSED(kwds),
+                                         kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx,
+                                         intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
                                          const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
 {
   typedef nd::masked_take_ck self_type;
@@ -128,8 +128,8 @@ intptr_t nd::indexed_take_ck::instantiate(char *DYND_UNUSED(static_data), char *
                                           intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
                                           intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
                                           const char *const *src_arrmeta, kernel_request_t kernreq,
-                                          const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                          const nd::array *DYND_UNUSED(kwds),
+                                          kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx,
+                                          intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
                                           const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
 {
   typedef nd::indexed_take_ck self_type;
@@ -148,8 +148,8 @@ intptr_t nd::indexed_take_ck::instantiate(char *DYND_UNUSED(static_data), char *
   intptr_t index_dim_size;
   ndt::type src0_el_tp, index_el_tp;
   const char *src0_el_meta, *index_el_meta;
-  if (!src_tp[0]
-           .get_as_strided(src_arrmeta[0], &self->m_src0_dim_size, &self->m_src0_stride, &src0_el_tp, &src0_el_meta)) {
+  if (!src_tp[0].get_as_strided(src_arrmeta[0], &self->m_src0_dim_size, &self->m_src0_stride, &src0_el_tp,
+                                &src0_el_meta)) {
     stringstream ss;
     ss << "indexed take arrfunc: could not process type " << src_tp[0];
     ss << " as a strided dimension";
@@ -182,17 +182,19 @@ intptr_t nd::indexed_take_ck::instantiate(char *DYND_UNUSED(static_data), char *
 intptr_t nd::take_ck::instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
                                   intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                   const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                  const eval::eval_context *ectx, intptr_t nkwd, const nd::array *kwds,
-                                  const std::map<std::string, ndt::type> &tp_vars)
+                                  kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                  const nd::array *kwds, const std::map<std::string, ndt::type> &tp_vars)
 {
   ndt::type mask_el_tp = src_tp[1].get_type_at_dimension(NULL, 1);
   if (mask_el_tp.get_type_id() == bool_type_id) {
     return nd::masked_take_ck::instantiate(NULL, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp, src_arrmeta,
-                                           kernreq, ectx, nkwd, kwds, tp_vars);
-  } else if (mask_el_tp.get_type_id() == (type_id_t)type_id_of<intptr_t>::value) {
+                                           kernreq, NULL, ectx, nkwd, kwds, tp_vars);
+  }
+  else if (mask_el_tp.get_type_id() == (type_id_t)type_id_of<intptr_t>::value) {
     return nd::indexed_take_ck::instantiate(NULL, NULL, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc, src_tp, src_arrmeta,
-                                            kernreq, ectx, nkwd, kwds, tp_vars);
-  } else {
+                                            kernreq, NULL, ectx, nkwd, kwds, tp_vars);
+  }
+  else {
     stringstream ss;
     ss << "take: unsupported type for the index " << mask_el_tp << ", need bool or intptr";
     throw invalid_argument(ss.str());
@@ -216,14 +218,17 @@ void nd::take_ck::resolve_dst_type(char *DYND_UNUSED(static_data), char *DYND_UN
   ndt::type mask_el_tp = src_tp[1].get_type_at_dimension(NULL, 1);
   if (mask_el_tp.get_type_id() == bool_type_id) {
     dst_tp = ndt::var_dim_type::make(src_tp[0].get_type_at_dimension(NULL, 1).get_canonical_type());
-  } else if (mask_el_tp.get_type_id() == (type_id_t)type_id_of<intptr_t>::value) {
+  }
+  else if (mask_el_tp.get_type_id() == (type_id_t)type_id_of<intptr_t>::value) {
     if (src_tp[1].get_type_id() == var_dim_type_id) {
       dst_tp = ndt::var_dim_type::make(src_tp[0].get_type_at_dimension(NULL, 1).get_canonical_type());
-    } else {
+    }
+    else {
       dst_tp = ndt::make_fixed_dim(src_tp[1].get_dim_size(NULL, NULL),
                                    src_tp[0].get_type_at_dimension(NULL, 1).get_canonical_type());
     }
-  } else {
+  }
+  else {
     stringstream ss;
     ss << "take: unsupported type for the index " << mask_el_tp << ", need bool or intptr";
     throw invalid_argument(ss.str());

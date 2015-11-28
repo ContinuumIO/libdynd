@@ -95,8 +95,8 @@ namespace nd {
   };
 
   template <>
-  struct equal_kernel<tuple_type_id,
-                      tuple_type_id> : base_comparison_kernel<equal_kernel<tuple_type_id, tuple_type_id>> {
+  struct equal_kernel<tuple_type_id, tuple_type_id>
+      : base_comparison_kernel<equal_kernel<tuple_type_id, tuple_type_id>> {
     typedef equal_kernel extra_type;
 
     size_t field_count;
@@ -143,8 +143,9 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                kernel_request_t DYND_UNUSED(kernreq), const eval::eval_context *ectx,
-                                intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
+                                kernel_request_t DYND_UNUSED(kernreq), kernel_targets_t *DYND_UNUSED(targets),
+                                const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
+                                const nd::array *DYND_UNUSED(kwds),
                                 const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars));
   };
 
@@ -172,8 +173,8 @@ namespace nd {
   };
 
   template <>
-  struct not_equal_kernel<tuple_type_id,
-                          tuple_type_id> : base_comparison_kernel<not_equal_kernel<tuple_type_id, tuple_type_id>> {
+  struct not_equal_kernel<tuple_type_id, tuple_type_id>
+      : base_comparison_kernel<not_equal_kernel<tuple_type_id, tuple_type_id>> {
     typedef not_equal_kernel extra_type;
 
     size_t field_count;
@@ -220,8 +221,9 @@ namespace nd {
     static intptr_t instantiate(char *static_data, char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
                                 const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                                 intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                kernel_request_t DYND_UNUSED(kernreq), const eval::eval_context *ectx,
-                                intptr_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
+                                kernel_request_t DYND_UNUSED(kernreq), kernel_targets_t *DYND_UNUSED(targets),
+                                const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
+                                const nd::array *DYND_UNUSED(kwds),
                                 const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars));
   };
 
@@ -275,8 +277,8 @@ namespace nd {
   struct option_comparison_kernel;
 
   template <typename FuncType>
-  struct option_comparison_kernel<FuncType, true, false> : base_kernel<option_comparison_kernel<FuncType, true, false>,
-                                                                       2> {
+  struct option_comparison_kernel<FuncType, true, false>
+      : base_kernel<option_comparison_kernel<FuncType, true, false>, 2> {
     static const size_t data_size = 0;
     intptr_t comp_offset;
     intptr_t assign_na_offset;
@@ -288,7 +290,8 @@ namespace nd {
       is_avail->single(reinterpret_cast<char *>(&child_dst), &src[0]);
       if (child_dst) {
         this->get_child(comp_offset)->single(dst, src);
-      } else {
+      }
+      else {
         this->get_child(assign_na_offset)->single(dst, nullptr);
       }
     }
@@ -296,8 +299,8 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *data, void *ckb, intptr_t ckb_offset,
                                 const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars)
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const array *kwds, const std::map<std::string, ndt::type> &tp_vars)
     {
       intptr_t option_comp_offset = ckb_offset;
       option_comparison_kernel::make(ckb, kernreq, ckb_offset);
@@ -305,29 +308,29 @@ namespace nd {
       auto is_avail = is_avail::get();
       ckb_offset =
           is_avail.get()->instantiate(is_avail.get()->static_data(), data, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc,
-                                      src_tp, src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                      src_tp, src_arrmeta, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       option_comparison_kernel *self = option_comparison_kernel::get_self(
           reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb), option_comp_offset);
       self->comp_offset = ckb_offset - option_comp_offset;
       auto cmp = FuncType::get();
       const ndt::type child_src_tp[2] = {src_tp[0].extended<ndt::option_type>()->get_value_type(), src_tp[1]};
-      ckb_offset = cmp.get()->instantiate(cmp.get()->static_data(), data, ckb, ckb_offset,
-                                          dst_tp.extended<ndt::option_type>()->get_value_type(), dst_arrmeta, nsrc,
-                                          child_src_tp, src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+      ckb_offset = cmp.get()->instantiate(
+          cmp.get()->static_data(), data, ckb, ckb_offset, dst_tp.extended<ndt::option_type>()->get_value_type(),
+          dst_arrmeta, nsrc, child_src_tp, src_arrmeta, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       self = option_comparison_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                                 option_comp_offset);
       self->assign_na_offset = ckb_offset - option_comp_offset;
       auto assign_na = nd::assign_na_decl::get();
       ckb_offset = assign_na.get()->instantiate(assign_na.get()->static_data(), data, ckb, ckb_offset,
                                                 ndt::option_type::make(ndt::type::make<bool1>()), nullptr, 0, nullptr,
-                                                nullptr, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                                nullptr, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       return ckb_offset;
     }
   };
 
   template <typename FuncType>
-  struct option_comparison_kernel<FuncType, false, true> : base_kernel<option_comparison_kernel<FuncType, false, true>,
-                                                                       2> {
+  struct option_comparison_kernel<FuncType, false, true>
+      : base_kernel<option_comparison_kernel<FuncType, false, true>, 2> {
     static const size_t data_size = 0;
     intptr_t comp_offset;
     intptr_t assign_na_offset;
@@ -339,7 +342,8 @@ namespace nd {
       is_avail->single(reinterpret_cast<char *>(&child_dst), &src[1]);
       if (child_dst) {
         this->get_child(comp_offset)->single(dst, src);
-      } else {
+      }
+      else {
         this->get_child(assign_na_offset)->single(dst, nullptr);
       }
     }
@@ -347,38 +351,40 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *data, void *ckb, intptr_t ckb_offset,
                                 const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars)
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const array *kwds, const std::map<std::string, ndt::type> &tp_vars)
     {
       intptr_t option_comp_offset = ckb_offset;
       option_comparison_kernel::make(ckb, kernreq, ckb_offset);
 
       auto is_avail = is_avail::get();
-      ckb_offset =
-          is_avail.get()->instantiate(is_avail.get()->static_data(), data, ckb, ckb_offset, dst_tp, dst_arrmeta, nsrc,
-                                      &src_tp[1], &src_arrmeta[1], kernel_request_single, ectx, nkwd, kwds, tp_vars);
+      ckb_offset = is_avail.get()->instantiate(is_avail.get()->static_data(), data, ckb, ckb_offset, dst_tp,
+                                               dst_arrmeta, nsrc, &src_tp[1], &src_arrmeta[1], kernel_request_single,
+                                               NULL, ectx, nkwd, kwds, tp_vars);
       option_comparison_kernel *self = option_comparison_kernel::get_self(
           reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb), option_comp_offset);
       self->comp_offset = ckb_offset - option_comp_offset;
       auto cmp = FuncType::get();
-      const ndt::type child_src_tp[2] = {src_tp[0], src_tp[1].extended<ndt::option_type>()->get_value_type(), };
-      ckb_offset = cmp.get()->instantiate(cmp.get()->static_data(), data, ckb, ckb_offset,
-                                          dst_tp.extended<ndt::option_type>()->get_value_type(), dst_arrmeta, nsrc,
-                                          child_src_tp, src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+      const ndt::type child_src_tp[2] = {
+          src_tp[0], src_tp[1].extended<ndt::option_type>()->get_value_type(),
+      };
+      ckb_offset = cmp.get()->instantiate(
+          cmp.get()->static_data(), data, ckb, ckb_offset, dst_tp.extended<ndt::option_type>()->get_value_type(),
+          dst_arrmeta, nsrc, child_src_tp, src_arrmeta, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       self = option_comparison_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                                 option_comp_offset);
       self->assign_na_offset = ckb_offset - option_comp_offset;
       auto assign_na = nd::assign_na_decl::get();
       ckb_offset = assign_na.get()->instantiate(assign_na.get()->static_data(), data, ckb, ckb_offset,
                                                 ndt::option_type::make(ndt::type::make<bool1>()), nullptr, 0, nullptr,
-                                                nullptr, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                                nullptr, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       return ckb_offset;
     }
   };
 
   template <typename FuncType>
-  struct option_comparison_kernel<FuncType, true, true> : base_kernel<option_comparison_kernel<FuncType, true, true>,
-                                                                      2> {
+  struct option_comparison_kernel<FuncType, true, true>
+      : base_kernel<option_comparison_kernel<FuncType, true, true>, 2> {
     static const size_t data_size = 0;
     intptr_t is_avail_rhs_offset;
     intptr_t comp_offset;
@@ -394,7 +400,8 @@ namespace nd {
       is_avail_rhs->single(reinterpret_cast<char *>(&child_dst_rhs), &src[1]);
       if (child_dst_lhs && child_dst_rhs) {
         this->get_child(comp_offset)->single(dst, src);
-      } else {
+      }
+      else {
         this->get_child(assign_na_offset)->single(dst, nullptr);
       }
     }
@@ -402,8 +409,8 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *data, void *ckb, intptr_t ckb_offset,
                                 const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t nsrc,
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *ectx, intptr_t nkwd, const array *kwds,
-                                const std::map<std::string, ndt::type> &tp_vars)
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *ectx, intptr_t nkwd,
+                                const array *kwds, const std::map<std::string, ndt::type> &tp_vars)
     {
       intptr_t option_comp_offset = ckb_offset;
       option_comparison_kernel::make(ckb, kernreq, ckb_offset);
@@ -411,7 +418,7 @@ namespace nd {
       auto is_avail_lhs = is_avail::get();
       ckb_offset = is_avail_lhs.get()->instantiate(is_avail_lhs.get()->static_data(), data, ckb, ckb_offset, dst_tp,
                                                    dst_arrmeta, nsrc, &src_tp[0], &src_arrmeta[0],
-                                                   kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                                   kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       option_comparison_kernel *self = option_comparison_kernel::get_self(
           reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb), option_comp_offset);
       self->is_avail_rhs_offset = ckb_offset - option_comp_offset;
@@ -419,23 +426,23 @@ namespace nd {
       auto is_avail_rhs = is_avail::get();
       ckb_offset = is_avail_rhs.get()->instantiate(is_avail_rhs.get()->static_data(), data, ckb, ckb_offset, dst_tp,
                                                    dst_arrmeta, nsrc, &src_tp[1], &src_arrmeta[1],
-                                                   kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                                   kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       self = option_comparison_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                                 option_comp_offset);
       self->comp_offset = ckb_offset - option_comp_offset;
       auto cmp = FuncType::get();
       const ndt::type child_src_tp[2] = {src_tp[0].extended<ndt::option_type>()->get_value_type(),
                                          src_tp[1].extended<ndt::option_type>()->get_value_type()};
-      ckb_offset = cmp.get()->instantiate(cmp.get()->static_data(), data, ckb, ckb_offset,
-                                          dst_tp.extended<ndt::option_type>()->get_value_type(), dst_arrmeta, nsrc,
-                                          child_src_tp, src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+      ckb_offset = cmp.get()->instantiate(
+          cmp.get()->static_data(), data, ckb, ckb_offset, dst_tp.extended<ndt::option_type>()->get_value_type(),
+          dst_arrmeta, nsrc, child_src_tp, src_arrmeta, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       self = option_comparison_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                                 option_comp_offset);
       self->assign_na_offset = ckb_offset - option_comp_offset;
       auto assign_na = nd::assign_na_decl::get();
       ckb_offset = assign_na.get()->instantiate(assign_na.get()->static_data(), data, ckb, ckb_offset,
                                                 ndt::option_type::make(ndt::type::make<bool1>()), nullptr, 0, nullptr,
-                                                nullptr, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+                                                nullptr, kernel_request_single, NULL, ectx, nkwd, kwds, tp_vars);
       return ckb_offset;
     }
   };
@@ -446,74 +453,47 @@ namespace ndt {
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::less_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::less_equal_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::equal_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::not_equal_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::greater_equal_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <type_id_t Src0TypeID, type_id_t Src1TypeID>
   struct type::equivalent<nd::greater_kernel<Src0TypeID, Src1TypeID>> {
-    static type make()
-    {
-      return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)});
-    }
+    static type make() { return callable_type::make(type::make<bool1>(), {type(Src0TypeID), type(Src1TypeID)}); }
   };
 
   template <typename FuncType>
   struct type::equivalent<nd::option_comparison_kernel<FuncType, true, false>> {
-    static type make()
-    {
-      return type("(?Scalar, Scalar) -> ?bool");
-    }
+    static type make() { return type("(?Scalar, Scalar) -> ?bool"); }
   };
 
   template <typename FuncType>
   struct type::equivalent<nd::option_comparison_kernel<FuncType, false, true>> {
-    static type make()
-    {
-      return type("(Scalar, ?Scalar) -> ?bool");
-    }
+    static type make() { return type("(Scalar, ?Scalar) -> ?bool"); }
   };
 
   template <typename FuncType>
   struct type::equivalent<nd::option_comparison_kernel<FuncType, true, true>> {
-    static type make()
-    {
-      return type("(?Scalar, ?Scalar) -> ?bool");
-    }
+    static type make() { return type("(?Scalar, ?Scalar) -> ?bool"); }
   };
 
 } // namespace dynd::ndt

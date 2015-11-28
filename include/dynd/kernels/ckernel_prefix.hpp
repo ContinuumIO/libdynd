@@ -22,6 +22,11 @@ typedef void (*expr_metadata_single_t)(ckernel_prefix *self, nd::array *dst, nd:
 typedef void (*expr_strided_t)(ckernel_prefix *self, char *dst, intptr_t dst_stride, char *const *src,
                                const intptr_t *src_stride, size_t count);
 
+struct kernel_targets_t {
+  void *single;
+  void *strided;
+};
+
 /**
  * Definition for kernel request parameters.
  */
@@ -145,8 +150,8 @@ struct DYND_API ckernel_prefix {
                               const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
                               intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
                               const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t kernreq,
-                              const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwds),
-                              const nd::array *DYND_UNUSED(kwds),
+                              kernel_targets_t *targets, const eval::eval_context *DYND_UNUSED(ectx),
+                              intptr_t DYND_UNUSED(nkwds), const nd::array *DYND_UNUSED(kwds),
                               const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars));
 };
 

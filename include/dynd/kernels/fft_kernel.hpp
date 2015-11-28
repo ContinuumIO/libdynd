@@ -96,15 +96,9 @@ namespace nd {
       ::fftw_execute_dft_c2r(plan, in, out);
     }
 
-    inline void fftw_destroy_plan(::fftwf_plan plan)
-    {
-      ::fftwf_destroy_plan(plan);
-    }
+    inline void fftw_destroy_plan(::fftwf_plan plan) { ::fftwf_destroy_plan(plan); }
 
-    inline void fftw_destroy_plan(::fftw_plan plan)
-    {
-      ::fftw_destroy_plan(plan);
-    }
+    inline void fftw_destroy_plan(::fftw_plan plan) { ::fftw_destroy_plan(plan); }
   }
 
   template <typename T>
@@ -131,14 +125,9 @@ namespace nd {
 
     plan_type plan;
 
-    fftw_ck(const plan_type &plan) : plan(plan)
-    {
-    }
+    fftw_ck(const plan_type &plan) : plan(plan) {}
 
-    ~fftw_ck()
-    {
-      detail::fftw_destroy_plan(plan);
-    }
+    ~fftw_ck() { detail::fftw_destroy_plan(plan); }
 
     void single(char *dst, char *const *src)
     {
@@ -164,13 +153,15 @@ namespace nd {
     static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
                                 const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc),
                                 const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
-                                const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
-                                const nd::array *kwds, const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+                                kernel_targets_t *DYND_UNUSED(targets), const eval::eval_context *DYND_UNUSED(ectx),
+                                intptr_t DYND_UNUSED(nkwd), const nd::array *kwds,
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
     {
       int flags;
       if (kwds[2].is_missing()) {
         flags = FFTW_ESTIMATE;
-      } else {
+      }
+      else {
         flags = kwds[2].as<int>();
       }
 
@@ -187,7 +178,8 @@ namespace nd {
         if (axes.get_type().get_type_id() == pointer_type_id) {
           axes = axes;
         }
-      } else {
+      }
+      else {
         axes = nd::range(src_tp[0].get_ndim());
       }
 
@@ -248,7 +240,8 @@ namespace nd {
       nd::array shape = kwds[0];
       if (shape.is_missing()) {
         dst_tp = src_tp[0];
-      } else {
+      }
+      else {
         if (shape.get_type().get_type_id() == pointer_type_id) {
           shape = shape.f("dereference");
         }

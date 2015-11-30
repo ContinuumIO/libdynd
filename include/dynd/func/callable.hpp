@@ -450,18 +450,9 @@ namespace nd {
     DYND_GET(static_data_free, callable_static_data_free_t, NULL);
 
     template <typename KernelType>
-    typename std::enable_if<!has_member_single<KernelType, void(array *, array *const *)>::value,
-                            kernel_request_t>::type
-    get_kernreq()
+    kernel_request_t get_kernreq()
     {
       return kernel_request_single;
-    }
-
-    template <typename KernelType>
-    typename std::enable_if<has_member_single<KernelType, void(array *, array *const *)>::value, kernel_request_t>::type
-    get_kernreq()
-    {
-      return kernel_request_array;
     }
 
     template <typename KernelType>

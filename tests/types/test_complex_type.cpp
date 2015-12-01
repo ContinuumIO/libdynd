@@ -191,6 +191,7 @@ TEST(ComplexType, CreateFromValue)
   EXPECT_EQ(dynd::complex<double>(2.5, 3.0), n.as<dynd::complex<double>>());
 }
 
+/*
 TEST(ComplexType, Properties)
 {
   nd::array n;
@@ -213,6 +214,7 @@ TEST(ComplexType, Properties)
   EXPECT_EQ(3., n.p("real")(2).as<double>());
   EXPECT_EQ(21.75, n.p("imag")(2).as<double>());
 }
+*/
 
 TYPED_TEST_P(ComplexType, Arithmetic)
 {

@@ -10,10 +10,13 @@
 #include <dynd/kernels/ckernel_builder.hpp>
 #include <dynd/types/callable_type.hpp>
 
+// Reenable test_view and test_complex_type properties
+
 namespace dynd {
 namespace nd {
   namespace detail {
 
+    DYND_HAS_MEMBER(call);
     DYND_HAS_MEMBER(single);
     DYND_HAS_MEMBER(strided);
 
@@ -166,12 +169,10 @@ namespace nd {
       SelfType *self = parent_type::init(rawself, kernreq, std::forward<A>(args)...);                                  \
       switch (kernreq) {                                                                                               \
       case kernel_request_single:                                                                                      \
-        self->function =                                                                                               \
-            reinterpret_cast<void *>(static_cast<void (*)(ckernel_prefix *, char *, char *const *)>(single_wrapper));  \
+        self->function = reinterpret_cast<void *>(single_wrapper);                                                     \
         break;                                                                                                         \
       case kernel_request_array:                                                                                       \
-        self->function = reinterpret_cast<void *>(                                                                     \
-            static_cast<void (*)(ckernel_prefix *, array *, array * const *)>(single_wrapper));                        \
+        self->function = reinterpret_cast<void *>(call_wrapper);                                                       \
         break;                                                                                                         \
       case kernel_request_strided:                                                                                     \
         self->function = reinterpret_cast<void *>(strided_wrapper);                                                    \
@@ -193,23 +194,19 @@ namespace nd {
                                                                                                                        \
     __VA_ARGS__ static void DYND_EMIT_LLVM(single_wrapper)(ckernel_prefix * self, char *dst, char *const *src)         \
     {                                                                                                                  \
-      typedef typename std::conditional<detail::has_member_single<SelfType, void(char *, char *const *)>::value,       \
-                                        SelfType, base_kernel>::type type;                                             \
-      reinterpret_cast<type *>(self)->single(dst, src);                                                                \
+      reinterpret_cast<SelfType *>(self)->single(dst, src);                                                            \
     }                                                                                                                  \
                                                                                                                        \
-    __VA_ARGS__ void single(array *DYND_UNUSED(dst), array *const *DYND_UNUSED(src))                                   \
+    __VA_ARGS__ void call(array *DYND_UNUSED(dst), array *const *DYND_UNUSED(src))                                     \
     {                                                                                                                  \
       std::stringstream ss;                                                                                            \
-      ss << "void single(array *dst, array *const *src) is not implemented in " << typeid(SelfType).name();            \
+      ss << "void call(array *dst, array *const *src) is not implemented in " << typeid(SelfType).name();              \
       throw std::runtime_error(ss.str());                                                                              \
     }                                                                                                                  \
                                                                                                                        \
-    __VA_ARGS__ static void single_wrapper(ckernel_prefix *self, array *dst, array *const *src)                        \
+    __VA_ARGS__ static void call_wrapper(ckernel_prefix *self, array *dst, array *const *src)                          \
     {                                                                                                                  \
-      typedef typename std::conditional<detail::has_member_single<SelfType, void(array *, array * const *)>::value,    \
-                                        SelfType, base_kernel>::type type;                                             \
-      reinterpret_cast<type *>(self)->single(dst, src);                                                                \
+      reinterpret_cast<SelfType *>(self)->call(dst, src);                                                              \
     }                                                                                                                  \
                                                                                                                        \
     __VA_ARGS__ static void strided_wrapper(ckernel_prefix *self, char *dst, intptr_t dst_stride, char *const *src,    \

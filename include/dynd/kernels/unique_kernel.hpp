@@ -12,8 +12,6 @@ namespace dynd {
 namespace nd {
 
   struct unique_kernel : base_kernel<unique_kernel> {
-    static const size_t data_size = 0;
-
     const intptr_t src0_size;
     const intptr_t src0_stride;
     const intptr_t src0_element_data_size;
@@ -25,7 +23,7 @@ namespace nd {
 
     ~unique_kernel() { get_child()->destroy(); }
 
-    void single(array *DYND_UNUSED(dst), array *const *src)
+    void call(array *DYND_UNUSED(dst), array *const *src)
     {
       ckernel_prefix *child = get_child();
       size_t new_size =

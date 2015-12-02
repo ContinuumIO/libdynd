@@ -723,6 +723,11 @@ struct type_kind_of<type_type_id> {
   static const type_kind_t value = type_kind;
 };
 
+template <>
+struct type_kind_of<any_kind_type_id> {
+  static const type_kind_t value = kind_kind;
+};
+
 namespace detail {
 
   template <type_id_t DstTypeID, type_kind_t DstTypeKind, type_id_t SrcTypeID, type_kind_t SrcTypeKind>

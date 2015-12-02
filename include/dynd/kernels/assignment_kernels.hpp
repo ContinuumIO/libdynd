@@ -2840,126 +2840,6 @@ namespace nd {
       }
     };
 
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
-    struct assignment_virtual_kernel<adapt_type_id, expr_kind, Src0TypeID, Src0TypeKind>
-        : base_virtual_kernel<assignment_virtual_kernel<adapt_type_id, expr_kind, Src0TypeID, Src0TypeKind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
-    struct assignment_virtual_kernel<view_type_id, expr_kind, Src0TypeID, Src0TypeKind>
-        : base_virtual_kernel<assignment_virtual_kernel<view_type_id, expr_kind, Src0TypeID, Src0TypeKind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <>
-    struct assignment_virtual_kernel<view_type_id, expr_kind, view_type_id, expr_kind>
-        : base_virtual_kernel<assignment_virtual_kernel<view_type_id, expr_kind, view_type_id, expr_kind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <>
-    struct assignment_virtual_kernel<convert_type_id, expr_kind, convert_type_id, expr_kind>
-        : base_virtual_kernel<assignment_virtual_kernel<convert_type_id, expr_kind, convert_type_id, expr_kind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
-    struct assignment_virtual_kernel<convert_type_id, expr_kind, Src0TypeID, Src0TypeKind>
-        : base_virtual_kernel<assignment_virtual_kernel<convert_type_id, expr_kind, Src0TypeID, Src0TypeKind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <type_id_t Src0TypeID, type_kind_t Src0TypeKind>
-    struct assignment_virtual_kernel<property_type_id, expr_kind, Src0TypeID, Src0TypeKind>
-        : base_virtual_kernel<assignment_virtual_kernel<property_type_id, expr_kind, Src0TypeID, Src0TypeKind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <type_id_t DstTypeID, type_kind_t DstKind, type_id_t Src0TypeID>
-    struct assignment_virtual_kernel<DstTypeID, DstKind, Src0TypeID, expr_kind>
-        : base_virtual_kernel<assignment_virtual_kernel<DstTypeID, DstKind, Src0TypeID, expr_kind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
-    template <type_id_t Src0TypeID>
-    struct assignment_virtual_kernel<fixed_string_type_id, string_kind, Src0TypeID, expr_kind>
-        : base_virtual_kernel<assignment_virtual_kernel<fixed_string_type_id, string_kind, Src0TypeID, expr_kind>> {
-      static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb,
-                                  intptr_t ckb_offset, const ndt::type &dst_tp, const char *dst_arrmeta,
-                                  intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp, const char *const *src_arrmeta,
-                                  kernel_request_t kernreq, const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
-                                  const nd::array *DYND_UNUSED(kwds),
-                                  const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-      {
-        return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0],
-                                                 kernreq, ectx);
-      }
-    };
-
     template <>
     struct assignment_virtual_kernel<char_type_id, char_kind, char_type_id, char_kind>
         : base_virtual_kernel<assignment_virtual_kernel<char_type_id, char_kind, char_type_id, char_kind>> {
@@ -3404,6 +3284,19 @@ namespace nd {
     }
   };
 
+  struct expression_assignment_kernel : base_virtual_kernel<expression_assignment_kernel> {
+    static intptr_t instantiate(char *DYND_UNUSED(static_data), char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
+                                const ndt::type &dst_tp, const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc),
+                                const ndt::type *src_tp, const char *const *src_arrmeta, kernel_request_t kernreq,
+                                const eval::eval_context *ectx, intptr_t DYND_UNUSED(nkwd),
+                                const nd::array *DYND_UNUSED(kwds),
+                                const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+    {
+      return make_expression_assignment_kernel(ckb, ckb_offset, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0], kernreq,
+                                               ectx);
+    }
+  };
+
 } // namespace dynd::nd
 
 namespace ndt {
@@ -3412,6 +3305,11 @@ namespace ndt {
   struct type::equivalent<nd::detail::assignment_virtual_kernel<DstTypeID, dynd::type_kind_of<DstTypeID>::value,
                                                                 Src0TypeID, dynd::type_kind_of<Src0TypeID>::value>> {
     static type make() { return ndt::callable_type::make(type(DstTypeID), type(Src0TypeID)); }
+  };
+
+  template <>
+  struct type::equivalent<nd::expression_assignment_kernel> {
+    static type make() { return ndt::type("(Any) -> Any"); }
   };
 
 } // namespace dynd::ndt

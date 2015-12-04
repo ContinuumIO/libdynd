@@ -655,12 +655,10 @@ void nd::array::val_assign(const array &rhs, const eval::eval_context *ectx) con
     throw runtime_error("tried to read from a dynd array that is not readable");
   }
 
-  /*
-    const ndt::type &dst_tp = get_type();
-    const ndt::type &src_tp = rhs.get_type();
-    if (dst_tp.is_builtin() && src_tp.is_builtin()) {
-    }
-  */
+  if (ectx == &eval::default_eval_context) {
+    assign(rhs, kwds("dst", *this));
+    return;
+  }
 
   typed_data_assign(get_type(), get()->metadata(), data(), rhs.get_type(), rhs.get()->metadata(), rhs.cdata(), ectx);
 }

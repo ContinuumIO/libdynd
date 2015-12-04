@@ -349,7 +349,6 @@ set(libdynd_SRC
     src/dynd/kernels/ckernel_builder.cpp
     src/dynd/kernels/comparison_kernels.cpp
     src/dynd/kernels/compare_kernels.cpp
-    src/dynd/kernels/copy_kernel.cpp
     src/dynd/kernels/date_adapter_kernels.cpp
     src/dynd/kernels/datetime_adapter_kernels.cpp
     src/dynd/kernels/date_expr_kernels.cpp

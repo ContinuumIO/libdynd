@@ -246,6 +246,8 @@ namespace nd {
 
     const char *cdata() const { return get()->data; }
 
+    array_preamble *operator->() const { return get(); }
+
     inline uint32_t get_access_flags() const
     {
       return get()->flags & (immutable_access_flag | read_access_flag | write_access_flag);

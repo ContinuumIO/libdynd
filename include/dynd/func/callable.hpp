@@ -404,8 +404,8 @@ namespace nd {
    * providing some more direct convenient interface.
    */
   class DYND_API callable : public intrusive_ptr<base_callable> {
-    template <typename DataType, typename... A>
-    class args;
+    template <typename DataType, typename... ArgTypes>
+    struct args;
 
     template <typename... A>
     struct has_kwds;
@@ -724,8 +724,7 @@ namespace nd {
   }
 
   template <typename DataType>
-  class callable::args<DataType> {
-  public:
+  struct callable::args<DataType> {
     args(std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars), const ndt::callable_type *self_tp)
     {
       detail::check_narg(self_tp, 0);
@@ -742,37 +741,28 @@ namespace nd {
 
   /** A holder class for the array arguments */
   template <typename DataType, typename... A>
-  class callable::args {
-    struct init {
-      template <size_t I>
-      void on_each(const args *self, const ndt::callable_type *af_tp, ndt::type *src_tp, const char **src_arrmeta,
-                   DataType *src_data, std::map<std::string, ndt::type> &tp_vars) const
-      {
-        auto &value = std::get<I>(self->values);
-        const ndt::type &tp = ndt::type::make<decltype(value)>(value);
-        const char *arrmeta = value.get()->metadata();
-
-        detail::check_arg(af_tp, I, tp, arrmeta, tp_vars);
-
-        src_tp[I] = tp;
-        src_arrmeta[I] = arrmeta;
-        detail::set_data(src_data[I], value);
-      }
-    };
-
-    std::tuple<typename as_array<A>::type...> values;
+  struct callable::args {
+    array values[sizeof...(A)];
     ndt::type m_tp[sizeof...(A)];
     const char *m_arrmeta[sizeof...(A)];
     DataType m_data[sizeof...(A)];
 
-  public:
     args(std::map<std::string, ndt::type> &tp_vars, const ndt::callable_type *self_tp, A &&... a)
-        : values(std::forward<A>(a)...)
+        : values{std::forward<A>(a)...}
     {
       detail::check_narg(self_tp, sizeof...(A));
 
-      typedef make_index_sequence<sizeof...(A)> I;
-      for_each<I>(init(), this, self_tp, m_tp, m_arrmeta, m_data, tp_vars);
+      for (size_t i = 0; i < sizeof...(A); ++i) {
+        const array &value = values[i];
+        const ndt::type &tp = value->tp;
+        const char *arrmeta = value->metadata();
+
+        detail::check_arg(self_tp, i, tp, arrmeta, tp_vars);
+
+        m_tp[i] = tp;
+        m_arrmeta[i] = arrmeta;
+        detail::set_data(m_data[i], value);
+      }
     }
 
     size_t size() const { return sizeof...(A); }
@@ -786,13 +776,12 @@ namespace nd {
 
   /** A way to pass a run-time array of array arguments */
   template <typename DataType>
-  class callable::args<DataType, size_t, array *> {
+  struct callable::args<DataType, size_t, array *> {
     size_t m_size;
     std::vector<ndt::type> m_tp;
     std::vector<const char *> m_arrmeta;
     std::vector<DataType> m_data;
 
-  public:
     args(std::map<std::string, ndt::type> &tp_vars, const ndt::callable_type *self_tp, size_t size, array *values)
         : m_size(size), m_tp(m_size), m_arrmeta(m_size), m_data(m_size)
     {
@@ -880,9 +869,7 @@ namespace nd {
   template <typename FuncType>
   std::ostream &operator<<(std::ostream &o, const declfunc<FuncType> &rhs)
   {
-    o << static_cast<const callable &>(rhs);
-
-    return o;
+    return o << static_cast<const callable &>(rhs);
   }
 
 } // namespace nd

@@ -204,10 +204,3 @@ void dynd::typed_data_assign(const ndt::type &dst_tp, const char *dst_arrmeta, c
   nd::assign::get()->call(dst_tp, dst_arrmeta, dst_data, 1, &src_tp, &src_arrmeta, const_cast<char *const *>(&src_data),
                           1, &kwd, tp_vars);
 }
-
-void dynd::typed_data_assign(const ndt::type &dst_tp, const char *dst_arrmeta, char *dst_data, const nd::array &src_arr,
-                             const eval::eval_context *ectx)
-{
-  typed_data_assign(dst_tp, dst_arrmeta, dst_data, src_arr.get_type(), src_arr.get()->metadata(), src_arr.cdata(),
-                    ectx);
-}

@@ -1045,6 +1045,101 @@ void ndt::type::print_data(std::ostream &o, const char *arrmeta, const char *dat
   }
 }
 
+ndt::type::type(type_id_t tp_id) : type((validate_type_id(tp_id), type_registry[tp_id].kind)) {}
+
+ndt::type_registry::type_registry()
+{
+  insert("uninitialized_type_id", {}, nullptr, type(reinterpret_cast<const base_type *>(uninitialized_type_id), false));
+  insert("bool", {bool_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(bool_type_id), false));
+  insert("int8", {int8_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(int8_type_id), false));
+  insert("int16", {int16_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(int16_type_id), false));
+  insert("int32", {int32_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(int32_type_id), false));
+  insert("int64", {int64_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(int64_type_id), false));
+  insert("int128", {int128_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(int128_type_id), false));
+  insert("uint8", {uint8_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(uint8_type_id), false));
+  insert("uint16", {uint16_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(uint16_type_id), false));
+  insert("uint32", {uint32_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(uint32_type_id), false));
+  insert("uint64", {uint64_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(uint64_type_id), false));
+  insert("uint128", {uint128_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(uint128_type_id), false));
+  insert("float16", {float16_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(float16_type_id), false));
+  insert("float32", {float32_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(float32_type_id), false));
+  insert("float64", {float64_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(float64_type_id), false));
+  insert("float128", {float128_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(float128_type_id), false));
+  insert("complex", {complex_float32_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(complex_float32_type_id), false));
+  insert("complex", {complex_float64_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(complex_float64_type_id), false));
+  insert("void", {void_type_id, any_kind_type_id}, nullptr,
+         type(reinterpret_cast<const base_type *>(void_type_id), false));
+  insert("pointer", {any_kind_type_id}, nullptr, type());                    // void_pointer_type_id
+  insert("pointer", {}, nullptr, pointer_type::make(any_kind_type::make())); // pointer_type_id
+  insert("array", {}, nullptr, type());                                      // reference_type_id
+  insert("bytes", {}, nullptr, bytes_type::make());                          // bytes_type_id
+  insert("fixed_bytes", {}, nullptr, fixed_bytes_kind_type::make());         // fixed_bytes_type_id
+  insert("char", {}, nullptr, char_type::make());                            // char_type_id
+  insert("", {}, nullptr, string_type::make());                              // string_type_id
+  insert("", {}, nullptr, fixed_string_kind_type::make());                   // fixed_string_type_id
+  insert("", {}, nullptr, categorical_kind_type::make());                    // categorical_type_id
+  insert("", {}, nullptr, date_type::make());                                // date_type_id
+  insert("", {}, nullptr, time_type::make());                                // time_type_id
+  insert("", {}, nullptr, datetime_type::make());                            // datetime_type
+  insert("", {}, nullptr, type());                                           // busdate_type_id
+  insert("", {}, nullptr, fixed_dim_kind_type::make(any_kind_type::make())); // fixed_dim_type_id
+  insert("", {}, nullptr, var_dim_type::make(any_kind_type::make()));        // var_dim_type_id
+  insert("", {}, nullptr, struct_type::make(true));                          // struct_type_id
+  insert("", {}, nullptr, tuple_type::make(true));                           // tuple_type_id
+  insert("", {}, nullptr, type());                                           // option_type_id
+  insert("", {}, nullptr, type());                                           // c_contiguous_type_id
+  insert("", {}, nullptr, type());                                           // adapt_type_id
+  insert("", {}, nullptr, type());                                           // convert_type_id
+  insert("", {}, nullptr, type());                                           // view_type_id
+  insert("", {}, nullptr, type());                                           // cuda_host_type_id
+  insert("", {}, nullptr, type());                                           // cuda_device_type_id
+  insert("", {}, nullptr, type());                                           // expr_type_id
+  insert("", {}, nullptr, make_type<type_type>());                           // type_type_id
+}
+
+ndt::type_registry::~type_registry()
+{
+  for (size_t tp_id = 0; tp_id < m_size; ++tp_id) {
+    delete[] m_infos[tp_id].bases;
+  }
+}
+
+type_id_t ndt::type_registry::insert(const char *name, size_t nbase, const type_id_t *bases, type_make_t construct,
+                                     const type &kind)
+{
+  new (m_infos + m_size) type_info{name, nbase, new type_id_t[nbase], construct, kind};
+  memcpy(m_infos[m_size].bases, bases, nbase * sizeof(type_id_t));
+
+  return static_cast<type_id_t>(m_size++);
+}
+
+type_id_t ndt::type_registry::insert(const char *name, const std::initializer_list<type_id_t> &bases,
+                                     type_make_t construct, const type &kind)
+{
+  return insert(name, bases.size(), bases.begin(), construct, kind);
+}
+
+const ndt::type_info &ndt::type_registry::operator[](type_id_t tp_id) const { return m_infos[tp_id]; }
+
+DYND_API class ndt::type_registry ndt::type_registry;
+
 struct ndt::common_type::init {
   template <typename TypeIDSequence>
   void on_each()

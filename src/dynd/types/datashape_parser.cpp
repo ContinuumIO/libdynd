@@ -693,7 +693,8 @@ static ndt::type parse_pointer_parameters(const char *&rbegin, const char *end, 
   // TODO catch errors, convert them to datashape_parse_error so the position is
   // shown
   rbegin = begin;
-  return ndt::pointer_type::make(tp);
+
+  return ndt::make_type<ndt::pointer_type>(tp);
 }
 
 static ndt::type parse_array_parameters(const char *&rbegin, const char *end, map<std::string, ndt::type> &symtable)

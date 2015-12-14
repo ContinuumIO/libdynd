@@ -186,7 +186,7 @@ namespace ndt {
     type() = default;
 
     /** Construct from a type ID */
-    type(type_id_t tp_id) : type((validate_type_id(tp_id), instances[tp_id])) {}
+    type(type_id_t tp_id);
 
     /** Construct from a string representation */
     explicit type(const std::string &rep);
@@ -1024,6 +1024,8 @@ namespace ndt {
     return type(new TypeType(std::forward<ArgTypes>(args)...), false);
   }
 
+  inline type make_type(type_id_t tp_id) { return type(tp_id); }
+
   /**
     * Returns the common type of two types. For built-in types, this is analogous to
     * std::common_type.
@@ -1084,6 +1086,31 @@ namespace ndt {
    *                     should initialize it to false.
    */
   DYND_API type make_type(intptr_t ndim, const intptr_t *shape, const ndt::type &dtype, bool &out_any_var);
+
+  struct type_info {
+    const char *name;
+    size_t nbase;
+    type_id_t *bases;
+    type_make_t construct;
+    type kind;
+  };
+
+  extern DYND_API class type_registry {
+    size_t m_size;
+    type_info m_infos[DYND_TYPE_ID_MAX];
+
+  public:
+    type_registry();
+
+    ~type_registry();
+
+    type_id_t insert(const char *name, size_t nbase, const type_id_t *bases, type_make_t construct,
+                     const type &kind = type());
+    type_id_t insert(const char *name, const std::initializer_list<type_id_t> &bases, type_make_t construct,
+                     const type &kind = type());
+
+    const type_info &operator[](type_id_t tp_id) const;
+  } type_registry;
 
   DYND_API type_id_t register_type(const std::string &name, type_make_t make);
 

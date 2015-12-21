@@ -494,7 +494,7 @@ namespace nd {
 } // namespace dynd::nd
 } // namespace dynd
 
-ndt::struct_type::struct_type(struct_type *other)
+ndt::struct_type::struct_type(struct_type *other, int use_count)
     : tuple_type(struct_type_id, {ndt::type(other, false)}, type_flag_none, false, false)
 {
   // Equivalent to ndt::struct_type::make(ndt::make_ndarrayarg(), "self");
@@ -513,12 +513,12 @@ ndt::struct_type::struct_type(struct_type *other)
 
   owner = other;
   owner_id = type_type_id;
-  owner_use_count = 1;
+  owner_use_count = use_count;
 }
 
 void ndt::struct_type::create_array_properties()
 {
-  type array_parameters_type(new struct_type(this), true);
+  type array_parameters_type(new struct_type(this, m_field_count), true);
 
   for (intptr_t i = 0, i_end = m_field_count; i != i_end; ++i) {
     nd::callable property = nd::callable::make<nd::get_array_field_kernel>(

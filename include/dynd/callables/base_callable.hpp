@@ -223,8 +223,6 @@ namespace nd {
 
   inline void intrusive_ptr_retain(base_callable *ptr)
   {
-    ++ptr->use_count;
-
     switch (ptr->owner_id) {
     case type_type_id:
       reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count += ptr->owner_use_count;
@@ -232,20 +230,22 @@ namespace nd {
     default:
       break;
     }
+
+    ++ptr->use_count;
   }
 
   inline void intrusive_ptr_release(base_callable *ptr)
   {
-    if (--ptr->use_count == 0) {
-      delete ptr;
-    }
-
     switch (ptr->owner_id) {
     case type_type_id:
       reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count -= ptr->owner_use_count;
       break;
     default:
       break;
+    }
+
+    if (--ptr->use_count == 0) {
+      delete ptr;
     }
   }
 

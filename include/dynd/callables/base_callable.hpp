@@ -126,18 +126,20 @@ namespace nd {
     callable_data_init_t data_init;
     callable_resolve_dst_type_t resolve_dst_type;
     callable_instantiate_t instantiate;
+    void *owner;
+    type_id_t owner_id;
+    int owner_use_count;
 
-    base_callable() : use_count(0), data_init(NULL), resolve_dst_type(NULL), instantiate(NULL) {}
-
-    base_callable(const ndt::type &tp, const base_callable &other)
-        : use_count(0), tp(tp), kernreq(other.kernreq), targets(other.targets), ir(other.ir),
-          data_init(other.data_init), resolve_dst_type(other.resolve_dst_type), instantiate(other.instantiate)
+    base_callable()
+        : use_count(0), data_init(NULL), resolve_dst_type(NULL), instantiate(NULL), owner(nullptr),
+          owner_id(uninitialized_type_id)
     {
     }
 
     base_callable(const ndt::type &tp, kernel_targets_t targets)
         : use_count(0), tp(tp), kernreq(kernel_request_single), targets(targets), data_init(&ckernel_prefix::data_init),
-          resolve_dst_type(NULL), instantiate(&ckernel_prefix::instantiate)
+          resolve_dst_type(NULL), instantiate(&ckernel_prefix::instantiate), owner(nullptr),
+          owner_id(uninitialized_type_id)
     {
       new (static_data()) kernel_targets_t(targets);
     }
@@ -146,7 +148,8 @@ namespace nd {
                   callable_data_init_t data_init, callable_resolve_dst_type_t resolve_dst_type,
                   callable_instantiate_t instantiate)
         : use_count(0), tp(tp), kernreq(kernreq), targets(targets), ir(const_cast<const char *>(ir)),
-          data_init(data_init), resolve_dst_type(resolve_dst_type), instantiate(instantiate)
+          data_init(data_init), resolve_dst_type(resolve_dst_type), instantiate(instantiate), owner(nullptr),
+          owner_id(uninitialized_type_id)
     {
     }
 
@@ -218,12 +221,31 @@ namespace nd {
     static void operator delete(void *ptr, size_t DYND_UNUSED(static_data_size)) { ::operator delete(ptr); }
   };
 
-  inline void intrusive_ptr_retain(base_callable *ptr) { ++ptr->use_count; }
+  inline void intrusive_ptr_retain(base_callable *ptr)
+  {
+    ++ptr->use_count;
+
+    switch (ptr->owner_id) {
+    case type_type_id:
+      reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count += ptr->owner_use_count;
+      break;
+    default:
+      break;
+    }
+  }
 
   inline void intrusive_ptr_release(base_callable *ptr)
   {
     if (--ptr->use_count == 0) {
       delete ptr;
+    }
+
+    switch (ptr->owner_id) {
+    case type_type_id:
+      reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count -= ptr->owner_use_count;
+      break;
+    default:
+      break;
     }
   }
 

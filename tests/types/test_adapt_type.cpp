@@ -16,6 +16,21 @@
 using namespace std;
 using namespace dynd;
 
+/*
+TEST(StructType, Properties)
+{
+  std::cout << "StructType::Properties" << std::endl;
+
+  ndt::type tp = ndt::struct_type::make({"x", "y"}, {ndt::make_type<int>(), ndt::make_type<float>()});
+  std::map<std::string, nd::callable> array_properties = tp.get_array_properties();
+
+  for (auto &pair : array_properties) {
+    std::cout << pair.first << std::endl;
+    std::cout << pair.second << std::endl;
+  }
+}
+*/
+
 TEST(AdaptType, Byteswap)
 {
   ndt::type tp =

@@ -518,7 +518,7 @@ ndt::struct_type::struct_type(struct_type *other, int use_count)
 
 void ndt::struct_type::create_array_properties()
 {
-  type array_parameters_type(new struct_type(this, m_field_count), true);
+  type array_parameters_type(new struct_type(this, 1), true);
 
   for (intptr_t i = 0, i_end = m_field_count; i != i_end; ++i) {
     nd::callable property = nd::callable::make<nd::get_array_field_kernel>(

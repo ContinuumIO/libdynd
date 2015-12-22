@@ -494,8 +494,8 @@ namespace nd {
 } // namespace dynd::nd
 } // namespace dynd
 
-ndt::struct_type::struct_type(struct_type *other, int )
-    : tuple_type(struct_type_id, {ndt::type(other, false)}, type_flag_none, false, false)
+ndt::struct_type::struct_type(struct_type *other, int)
+    : tuple_type(struct_type_id, {ndt::type(other, true)}, type_flag_none, false, false)
 {
   // Equivalent to ndt::struct_type::make(ndt::make_ndarrayarg(), "self");
   // but hardcoded to break the dependency of struct_type::array_parameters_type
@@ -511,14 +511,14 @@ ndt::struct_type::struct_type(struct_type *other, int )
   m_field_names = {"self"};
   // Leave m_array_properties so there is no reference loop
 
-//  owner = other;
-  //owner_id = type_type_id;
-//  owner_use_count = use_count;
+  //  owner = other;
+  // owner_id = type_type_id;
+  // owner_use_count = use_count;
 }
 
 void ndt::struct_type::create_array_properties()
 {
-  type array_parameters_type(new struct_type(this, 0), true);
+  type array_parameters_type(new struct_type(this, 1), true);
 
   for (intptr_t i = 0, i_end = m_field_count; i != i_end; ++i) {
     nd::callable property = nd::callable::make<nd::get_array_field_kernel>(
@@ -527,7 +527,7 @@ void ndt::struct_type::create_array_properties()
 
     property.get()->owner = this;
     property.get()->owner_id = type_type_id;
-    property.get()->owner_use_count = 2;
+    property.get()->owner_use_count = 1;
   }
 }
 

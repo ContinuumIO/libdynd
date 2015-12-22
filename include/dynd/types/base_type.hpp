@@ -593,9 +593,9 @@ namespace ndt {
         break;
       }
 
-//      if (ptr->m_use_count == 0) {
-  //      std::cout << "ZERO!" << std::endl;
-    //  }
+      if (ptr->m_use_count == 0) {
+        std::cout << "TYPE ZERO!" << std::endl;
+      }
       if (--ptr->m_use_count == 0) {
         delete ptr;
       }

@@ -82,7 +82,12 @@ struct DYND_API memory_block_data {
   /** A memory_block_type_t enum value */
   uint32_t m_type;
 
-  explicit memory_block_data(long use_count, memory_block_type_t type) : m_use_count(use_count), m_type(type)
+  //  void *owner;
+  // type_id_t owner_id;
+  // std::atomic_long owner_use_count;
+
+  explicit memory_block_data(long use_count, memory_block_type_t type)
+      : m_use_count(use_count), m_type(type) //, owner(NULL), owner_id(uninitialized_type_id)
   {
     // std::cout << "memblock " << (void *)this << " cre: " << this->m_use_count << std::endl;
   }
@@ -114,15 +119,9 @@ namespace detail {
   DYND_API void memory_block_free(memory_block_data *memblock);
 } // namespace detail
 
-inline long intrusive_ptr_use_count(memory_block_data *ptr)
-{
-  return ptr->m_use_count;
-}
+inline long intrusive_ptr_use_count(memory_block_data *ptr) { return ptr->m_use_count; }
 
-inline void intrusive_ptr_retain(memory_block_data *ptr)
-{
-  ++ptr->m_use_count;
-}
+inline void intrusive_ptr_retain(memory_block_data *ptr) { ++ptr->m_use_count; }
 
 inline void intrusive_ptr_release(memory_block_data *ptr)
 {

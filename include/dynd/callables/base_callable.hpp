@@ -221,7 +221,18 @@ namespace nd {
     static void operator delete(void *ptr, size_t DYND_UNUSED(static_data_size)) { ::operator delete(ptr); }
   };
 
-  inline void intrusive_ptr_retain(base_callable *ptr) { ++ptr->use_count; }
+  inline void intrusive_ptr_retain(base_callable *ptr)
+  {
+    switch (ptr->owner_id) {
+    case type_type_id:
+      reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count += ptr->owner_use_count;
+      break;
+    default:
+      break;
+    }
+
+    ++ptr->use_count;
+  }
 
   inline void intrusive_ptr_release(base_callable *ptr)
   {
@@ -233,9 +244,6 @@ namespace nd {
       break;
     }
 
-    if (ptr->use_count == 0) {
-      std::cout << "CALLABLE ZERO!" << std::endl;
-    }
     if (--ptr->use_count == 0) {
       delete ptr;
     }

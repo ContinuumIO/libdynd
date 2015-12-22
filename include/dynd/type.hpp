@@ -797,6 +797,26 @@ namespace ndt {
     return traits<T>::equivalent(std::forward<ArgTypes>(args)...);
   }
 
+  template <typename T, typename... ArgTypes>
+  type make_type(const std::initializer_list<T> &value, ArgTypes &&... args)
+  {
+    return make_type<std::initializer_list<T>>(value, std::forward<ArgTypes>(args)...);
+  }
+
+  template <typename T, typename... ArgTypes>
+  type make_type(const std::initializer_list<std::initializer_list<T>> &value, ArgTypes &&... args)
+  {
+    return make_type<std::initializer_list<std::initializer_list<T>>>(value, std::forward<ArgTypes>(args)...);
+  }
+
+  template <typename T, typename... ArgTypes>
+  type make_type(const std::initializer_list<std::initializer_list<std::initializer_list<T>>> &value,
+                 ArgTypes &&... args)
+  {
+    return make_type<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>(
+        value, std::forward<ArgTypes>(args)...);
+  }
+
   /**
    * Allocates and constructs a type with a use count of 1.
    */
@@ -820,6 +840,8 @@ namespace ndt {
 
   template <>
   struct traits<bool1> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<bool1>::value); }
@@ -827,6 +849,8 @@ namespace ndt {
 
   template <>
   struct traits<bool> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<bool1>::value); }
@@ -834,6 +858,8 @@ namespace ndt {
 
   template <>
   struct traits<signed char> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<signed char>::value); }
@@ -842,6 +868,8 @@ namespace ndt {
 
   template <>
   struct traits<short> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<short>::value); }
@@ -849,6 +877,8 @@ namespace ndt {
 
   template <>
   struct traits<int> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<int>::value); }
@@ -856,6 +886,8 @@ namespace ndt {
 
   template <>
   struct traits<long> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<long>::value); }
@@ -863,6 +895,8 @@ namespace ndt {
 
   template <>
   struct traits<long long> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<long long>::value); }
@@ -870,6 +904,8 @@ namespace ndt {
 
   template <>
   struct traits<int128> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<int128>::value); }
@@ -877,6 +913,8 @@ namespace ndt {
 
   template <>
   struct traits<unsigned char> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<unsigned char>::value); }
@@ -884,6 +922,8 @@ namespace ndt {
 
   template <>
   struct traits<unsigned short> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<unsigned short>::value); }
@@ -891,6 +931,8 @@ namespace ndt {
 
   template <>
   struct traits<unsigned int> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<unsigned int>::value); }
@@ -898,6 +940,8 @@ namespace ndt {
 
   template <>
   struct traits<unsigned long> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<unsigned long>::value); }
@@ -905,6 +949,8 @@ namespace ndt {
 
   template <>
   struct traits<unsigned long long> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<unsigned long long>::value); }
@@ -912,6 +958,8 @@ namespace ndt {
 
   template <>
   struct traits<uint128> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<uint128>::value); }
@@ -919,6 +967,8 @@ namespace ndt {
 
   template <>
   struct traits<char> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<char>::value); }
@@ -926,6 +976,8 @@ namespace ndt {
 
   template <>
   struct traits<float16> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<float16>::value); }
@@ -933,6 +985,8 @@ namespace ndt {
 
   template <>
   struct traits<float> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<float>::value); }
@@ -940,6 +994,8 @@ namespace ndt {
 
   template <>
   struct traits<double> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<double>::value); }
@@ -947,6 +1003,8 @@ namespace ndt {
 
   template <>
   struct traits<float128> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<float128>::value); }
@@ -954,6 +1012,8 @@ namespace ndt {
 
   template <typename T>
   struct traits<complex<T>> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<complex<T>>::value); }
@@ -961,6 +1021,8 @@ namespace ndt {
 
   template <typename T>
   struct traits<std::complex<T>> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_id_of<std::complex<T>>::value); }
@@ -968,6 +1030,8 @@ namespace ndt {
 
   template <>
   struct traits<void> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = false;
 
     static type equivalent() { return type(type_id_of<void>::value); }
@@ -975,6 +1039,8 @@ namespace ndt {
 
   template <>
   struct traits<string> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(string_type_id); }
@@ -984,6 +1050,8 @@ namespace ndt {
 
   template <>
   struct traits<type> {
+    static const size_t ndim = 0;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return type(type_type_id); }
@@ -991,6 +1059,8 @@ namespace ndt {
 
   template <typename T>
   struct traits<const T> {
+    static const size_t ndim = traits<T>::ndim;
+
     static const bool is_same_layout = traits<T>::is_same_layout;
 
     static type equivalent() { return traits<T>::equivalent(); }
@@ -999,6 +1069,8 @@ namespace ndt {
   // Same as for const
   template <typename T>
   struct traits<T &> {
+    static const size_t ndim = traits<T>::ndim;
+
     static const bool is_same_layout = traits<T>::is_same_layout;
 
     static type equivalent() { return traits<T>::equivalent(); }
@@ -1007,6 +1079,8 @@ namespace ndt {
   // Same as for const
   template <typename T>
   struct traits<T &&> {
+    static const size_t ndim = traits<T>::ndim;
+
     static const bool is_same_layout = traits<T>::is_same_layout;
 
     static type equivalent() { return traits<T>::equivalent(); }
@@ -1014,6 +1088,8 @@ namespace ndt {
 
   template <typename T, int N>
   struct traits<T[N]> {
+    static const size_t ndim = traits<T>::ndim + 1;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return make_fixed_dim(N, make_type<T>()); }
@@ -1022,6 +1098,8 @@ namespace ndt {
   // Need to handle const properly
   template <typename T, int N>
   struct traits<const T[N]> {
+    static const size_t ndim = traits<T>::ndim + 1;
+
     static const bool is_same_layout = true;
 
     static type equivalent() { return make_type<T[N]>(); }

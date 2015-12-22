@@ -101,12 +101,16 @@ namespace ndt {
 
   template <typename T>
   struct traits<T[]> {
+    static const size_t ndim = traits<T>::ndim + 1;
+
     static type equivalent() { return fixed_dim_kind_type::make(make_type<T>()); }
   };
 
   // Need to handle const properly
   template <typename T>
   struct traits<const T[]> {
+    static const size_t ndim = traits<T>::ndim + 1;
+
     static type equivalent() { return make_type<T[]>(); }
   };
 
@@ -122,6 +126,100 @@ namespace ndt {
 
     static type equivalent() { return fixed_dim_kind_type::make(make_type<ElementType>()); }
   };
+
+  namespace detail {
+
+    template <typename ContainerType, size_t Rank>
+    struct traits {
+      static const bool is_same_layout = false;
+
+      static const size_t ndim = Rank;
+
+      static type equivalent()
+      {
+        return make_type<fixed_dim_kind_type>(make_type<typename ContainerType::value_type>());
+      }
+
+      static type equivalent(const ContainerType &values)
+      {
+        intptr_t shape[ndim];
+        traits::shape(shape, values);
+
+        type tp = value_type();
+        for (intptr_t i = ndim - 1; i >= 0; --i) {
+          if (shape[i] == -1) {
+            tp = make_type<var_dim_type>(tp);
+          }
+          else {
+            tp = make_type<fixed_dim_type>(shape[i], tp);
+          }
+        }
+
+        return tp;
+      }
+
+      static void shape(intptr_t *res, const ContainerType &values)
+      {
+        res[0] = values.size();
+
+        auto iter = values.begin();
+        ndt::traits<typename ContainerType::value_type>::shape(res + 1, *iter);
+
+        while (++iter != values.end()) {
+          intptr_t next_shape[ndim - 1];
+          ndt::traits<typename ContainerType::value_type>::shape(next_shape, *iter);
+
+          for (size_t i = 1; i < ndim; ++i) {
+            if (res[i] != next_shape[i - 1]) {
+              res[i] = -1;
+            }
+          }
+        }
+      }
+
+      static type value_type() { return ndt::traits<typename ContainerType::value_type>::value_type(); }
+    };
+
+    template <typename ContainerType>
+    struct traits<ContainerType, 1> {
+      static const bool is_same_layout = false;
+
+      static const size_t ndim = 1;
+
+      static type equivalent()
+      {
+        return make_type<fixed_dim_kind_type>(make_type<typename ContainerType::value_type>());
+      }
+
+      static type equivalent(const ContainerType &values)
+      {
+        return make_type<fixed_dim_type>(values.size(), value_type());
+      }
+
+      static void shape(intptr_t *res, const ContainerType &values) { res[0] = values.size(); }
+
+      static type value_type() { return make_type<typename ContainerType::value_type>(); }
+    };
+  }
+
+  template <typename T>
+  struct traits<std::initializer_list<T>> : detail::traits<std::initializer_list<T>, traits<T>::ndim + 1> {
+    static const bool is_same_layout = false;
+  };
+
+  /*
+    template <typename T>
+    struct traits<std::initializer_list<std::initializer_list<T>>> {
+      static type equivalent() { return
+  make_type<fixed_dim_kind_type>(make_type<fixed_dim_kind_type>(make_type<T>()));
+  }
+
+      // fixed
+      // var
+  // all_same_size
+      static type equivalent(const std::initializer_list<std::initializer_list<T>> &) { return type("Any"); }
+    };
+  */
 
 } // namespace dynd::ndt
 } // namespace dynd

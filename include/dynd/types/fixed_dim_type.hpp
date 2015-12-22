@@ -260,7 +260,8 @@ namespace nd {
 
   template <typename T, int N>
   struct traits<T[N]> {
-    static void init(const T(&value)[N], const char *DYND_UNUSED(metadata), char *data)
+    static void init(const T(&value)[N], const ndt::type &DYND_UNUSED(tp), const char *DYND_UNUSED(metadata),
+                     char *data)
     {
       memcpy(data, value, N * sizeof(T));
     }

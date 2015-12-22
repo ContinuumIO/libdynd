@@ -90,6 +90,7 @@ namespace ndt {
    */
   class DYND_API base_type {
     /** Embedded reference counting */
+  public:
     mutable std::atomic_long m_use_count;
 
   protected:
@@ -102,6 +103,9 @@ namespace ndt {
     int8_t ndim;            // The number of array dimensions this type has
     int8_t strided_ndim; // The number of strided dimensions (strided/fixed/cfixed) in a row with no pointers, var dims,
                          // etc in between.
+    void *owner;
+    type_id_t owner_id;
+    std::atomic_long owner_use_count;
 
   public:
     typedef uint32_t flags_type;
@@ -111,7 +115,8 @@ namespace ndt {
               size_t arrmeta_size, size_t ndim, size_t strided_ndim)
         : m_use_count(1), type_id(type_id), kind(kind), data_size(data_size),
           data_alignment(static_cast<uint8_t>(alignment)), flags(flags), arrmeta_size(arrmeta_size),
-          ndim(static_cast<uint8_t>(ndim)), strided_ndim(static_cast<uint8_t>(strided_ndim))
+          ndim(static_cast<uint8_t>(ndim)), strided_ndim(static_cast<uint8_t>(strided_ndim)), owner(NULL),
+          owner_id(uninitialized_type_id)
     {
     }
 
@@ -120,7 +125,7 @@ namespace ndt {
               size_t strided_ndim)
         : m_use_count(1), type_id(type_id), data_size(data_size), data_alignment(static_cast<uint8_t>(alignment)),
           flags(flags), arrmeta_size(arrmeta_size), ndim(static_cast<uint8_t>(ndim)),
-          strided_ndim(static_cast<uint8_t>(strided_ndim))
+          strided_ndim(static_cast<uint8_t>(strided_ndim)), owner(NULL), owner_id(uninitialized_type_id)
     {
     }
 
@@ -572,7 +577,18 @@ namespace ndt {
   inline void intrusive_ptr_release(const base_type *ptr)
   {
     if (!is_builtin_type(ptr)) {
+      if (ptr->m_use_count == 0) {
+        std::cout << "TYPE ZERO!" << std::endl;
+      }
       if (--ptr->m_use_count == 0) {
+        switch (ptr->owner_id) {
+        case type_type_id:
+          reinterpret_cast<const ndt::base_type *>(ptr->owner)->m_use_count -= ptr->owner_use_count;
+          break;
+        default:
+          break;
+        }
+
         delete ptr;
       }
     }

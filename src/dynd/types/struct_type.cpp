@@ -495,6 +495,7 @@ namespace nd {
 
 } // namespace dynd
 
+/*
 static nd::array make_self_types()
 {
   nd::array result = nd::empty(1, ndt::make_type<ndt::type_type>());
@@ -502,8 +503,10 @@ static nd::array make_self_types()
   result.flag_as_immutable();
   return result;
 }
+*/
 
-ndt::struct_type::struct_type(int, int) : tuple_type(struct_type_id, make_self_types(), type_flag_none, false, false)
+ndt::struct_type::struct_type(base_type *other)
+    : tuple_type(struct_type_id, {type(other, true)}, type_flag_none, false, false)
 {
   // Equivalent to ndt::struct_type::make(ndt::make_ndarrayarg(), "self");
   // but hardcoded to break the dependency of struct_type::array_parameters_type
@@ -521,7 +524,7 @@ ndt::struct_type::struct_type(int, int) : tuple_type(struct_type_id, make_self_t
 
 void ndt::struct_type::create_array_properties()
 {
-  type array_parameters_type(new struct_type(0, 0), false);
+  type array_parameters_type(new struct_type(this), false);
 
   for (intptr_t i = 0, i_end = m_field_count; i != i_end; ++i) {
     // TODO: Transform the name into a valid Python symbol?

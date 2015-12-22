@@ -25,7 +25,7 @@ namespace ndt {
 
     // Special constructor to break the property parameter cycle in
     // create_array_properties
-    struct_type(int, int);
+    struct_type(base_type *);
 
   protected:
     uintptr_t *get_arrmeta_data_offsets(char *arrmeta) const { return reinterpret_cast<uintptr_t *>(arrmeta); }

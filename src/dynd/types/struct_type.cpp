@@ -511,10 +511,9 @@ ndt::struct_type::struct_type(struct_type *other, int)
   m_field_names = {"self"};
   // Leave m_array_properties so there is no reference loop
 
-  static_cast<memory_block_data *>(m_field_types.get())->owner = other;
-  m_field_types.get()->owner_id = type_type_id;
-  m_field_types.get()->owner_use_count = 1;
-  other->m_use_count -= 1;
+  owner = other;
+  owner_id = type_type_id;
+  owner_use_count = 1;
 }
 
 void ndt::struct_type::create_array_properties()

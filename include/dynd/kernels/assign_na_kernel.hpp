@@ -14,7 +14,7 @@ namespace dynd {
 namespace nd {
   namespace detail {
 
-    template <type_id_t DstTypeID, type_id_t DstBaseTypeID>
+    template <int ResID, int ResBaseID>
     struct assign_na_kernel;
 
     template <>
@@ -36,10 +36,10 @@ namespace nd {
       }
     };
 
-    template <type_id_t RetTypeID>
+    template <int RetTypeID>
     struct assign_na_kernel<RetTypeID, int_kind_type_id>
         : base_kernel<assign_na_kernel<RetTypeID, int_kind_type_id>, 0> {
-      typedef typename type_of<RetTypeID>::type ret_type;
+      typedef typename type_of<(type_id_t)RetTypeID>::type ret_type;
 
       void single(char *dst, char *const *DYND_UNUSED(src))
       {
@@ -55,10 +55,10 @@ namespace nd {
       }
     };
 
-    template <type_id_t DstTypeID>
+    template <int DstTypeID>
     struct assign_na_kernel<DstTypeID, uint_kind_type_id>
         : base_kernel<assign_na_kernel<DstTypeID, uint_kind_type_id>, 0> {
-      typedef typename type_of<DstTypeID>::type dst_type;
+      typedef typename type_of<(type_id_t)DstTypeID>::type dst_type;
 
       void single(char *dst, char *const *DYND_UNUSED(src))
       {
@@ -269,18 +269,17 @@ namespace nd {
 
   } // namespace dynd::nd::detail
 
-  template <int DstTypeID>
-  struct assign_na_kernel
-      : detail::assign_na_kernel<(type_id_t)DstTypeID, base_type_id_of<(type_id_t)DstTypeID>::value> {
+  template <int ResID>
+  struct assign_na_kernel : detail::assign_na_kernel<ResID, base_type_id_of<(type_id_t)ResID>::value> {
   };
 
 } // namespace dynd::nd
 
 namespace ndt {
 
-  template <int Src0ValueTypeID>
-  struct traits<nd::assign_na_kernel<Src0ValueTypeID>> {
-    static type equivalent() { return callable_type::make(make_type<option_type>((type_id_t)Src0ValueTypeID)); }
+  template <int ResValueID>
+  struct traits<nd::assign_na_kernel<ResValueID>> {
+    static type equivalent() { return callable_type::make(make_type<option_type>((type_id_t)ResValueID)); }
   };
 
 } // namespace dynd::ndt

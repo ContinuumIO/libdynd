@@ -279,7 +279,7 @@ namespace ndt {
 
   template <int ResValueID>
   struct traits<nd::assign_na_kernel<ResValueID>> {
-    static type equivalent() { return callable_type::make(make_type<option_type>((type_id_t)ResValueID)); }
+    static type equivalent() { return callable_type::make(make_type<option_type>(ResValueID)); }
   };
 
 } // namespace dynd::ndt

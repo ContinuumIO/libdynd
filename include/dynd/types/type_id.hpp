@@ -408,7 +408,7 @@ struct type_id_of<std::complex<double>> {
   static const type_id_t value = complex_float64_type_id;
 };
 
-template <type_id_t TypeID>
+template <int ID>
 struct type_of;
 
 template <>
@@ -684,7 +684,7 @@ struct type_kind_of<type_type_id> {
   static const type_kind_t value = type_kind;
 };
 
-template <type_id_t TypeID>
+template <int ID>
 struct base_type_id_of;
 
 template <>

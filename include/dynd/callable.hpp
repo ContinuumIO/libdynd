@@ -116,6 +116,9 @@ namespace nd {
     template <template <type_id_t...> class KernelType>
     struct make_all;
 
+    template <template <int...> class KernelType>
+    struct make_all2;
+
   } // namespace dynd::nd::detail
 
   typedef array callable_arg_t;
@@ -420,11 +423,20 @@ namespace nd {
       }
     }
 
-    template <template <type_id_t> class KernelType, typename I0, typename... A>
-    static std::map<type_id_t, callable> make_all(A &&... a)
+    template <template <type_id_t> class KernelType, typename I0, typename... ArgTypes>
+    static std::map<type_id_t, callable> make_all(ArgTypes &&... args)
     {
       std::map<type_id_t, callable> callables;
-      for_each<I0>(detail::make_all<KernelType>(), callables, std::forward<A>(a)...);
+      for_each<I0>(detail::make_all<KernelType>(), callables, std::forward<ArgTypes>(args)...);
+
+      return callables;
+    }
+
+    template <template <int> class KernelType, typename I0, typename... ArgTypes>
+    static std::map<int, callable> make_all(ArgTypes &&... args)
+    {
+      std::map<int, callable> callables;
+      for_each<I0>(detail::make_all2<KernelType>(), callables, std::forward<ArgTypes>(args)...);
 
       return callables;
     }
@@ -495,6 +507,15 @@ namespace nd {
       {
         callables[i2a<TypeIDSequence>()] =
             callable::make<typename apply<KernelType, TypeIDSequence>::type>(std::forward<A>(a)...);
+      }
+    };
+
+    template <template <int...> class KernelType>
+    struct make_all2 {
+      template <int ID, typename... A>
+      void on_each(std::map<int, callable> &callables, A &&... a) const
+      {
+        callables[ID] = callable::make<KernelType<ID>>(std::forward<A>(a)...);
       }
     };
 

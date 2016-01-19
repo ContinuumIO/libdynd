@@ -18,7 +18,7 @@ DYND_API nd::callable nd::assign_na::make()
                            void_type_id, string_type_id, fixed_dim_type_id, date_type_id, time_type_id,
                            datetime_type_id> type_ids;
 
-  std::map<type_id_t, callable> children = callable::make_all<assign_na_kernel, type_ids>();
+  std::map<int, callable> children = callable::make_all<assign_na_kernel, type_ids>();
   children[uint32_type_id] = callable::make<assign_na_kernel<uint32_type_id>>();
   std::array<callable, 2> dim_children;
 

@@ -269,17 +269,18 @@ namespace nd {
 
   } // namespace dynd::nd::detail
 
-  template <type_id_t DstTypeID>
-  struct assign_na_kernel : detail::assign_na_kernel<DstTypeID, base_type_id_of<DstTypeID>::value> {
+  template <int DstTypeID>
+  struct assign_na_kernel
+      : detail::assign_na_kernel<(type_id_t)DstTypeID, base_type_id_of<(type_id_t)DstTypeID>::value> {
   };
 
 } // namespace dynd::nd
 
 namespace ndt {
 
-  template <type_id_t Src0ValueTypeID>
+  template <int Src0ValueTypeID>
   struct traits<nd::assign_na_kernel<Src0ValueTypeID>> {
-    static type equivalent() { return callable_type::make(make_type<option_type>(Src0ValueTypeID)); }
+    static type equivalent() { return callable_type::make(make_type<option_type>((type_id_t)Src0ValueTypeID)); }
   };
 
 } // namespace dynd::ndt

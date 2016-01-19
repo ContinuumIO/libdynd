@@ -39,7 +39,7 @@ namespace nd {
     template <int RetTypeID>
     struct assign_na_kernel<RetTypeID, int_kind_type_id>
         : base_kernel<assign_na_kernel<RetTypeID, int_kind_type_id>, 0> {
-      typedef typename type_of<(type_id_t)RetTypeID>::type ret_type;
+      typedef typename type_of<RetTypeID>::type ret_type;
 
       void single(char *dst, char *const *DYND_UNUSED(src))
       {
@@ -58,7 +58,7 @@ namespace nd {
     template <int DstTypeID>
     struct assign_na_kernel<DstTypeID, uint_kind_type_id>
         : base_kernel<assign_na_kernel<DstTypeID, uint_kind_type_id>, 0> {
-      typedef typename type_of<(type_id_t)DstTypeID>::type dst_type;
+      typedef typename type_of<DstTypeID>::type dst_type;
 
       void single(char *dst, char *const *DYND_UNUSED(src))
       {
@@ -270,7 +270,7 @@ namespace nd {
   } // namespace dynd::nd::detail
 
   template <int ResID>
-  struct assign_na_kernel : detail::assign_na_kernel<ResID, base_type_id_of<(type_id_t)ResID>::value> {
+  struct assign_na_kernel : detail::assign_na_kernel<ResID, base_type_id_of<ResID>::value> {
   };
 
 } // namespace dynd::nd

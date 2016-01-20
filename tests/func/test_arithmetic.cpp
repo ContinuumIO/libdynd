@@ -282,40 +282,40 @@ TEST(Arithmetic, OptionArithmeticInt32)
 {
   nd::array NA = nd::empty(ndt::type("?int32"));
   NA.assign_na();
-  EXPECT_ALL_TRUE(nd::is_missing(NA + 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA - 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA * 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA / 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA + 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA - 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA * 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA / 1));
 
-  EXPECT_ALL_TRUE(nd::is_missing(1 + NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 - NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 * NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 / NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 + NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 - NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 * NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 / NA));
 
-  EXPECT_ALL_TRUE(nd::is_missing(NA + NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA - NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA * NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA / NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA + NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA - NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA * NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA / NA));
 }
 
 TEST(Arithmetic, OptionArithmeticFloat64)
 {
   nd::array NA = nd::empty(ndt::type("?float64"));
   NA.assign_na();
-  EXPECT_ALL_TRUE(nd::is_missing(NA + 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA - 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA * 1));
-  EXPECT_ALL_TRUE(nd::is_missing(NA / 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA + 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA - 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA * 1));
+  EXPECT_ALL_TRUE(nd::is_na(NA / 1));
 
-  EXPECT_ALL_TRUE(nd::is_missing(1 + NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 - NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 * NA));
-  EXPECT_ALL_TRUE(nd::is_missing(1 / NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 + NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 - NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 * NA));
+  EXPECT_ALL_TRUE(nd::is_na(1 / NA));
 
-  EXPECT_ALL_TRUE(nd::is_missing(NA + NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA - NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA * NA));
-  EXPECT_ALL_TRUE(nd::is_missing(NA / NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA + NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA - NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA * NA));
+  EXPECT_ALL_TRUE(nd::is_na(NA / NA));
 }
 
 TEST(Arithmetic, OptionArrayLHSInt32)
@@ -324,10 +324,10 @@ TEST(Arithmetic, OptionArrayLHSInt32)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(data + 1), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data - 1), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data * 2), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data / 1), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data + 1), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data - 1), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data * 2), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data / 1), expected);
 
   auto add = nd::array{1, 41, 2}.ucast(ndt::type("?int32")).eval();
   auto sub = nd::array{-1, 39, 0}.ucast(ndt::type("?int32")).eval();
@@ -349,10 +349,10 @@ TEST(Arithmetic, OptionArrayLHSFloat64)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(data + 1.0), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data - 1.0), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data * 2.0), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data / 1.0), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data + 1.0), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data - 1.0), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data * 2.0), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data / 1.0), expected);
 
   auto add = nd::array{1.0, 41.0, 2.0}.ucast(ndt::type("?float64")).eval();
   auto sub = nd::array{-1.0, 39.0, 0.0}.ucast(ndt::type("?float64")).eval();
@@ -374,10 +374,10 @@ TEST(Arithmetic, OptionArrayRHS)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(1 + data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(1 - data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(1 * data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(1 / data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(1 + data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(1 - data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(1 * data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(1 / data), expected);
 
   auto add = nd::array{0, 41, 2}.ucast(ndt::type("?int32")).eval();
   auto sub = nd::array{2, -39, 0}.ucast(ndt::type("?int32")).eval();
@@ -399,10 +399,10 @@ TEST(Arithmetic, OptionArrayOptionInt32)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(data + data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data - data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data * data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data / data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data + data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data - data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data * data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data / data), expected);
 
   auto add = nd::array{-2, 80, 2}.ucast(ndt::type("?int32")).eval();
   auto sub = nd::array{0, 0, 0}.ucast(ndt::type("?int32")).eval();
@@ -424,10 +424,10 @@ TEST(Arithmetic, OptionArrayOptionFloat64)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(data + data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data - data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data * data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data / data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data + data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data - data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data * data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data / data), expected);
 
   auto add = nd::array{-2, 80, 2}.ucast(ndt::type("?int32")).eval();
   auto sub = nd::array{0, 0, 0}.ucast(ndt::type("?int32")).eval();
@@ -451,10 +451,10 @@ TEST(Arithmetic, OptionArrayNotOptionFloat64)
   nd::array expected = nd::array{true, false, false, true, false};
   nd::array indices = {1L, 2L, 4L};
 
-  EXPECT_ARRAY_EQ(nd::is_missing(data + not_na_data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data - not_na_data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data * not_na_data), expected);
-  EXPECT_ARRAY_EQ(nd::is_missing(data / not_na_data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data + not_na_data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data - not_na_data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data * not_na_data), expected);
+  EXPECT_ARRAY_EQ(nd::is_na(data / not_na_data), expected);
 
   auto add = nd::array{-2, 80, 2}.ucast(ndt::type("?float64")).eval();
   auto sub = nd::array{0, 0, 0}.ucast(ndt::type("?float64")).eval();

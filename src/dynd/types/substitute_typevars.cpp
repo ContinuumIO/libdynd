@@ -27,15 +27,17 @@ using namespace dynd;
 /**
  * Substitutes the field types for contiguous array of types
  */
-static nd::array substitute_type_array(const nd::array &type_array, const std::map<std::string, ndt::type> &typevars,
-                                       bool concrete)
+static std::vector<ndt::type> substitute_type_array(const nd::array &type_array,
+                                                    const std::map<std::string, ndt::type> &typevars,
+                                                    bool concrete)
 {
   intptr_t field_count = type_array.get_dim_size();
   const ndt::type *field_types = reinterpret_cast<const ndt::type *>(type_array.cdata());
-  nd::array tmp_field_types(nd::empty(field_count, ndt::make_type<ndt::type_type>()));
-  ndt::type *ftraw = reinterpret_cast<ndt::type *>(tmp_field_types.data());
+  std::vector<ndt::type> tmp_field_types;
+
   for (intptr_t i = 0; i < field_count; ++i) {
-    ftraw[i] = ndt::substitute(field_types[i], typevars, concrete);
+    ndt::type t = ndt::substitute(field_types[i], typevars, concrete);
+    tmp_field_types.push_back(t);
   }
   return tmp_field_types;
 }

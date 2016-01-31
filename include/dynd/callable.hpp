@@ -155,9 +155,9 @@ namespace nd {
 
     std::intptr_t get_narg() const { return get_type()->get_npos(); }
 
-    const ndt::type &get_arg_type(std::intptr_t i) const { return get_type()->get_pos_type(i); }
+    const ndt::type get_arg_type(std::intptr_t i) const { return get_type()->get_pos_type(i); }
 
-    const array &get_arg_types() const { return get_type()->get_pos_types(); }
+    nd::array get_arg_types() const { return get_type()->get_pos_types(); }
 
     const callable &get_overload(const ndt::type &ret_tp, intptr_t narg, const ndt::type *arg_tp) const
     {

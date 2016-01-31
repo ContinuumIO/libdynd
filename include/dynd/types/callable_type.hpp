@@ -47,7 +47,20 @@ namespace ndt {
 
     const type &get_pos_tuple() const { return m_pos_tuple; }
 
-    const nd::array &get_pos_types() const { return m_pos_tuple.extended<tuple_type>()->get_field_types(); }
+    std::vector<type> get_pos_types() const { return m_pos_tuple.extended<tuple_type>()->get_field_types(); }
+    nd::array pos_types_as_ndarray() const { return m_pos_tuple.extended<tuple_type>()->get_field_types(); }
+
+    std::vector<type> pos_types_as_slice(intptr_t start, intptr_t end = -1) const {
+      std::vector<type> fields = get_pos_types();
+
+      if (end == -1 || end > (intptr_t)fields.size()) {
+        end = fields.size();
+      }
+      if (start >= end) {
+        return std::vector<type>();
+      }
+      return {fields.begin() + start, end == -1 ? fields.end() : fields.begin() + end };
+    }
 
     bool is_pos_variadic() const { return m_pos_tuple.extended<tuple_type>()->is_variadic(); }
 
@@ -55,13 +68,14 @@ namespace ndt {
 
     const type &get_kwd_struct() const { return m_kwd_struct; }
 
-    const nd::array &get_kwd_types() const { return m_kwd_struct.extended<struct_type>()->get_field_types(); }
+    std::vector<type> get_kwd_types() const { return m_kwd_struct.extended<struct_type>()->get_field_types(); }
+    nd::array kwd_types_as_ndarray() const { return m_kwd_struct.extended<struct_type>()->get_field_types(); }
 
-    const nd::array &get_kwd_names() const { return m_kwd_struct.extended<struct_type>()->get_field_names(); }
+    nd::array get_kwd_names() const { return m_kwd_struct.extended<struct_type>()->get_field_names(); }
 
     const type *get_pos_types_raw() const { return m_pos_tuple.extended<tuple_type>()->get_field_types_raw(); }
 
-    const type &get_pos_type(intptr_t i) const
+    const type get_pos_type(intptr_t i) const
     {
       if (i == -1) {
         return get_return_type();
@@ -70,7 +84,7 @@ namespace ndt {
       return m_pos_tuple.extended<tuple_type>()->get_field_type(i);
     }
 
-    const type &get_kwd_type(intptr_t i) const { return m_kwd_struct.extended<struct_type>()->get_field_type(i); }
+    const type get_kwd_type(intptr_t i) const { return m_kwd_struct.extended<struct_type>()->get_field_type(i); }
 
     std::string get_kwd_name(intptr_t i) const { return m_kwd_struct.extended<struct_type>()->get_field_name(i); }
 
@@ -139,7 +153,10 @@ namespace ndt {
     }
 
     /** Makes an callable type with both positional and keyword arguments */
-    static type make(const type &ret_tp, const nd::array &pos_tp, const nd::array &kwd_names, const nd::array &kwd_tp)
+    static type make(const type &ret_tp,
+                     std::vector<type> pos_tp,
+                     const nd::array &kwd_names,
+                     std::vector<type> kwd_tp)
     {
       return make(ret_tp, tuple_type::make(pos_tp), struct_type::make(kwd_names, kwd_tp));
     }
@@ -155,7 +172,7 @@ namespace ndt {
     }
 
     /** Makes an callable type with just positional arguments */
-    static type make(const type &ret_tp, const nd::array &pos_tp)
+    static type make(const type &ret_tp, std::vector<type> pos_tp)
     {
       return make(ret_tp, tuple_type::make(pos_tp), struct_type::make());
     }
@@ -176,10 +193,12 @@ namespace ndt {
     template <typename... T>
     static type equivalent(const T &... names)
     {
-      type tp[1 + sizeof...(A)] = {make_type<A0>(), make_type<A>()...};
+      size_t num_pos = 1 + sizeof...(A) - sizeof...(T);
+      std::vector<type> tp {make_type<A0>(), make_type<A>()...};
+      std::vector<type> pos(tp.begin(), tp.begin()+num_pos);
+      std::vector<type> kwargs(tp.begin()+num_pos, tp.end());
 
-      return callable_type::make(make_type<R>(), nd::array(tp, 1 + sizeof...(A) - sizeof...(T)), {names...},
-                                 nd::array(tp + (1 + sizeof...(A) - sizeof...(T)), sizeof...(T)));
+      return callable_type::make(make_type<R>(), pos, {names...}, kwargs);
     }
   };
 

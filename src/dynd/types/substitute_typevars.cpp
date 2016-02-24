@@ -59,21 +59,14 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
     return ndt::pointer_type::make(
         ndt::substitute(pattern.extended<pointer_type>()->get_target_type(), typevars, concrete));
   case fixed_dim_id:
-    if (pattern.get_kind() == kind_kind) {
-      if (!concrete) {
-        return ndt::make_fixed_dim_kind(
-            ndt::substitute(pattern.extended<base_dim_type>()->get_element_type(), typevars, concrete));
-      }
-      else {
-        throw invalid_argument("The dynd pattern type includes a symbolic "
-                               "'fixed' dimension, which is not concrete as "
-                               "requested");
-      }
+    if (!concrete) {
+      return ndt::make_fixed_dim_kind(
+          ndt::substitute(pattern.extended<base_dim_type>()->get_element_type(), typevars, concrete));
     }
     else {
-      return ndt::make_fixed_dim(
-          pattern.extended<fixed_dim_type>()->get_fixed_dim_size(),
-          ndt::substitute(pattern.extended<fixed_dim_type>()->get_element_type(), typevars, concrete));
+      throw invalid_argument("The dynd pattern type includes a symbolic "
+                             "'fixed' dimension, which is not concrete as "
+                             "requested");
     }
   case var_dim_id:
     return ndt::var_dim_type::make(
@@ -147,7 +140,7 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
       if (!concrete || !it->second.is_symbolic()) {
         switch (it->second.get_id()) {
         case fixed_dim_id:
-          if (it->second.get_kind() == kind_kind) {
+          if (it->second.is_symbolic()) {
             return ndt::make_fixed_dim_kind(
                 ndt::substitute(pattern.extended<typevar_dim_type>()->get_element_type(), typevars, concrete));
           }
@@ -252,7 +245,7 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
     else {
       switch (base_tp.get_id()) {
       case fixed_dim_id: {
-        if (base_tp.get_kind() == kind_kind) {
+        if (base_tp.is_symbolic()) {
           if (concrete) {
             stringstream ss;
             ss << "The base for a dimensional power type, 'Fixed ** " << exponent << "', is not concrete as required";

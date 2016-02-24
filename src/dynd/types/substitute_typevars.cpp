@@ -252,7 +252,7 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
     else {
       switch (base_tp.get_id()) {
       case fixed_dim_id: {
-        if (base_tp.get_kind() == kind_kind) {
+        if (base_tp.is_symbolic()) {
           if (concrete) {
             stringstream ss;
             ss << "The base for a dimensional power type, 'Fixed ** " << exponent << "', is not concrete as required";

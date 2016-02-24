@@ -59,7 +59,7 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
     return ndt::pointer_type::make(
         ndt::substitute(pattern.extended<pointer_type>()->get_target_type(), typevars, concrete));
   case fixed_dim_id:
-    if (pattern.get_kind() == kind_kind) {
+    if (pattern.is_symbolic()) {
       if (!concrete) {
         return ndt::make_fixed_dim_kind(
             ndt::substitute(pattern.extended<base_dim_type>()->get_element_type(), typevars, concrete));

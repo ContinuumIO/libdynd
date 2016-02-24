@@ -147,7 +147,7 @@ ndt::type ndt::detail::internal_substitute(const ndt::type &pattern, const std::
       if (!concrete || !it->second.is_symbolic()) {
         switch (it->second.get_id()) {
         case fixed_dim_id:
-          if (it->second.get_kind() == kind_kind) {
+          if (it->second.is_symbolic()) {
             return ndt::make_fixed_dim_kind(
                 ndt::substitute(pattern.extended<typevar_dim_type>()->get_element_type(), typevars, concrete));
           }

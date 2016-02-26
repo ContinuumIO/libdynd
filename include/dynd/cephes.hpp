@@ -5,9 +5,10 @@
 
 #pragma once
 
-namespace dynd { extern "C" {
+namespace dynd {
+extern "C" {
 
 #include "dynd/cephes/rename.h"
 #include "dynd/cephes/protos.h"
-
-}} // namespace dynd::cephes
+}
+} // namespace dynd

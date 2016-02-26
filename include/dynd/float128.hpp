@@ -433,11 +433,6 @@ inline float128 floor(float128 value)
   return static_cast<double>(value);
 }
 
-inline bool isfinite(float128 DYND_UNUSED(value))
-{
-  throw std::runtime_error("isfinite is not implemented for float128");
-}
-
 } // namespace dynd
 
 namespace std {

@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include <dynd/math.hpp>
 #include <dynd/json_parser.hpp>
 #include <dynd/types/struct_type.hpp>
 #include <dynd/type_promotion.hpp>

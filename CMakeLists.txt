@@ -260,7 +260,6 @@ set(libdynd_SRC
     src/dynd/func/elwise.cpp
     src/dynd/func/fft.cpp
     src/dynd/func/reduction.cpp
-    src/dynd/func/math.cpp
     src/dynd/func/max.cpp
     src/dynd/func/min.cpp
     src/dynd/func/mean.cpp
@@ -286,7 +285,6 @@ set(libdynd_SRC
     include/dynd/func/elwise.hpp
     include/dynd/func/fft.hpp
     include/dynd/func/reduction.hpp
-    include/dynd/func/math.hpp
     include/dynd/func/max.hpp
     include/dynd/func/mean.hpp
     include/dynd/func/min.hpp
@@ -376,6 +374,7 @@ set(libdynd_SRC
     src/dynd/functional.cpp
     src/dynd/int128.cpp
     src/dynd/io.cpp
+    src/dynd/math.cpp
     src/dynd/option.cpp
     src/dynd/search.cpp
     src/dynd/sort.cpp

@@ -15,9 +15,9 @@ extern double atanh(double x);
 
 extern int airy(double x, double *ai, double *aip, double *bi,
 		double *bip);
-//extern double asin(double x);
-//extern double acos(double x);
-//extern double atan(double x);
+extern double asin(double x);
+extern double acos(double x);
+extern double atan(double x);
 //extern double atan2(double y, double x);
 extern double bdtrc(int k, int n, double p);
 extern double bdtr(int k, int n, double p);

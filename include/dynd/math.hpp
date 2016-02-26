@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cmath>
+
 #include <dynd/callable.hpp>
 
 namespace dynd {

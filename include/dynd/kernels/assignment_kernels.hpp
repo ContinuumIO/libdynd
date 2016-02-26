@@ -25,6 +25,7 @@
 #include <dynd/types/fixed_string_type.hpp>
 #include <dynd/parse.hpp>
 #include <dynd/option.hpp>
+#include <dynd/math.hpp>
 #include <map>
 
 #if defined(_MSC_VER)

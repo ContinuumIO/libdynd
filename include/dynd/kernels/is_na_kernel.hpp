@@ -15,7 +15,7 @@ namespace dynd {
 namespace nd {
   namespace detail {
 
-    template <type_id_t Src0TypeID, type_id_t Src0BaseID>
+    template <type_id_t Arg0ValueID, type_id_t Arg0BaseValueID>
     struct is_na_kernel;
 
     template <>

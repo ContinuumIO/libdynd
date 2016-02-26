@@ -5,6 +5,7 @@
 
 #include <dynd/special.hpp>
 
+using namespace std;
 using namespace dynd;
 
 double dynd::factorial(int n) {

@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <dynd/array.hpp>
 #include <dynd/cephes.hpp>
 #include <dynd/math.hpp>
 

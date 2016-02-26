@@ -52,9 +52,9 @@ bool ndt::option_type::is_avail(const char *arrmeta, const char *data,
     case int128_id:
       return *reinterpret_cast<const int128 *>(data) != DYND_INT128_NA;
     case float32_id:
-      return !isnan(*reinterpret_cast<const float *>(data));
+      return !std::isnan(*reinterpret_cast<const float *>(data));
     case float64_id:
-      return !isnan(*reinterpret_cast<const double *>(data));
+      return !std::isnan(*reinterpret_cast<const double *>(data));
     case complex_float32_id:
       return reinterpret_cast<const uint32_t *>(data)[0] != DYND_FLOAT32_NA_AS_UINT ||
              reinterpret_cast<const uint32_t *>(data)[1] != DYND_FLOAT32_NA_AS_UINT;

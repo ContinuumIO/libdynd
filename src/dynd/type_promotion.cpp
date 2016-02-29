@@ -14,26 +14,6 @@
 using namespace std;
 using namespace dynd;
 
-/*
-static intptr_t min_strlen_for_builtin_kind(type_kind_t kind)
-{
-    switch (kind) {
-        case bool_kind:
-            return 1;
-        case sint_kind:
-        case uint_kind:
-            return 24;
-        case real_kind:
-            return 32;
-        case complex_kind:
-            return 64;
-        default:
-            throw dynd::type_error("cannot get minimum string length for
-specified kind");
-    }
-}
-*/
-
 ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &tp1)
 {
   // Use the value types
@@ -45,6 +25,9 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
 
   if (tp0_val.is_builtin() && tp1_val.is_builtin()) {
     const size_t int_size = sizeof(int);
+    if (tp0_val.get_id() == void_id) {
+      return tp0_val;
+    }
     switch (tp0_val.get_kind()) {
     case bool_kind:
       switch (tp1_val.get_kind()) {
@@ -53,8 +36,6 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
       case sint_kind:
       case uint_kind:
         return (tp1_val.get_data_size() >= int_size) ? tp1_val : ndt::make_type<int>();
-      case void_kind:
-        return tp0_val;
       case real_kind:
         // The bool type doesn't affect float type sizes, except
         // require at least float32
@@ -63,6 +44,9 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
         return tp1_val;
       }
     case sint_kind:
+      if (tp1_val.get_id() == void_id) {
+        return tp0_val;
+      }
       switch (tp1_val.get_kind()) {
       case bool_kind:
         return (tp0_val.get_data_size() >= int_size) ? tp0_val : ndt::make_type<int>();
@@ -88,8 +72,6 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
       case complex_kind:
         // Integer type sizes don't affect complex type sizes
         return tp1_val;
-      case void_kind:
-        return tp0_val;
       default:
         break;
       }
@@ -127,6 +109,9 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
       }
       break;
     case real_kind:
+      if (tp1_val.get_id() == void_id) {
+        return tp0_val;
+      }
       switch (tp1_val.get_kind()) {
       // Integer type sizes don't affect float type sizes
       case bool_kind:
@@ -142,13 +127,14 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
         else {
           return tp1_val;
         }
-      case void_kind:
-        return tp0_val;
       default:
         break;
       }
       break;
     case complex_kind:
+      if (tp1_val.get_id() == void_id) {
+        return tp0_val;
+      }
       switch (tp1_val.get_kind()) {
       // Integer and float type sizes don't affect complex type sizes
       case bool_kind:
@@ -164,14 +150,10 @@ ndt::type dynd::promote_types_arithmetic(const ndt::type &tp0, const ndt::type &
         }
       case complex_kind:
         return (tp0_val.get_data_size() >= tp1_val.get_data_size()) ? tp0_val : tp1_val;
-      case void_kind:
-        return tp0_val;
       default:
         break;
       }
       break;
-    case void_kind:
-      return tp1_val;
     default:
       break;
     }

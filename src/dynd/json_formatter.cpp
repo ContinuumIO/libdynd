@@ -182,7 +182,7 @@ static void format_json_string(output_data &out, const ndt::type &dt, const char
 static void format_json_option(output_data &out, const ndt::type &dt, const char *arrmeta, const char *data)
 {
   const ndt::option_type *ot = dt.extended<ndt::option_type>();
-  if (ot->is_avail(arrmeta, data, &eval::default_eval_context)) {
+  if (false) { //ot->is_avail(arrmeta, data, &eval::default_eval_context)) {
     format_json(out, ot->get_value_type(), arrmeta, data);
   }
   else {

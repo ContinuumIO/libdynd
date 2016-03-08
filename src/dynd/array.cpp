@@ -390,7 +390,8 @@ bool nd::array::is_na() const
 {
   ndt::type tp = get_type();
   if (tp.get_id() == option_id) {
-    return !tp.extended<ndt::option_type>()->is_avail(get()->metadata(), cdata(), &eval::default_eval_context);
+    std::exit(-1);
+//    return !tp.extended<ndt::option_type>()->is_avail(get()->metadata(), cdata(), &eval::default_eval_context);
   }
 
   return false;

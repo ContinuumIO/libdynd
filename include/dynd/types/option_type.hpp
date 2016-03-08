@@ -48,10 +48,10 @@ namespace ndt {
     const type &get_value_type() const { return m_value_tp.value_type(); }
 
     /** Assigns NA to one value */
-    void assign_na(const char *arrmeta, char *data, const eval::eval_context *ectx) const;
+  //  void assign_na(const char *arrmeta, char *data, const eval::eval_context *ectx) const;
 
     /** Returns true if the value is available */
-    bool is_avail(const char *arrmeta, const char *data, const eval::eval_context *ectx) const;
+//    bool is_avail(const char *arrmeta, const char *data, const eval::eval_context *ectx) const;
 
     void print_type(std::ostream &o) const;
     void print_data(std::ostream &o, const char *arrmeta, const char *data) const;

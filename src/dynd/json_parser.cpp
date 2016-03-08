@@ -289,8 +289,9 @@ static bool parse_struct_json_from_object(const ndt::type &tp, const char *arrme
     if (!populated_fields[i]) {
       const ndt::type &field_tp = fsd->get_field_type(i);
       if (field_tp.get_id() == option_id) {
-        field_tp.extended<ndt::option_type>()->assign_na(arrmeta + arrmeta_offsets[i], out_data + data_offsets[i],
-                                                         &eval::default_eval_context);
+        std::exit(-1);
+//        field_tp.extended<ndt::option_type>()->assign_na(arrmeta + arrmeta_offsets[i], out_data + data_offsets[i],
+  //                                                       &eval::default_eval_context);
       }
       else {
         stringstream ss;
@@ -534,7 +535,8 @@ static void parse_option_json(const ndt::type &tp, const char *arrmeta, char *ou
   const char *saved_begin = begin;
   if (tp.is_scalar()) {
     if (parse_token(begin, end, "null")) {
-      tp.extended<ndt::option_type>()->assign_na(arrmeta, out_data, ectx);
+      std::exit(-1);
+//      tp.extended<ndt::option_type>()->assign_na(arrmeta, out_data, ectx);
       return;
     }
     else {

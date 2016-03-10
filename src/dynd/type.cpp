@@ -10,7 +10,7 @@
 #include <dynd/types/fixed_dim_type.hpp>
 #include <dynd/types/var_dim_type.hpp>
 #include <dynd/exceptions.hpp>
-#include <dynd/types/adapt_type.hpp>
+#include <dynd/types/struct_type.hpp>
 #include <dynd/types/option_type.hpp>
 #include <dynd/types/datashape_parser.hpp>
 #include <dynd/types/any_kind_type.hpp>
@@ -328,7 +328,7 @@ const ndt::type &ndt::type::storage_type() const
     return *this;
   }
   else if (get_id() == adapt_id) {
-    return extended<ndt::adapt_type>()->get_storage_type();
+    return extended<ndt::base_expr_type>()->get_storage_type();
   }
   else {
     // Follow the operand type chain to get the storage type
@@ -347,7 +347,7 @@ const ndt::type &ndt::type::value_type() const
     return *this;
   }
   else if (get_id() == adapt_id) {
-    return extended<ndt::adapt_type>()->get_value_type();
+    return extended<ndt::base_expr_type>()->get_value_type();
   }
   else {
     // All chaining happens in the operand_type
@@ -936,12 +936,12 @@ struct ndt::common_type::init {
   template <typename TypeIDSequence>
   void on_each()
   {
-    children[{{front<TypeIDSequence>::value, back<TypeIDSequence>::value}}] =
-        [](const ndt::type &DYND_UNUSED(tp0), const ndt::type &DYND_UNUSED(tp1)) {
-          return ndt::make_type<
-              typename std::common_type<typename dynd::type_of<front<TypeIDSequence>::value>::type,
-                                        typename dynd::type_of<back<TypeIDSequence>::value>::type>::type>();
-        };
+    children[{{front<TypeIDSequence>::value, back<TypeIDSequence>::value}}] = [](const ndt::type &DYND_UNUSED(tp0),
+                                                                                 const ndt::type &DYND_UNUSED(tp1)) {
+      return ndt::make_type<
+          typename std::common_type<typename dynd::type_of<front<TypeIDSequence>::value>::type,
+                                    typename dynd::type_of<back<TypeIDSequence>::value>::type>::type>();
+    };
   }
 };
 

@@ -23,13 +23,11 @@ static inline ndt::type get_tagged_dims_from_type(intptr_t ndim, const ndt::type
   ndt::type dtp = tp.without_memory_type();
   for (int i = 0; i < ndim; ++i) {
     switch (dtp.get_id()) {
+    case fixed_dim_kind_id:
+      out_tagged_dims[i] = -2;
+      break;
     case fixed_dim_id:
-      if (dtp.is_symbolic()) {
-        out_tagged_dims[i] = -2;
-      }
-      else {
-        out_tagged_dims[i] = dtp.extended<ndt::fixed_dim_type>()->get_fixed_dim_size();
-      }
+      out_tagged_dims[i] = dtp.extended<ndt::fixed_dim_type>()->get_fixed_dim_size();
       break;
     case var_dim_id:
       out_tagged_dims[i] = -1;

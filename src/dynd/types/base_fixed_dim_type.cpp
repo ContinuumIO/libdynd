@@ -15,7 +15,7 @@ using namespace std;
 using namespace dynd;
 
 ndt::base_fixed_dim_type::base_fixed_dim_type(const type &element_tp)
-    : base_dim_type(fixed_dim_id, element_tp, 0, element_tp.get_data_alignment(), sizeof(size_stride_t),
+    : base_dim_type(fixed_dim_kind_id, element_tp, 0, element_tp.get_data_alignment(), sizeof(size_stride_t),
                     type_flag_symbolic, true)
 {
   // Propagate the inherited flags from the element
@@ -114,11 +114,7 @@ bool ndt::base_fixed_dim_type::operator==(const base_type &rhs) const
     return true;
   }
 
-  if (rhs.get_id() != fixed_dim_id) {
-    return false;
-  }
-
-  if (static_cast<const base_fixed_dim_type *>(&rhs)->is_sized()) {
+  if (rhs.get_id() != fixed_dim_kind_id) {
     return false;
   }
 
@@ -184,13 +180,10 @@ void ndt::base_fixed_dim_type::data_destruct_strided(const char *DYND_UNUSED(arr
 bool ndt::base_fixed_dim_type::match(const type &candidate_tp, std::map<std::string, type> &tp_vars) const
 {
   switch (candidate_tp.get_id()) {
+  case fixed_dim_kind_id:
+    return m_element_tp.match(candidate_tp.extended<base_fixed_dim_type>()->get_element_type(), tp_vars);
   case fixed_dim_id:
-    if (candidate_tp.is_symbolic()) {
-      return m_element_tp.match(candidate_tp.extended<base_fixed_dim_type>()->get_element_type(), tp_vars);
-    }
-    else {
-      return m_element_tp.match(candidate_tp.extended<fixed_dim_type>()->get_element_type(), tp_vars);
-    }
+    return m_element_tp.match(candidate_tp.extended<fixed_dim_type>()->get_element_type(), tp_vars);
   default:
     return false;
   }

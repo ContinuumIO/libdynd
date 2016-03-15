@@ -24,8 +24,8 @@ struct DYND_API _bind {
 DYND_API nd::callable nd::assign::make()
 {
   typedef type_id_sequence<bool_id, int8_id, int16_id, int32_id, int64_id, int128_id, uint8_id, uint16_id, uint32_id,
-                           uint64_id, uint128_id, float32_id, float64_id, complex_float32_id, complex_float64_id>
-      numeric_ids;
+                           uint64_id, uint128_id, float32_id, float64_id, complex_float32_id,
+                           complex_float64_id> numeric_ids;
 
   ndt::type self_tp = ndt::callable_type::make(ndt::any_kind_type::make(), {ndt::any_kind_type::make()}, {"error_mode"},
                                                {ndt::make_type<ndt::option_type>(ndt::make_type<assign_error_mode>())});
@@ -132,27 +132,4 @@ void dynd::make_assignment_kernel(nd::kernel_builder *ckb, const ndt::type &dst_
   nd::array error_mode = ectx->errmode;
   nd::assign::get()->instantiate(nd::assign::get()->static_data(), NULL, ckb, dst_tp, dst_arrmeta, 1, &src_tp,
                                  &src_arrmeta, kernreq, 1, &error_mode, std::map<std::string, ndt::type>());
-}
-
-void dynd::make_pod_typed_data_assignment_kernel(nd::kernel_builder *ckb, size_t data_size,
-                                                 size_t DYND_UNUSED(data_alignment), kernel_request_t kernreq)
-{
-  // Aligned specialization tables
-  switch (data_size) {
-  case 1:
-    ckb->emplace_back<nd::trivial_copy_kernel<1>>(kernreq);
-    break;
-  case 2:
-    ckb->emplace_back<nd::trivial_copy_kernel<2>>(kernreq);
-    break;
-  case 4:
-    ckb->emplace_back<nd::trivial_copy_kernel<4>>(kernreq);
-    break;
-  case 8:
-    ckb->emplace_back<nd::trivial_copy_kernel<8>>(kernreq);
-    break;
-  default:
-    ckb->emplace_back<nd::unaligned_copy_ck>(kernreq, data_size);
-    break;
-  }
 }

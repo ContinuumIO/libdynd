@@ -1287,46 +1287,6 @@ namespace nd {
     }
   };
 
-  template <int N>
-  struct trivial_copy_kernel;
-
-  template <>
-  struct trivial_copy_kernel<1> : base_strided_kernel<trivial_copy_kernel<1>, 1> {
-    void single(char *dst, char *const *src) { *dst = *src[0]; }
-  };
-
-  template <>
-  struct trivial_copy_kernel<2> : base_strided_kernel<trivial_copy_kernel<2>, 1> {
-    void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<int16_t *>(dst) = *reinterpret_cast<int16_t *>(src[0]);
-    }
-  };
-
-  template <>
-  struct trivial_copy_kernel<4> : base_strided_kernel<trivial_copy_kernel<4>, 1> {
-    void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<int32_t *>(dst) = *reinterpret_cast<int32_t *>(src[0]);
-    }
-  };
-
-  template <>
-  struct trivial_copy_kernel<8> : base_strided_kernel<trivial_copy_kernel<8>, 1> {
-    void single(char *dst, char *const *src)
-    {
-      *reinterpret_cast<int64_t *>(dst) = *reinterpret_cast<int64_t *>(src[0]);
-    }
-  };
-
-  struct unaligned_copy_ck : base_strided_kernel<unaligned_copy_ck, 1> {
-    size_t data_size;
-
-    unaligned_copy_ck(size_t data_size) : data_size(data_size) {}
-
-    void single(char *dst, char *const *src) { memcpy(dst, *src, data_size); }
-  };
-
   namespace detail {
 
     template <>

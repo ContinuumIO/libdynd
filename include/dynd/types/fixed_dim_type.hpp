@@ -159,8 +159,6 @@ namespace ndt {
     void get_shape(intptr_t ndim, intptr_t i, intptr_t *out_shape, const char *arrmeta, const char *data) const;
     void get_strides(size_t i, intptr_t *out_strides, const char *arrmeta) const;
 
-    bool is_sized() const { return true; }
-
     axis_order_classification_t classify_axis_order(const char *arrmeta) const;
 
     bool is_lossless_assignment(const type &dst_tp, const type &src_tp) const;

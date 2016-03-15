@@ -37,8 +37,6 @@ namespace ndt {
 
     bool is_lossless_assignment(const type &dst_tp, const type &src_tp) const;
 
-    virtual bool is_sized() const { return false; }
-
     bool operator==(const base_type &rhs) const;
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;

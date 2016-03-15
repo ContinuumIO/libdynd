@@ -36,14 +36,10 @@ TEST(TypePatternMatch, Simple)
   EXPECT_FALSE(ndt::type("T").match(ndt::type("3 * int32")));
   EXPECT_FALSE(ndt::type("A... * int32").match(ndt::type("int16")));
   EXPECT_FALSE(ndt::type("A... * 3 * M").match(ndt::type("4 * int32")));
-  EXPECT_FALSE(
-      ndt::type("Fixed**N * var * int32").match(ndt::type("Fixed**3 * int32")));
-  EXPECT_FALSE(
-      ndt::type("Fixed**N * int32").match(ndt::type("var * Fixed**3 * int32")));
-  EXPECT_FALSE(
-      ndt::type("A**N * A * int32").match(ndt::type("Fixed**3 * var * int32")));
-  EXPECT_FALSE(
-      ndt::type("4**N * N * int32").match(ndt::type("4 * 4 * 3 * int32")));
+  EXPECT_FALSE(ndt::type("Fixed**N * var * int32").match(ndt::type("Fixed**3 * int32")));
+  EXPECT_FALSE(ndt::type("Fixed**N * int32").match(ndt::type("var * Fixed**3 * int32")));
+  EXPECT_FALSE(ndt::type("A**N * A * int32").match(ndt::type("Fixed**3 * var * int32")));
+  EXPECT_FALSE(ndt::type("4**N * N * int32").match(ndt::type("4 * 4 * 3 * int32")));
 
   EXPECT_TYPE_MATCH("... * T", "... * int32");
 }
@@ -94,8 +90,7 @@ TEST(TypePatternMatch, VariadicTuple)
   EXPECT_TYPE_MATCH("(int32, int64, ...)", "(int32, int64, float32)");
   EXPECT_TYPE_MATCH("(int32, int64, float32, ...)", "(int32, int64, float32)");
   EXPECT_TYPE_MATCH("(int32, T, ...)", "(int32, int64, float32)");
-  EXPECT_FALSE(
-      ndt::type("(T, T, ...)").match(ndt::type("(int32, int64, float32)")));
+  EXPECT_FALSE(ndt::type("(T, T, ...)").match(ndt::type("(int32, int64, float32)")));
   EXPECT_TYPE_MATCH("(T, T, ...)", "(int32, int32, float32)");
 }
 
@@ -105,12 +100,11 @@ TEST(TypePatternMatch, Struct)
   EXPECT_TYPE_MATCH("{x: T}", "{x: int32}");
   EXPECT_TYPE_MATCH("A... * {x: B... * T}", "{x: int32}");
   EXPECT_TYPE_MATCH("A... * {x: T, y: T}", "100 * {x: int32, y: int32}");
-  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: S, v: S}",
-                    "100 * {x: int32, y: int32, u: int16, v: int16}");
+  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: S, v: S}", "100 * {x: int32, y: int32, u: int16, v: int16}");
   EXPECT_TYPE_MATCH("T", "{x: int32}");
 
-  EXPECT_FALSE(ndt::type("100 * {x: int32, y: int32, u: int16, v: int32}")
-                   .match(ndt::type("M * {x: T, y: T, u: S, v: S}")));
+  EXPECT_FALSE(
+      ndt::type("100 * {x: int32, y: int32, u: int16, v: int32}").match(ndt::type("M * {x: T, y: T, u: S, v: S}")));
 }
 
 TEST(TypePatternMatch, VariadicStruct)
@@ -123,18 +117,12 @@ TEST(TypePatternMatch, VariadicStruct)
   EXPECT_TYPE_MATCH("{...}", "{x: int32, y: int64}");
   EXPECT_TYPE_MATCH("{...}", "{x: int32, y: int64, z: float32}");
   EXPECT_TYPE_MATCH("{x: int32, ...}", "{x: int32, y: int64, z: float32}");
-  EXPECT_FALSE(ndt::type("{x: int32, y: int64, z: float32}")
-                   .match(ndt::type("{y: int32, ...}")));
-  EXPECT_FALSE(ndt::type("{y: int64, ...}")
-                   .match(ndt::type("{x: int32, y: int64, z: float32}")));
-  EXPECT_TYPE_MATCH("{x: int32, y: int64, ...}",
-                    "{x: int32, y: int64, z: float32}");
-  EXPECT_TYPE_MATCH("{x: int32, y: int64, z: float32, ...}",
-                    "{x: int32, y: int64, z: float32}");
-  EXPECT_TYPE_MATCH("{x: int32, y: T, ...}",
-                    "{x: int32, y: int64, z: float32}");
-  EXPECT_FALSE(ndt::type("{x: T, y: T, ...}")
-                   .match(ndt::type("{x: int32, y: int64, z: float32}")));
+  EXPECT_FALSE(ndt::type("{x: int32, y: int64, z: float32}").match(ndt::type("{y: int32, ...}")));
+  EXPECT_FALSE(ndt::type("{y: int64, ...}").match(ndt::type("{x: int32, y: int64, z: float32}")));
+  EXPECT_TYPE_MATCH("{x: int32, y: int64, ...}", "{x: int32, y: int64, z: float32}");
+  EXPECT_TYPE_MATCH("{x: int32, y: int64, z: float32, ...}", "{x: int32, y: int64, z: float32}");
+  EXPECT_TYPE_MATCH("{x: int32, y: T, ...}", "{x: int32, y: int64, z: float32}");
+  EXPECT_FALSE(ndt::type("{x: T, y: T, ...}").match(ndt::type("{x: int32, y: int64, z: float32}")));
   EXPECT_TYPE_MATCH("{x: T, y: T, ...}", "{x: int32, y: int32, z: float32}");
 }
 
@@ -143,13 +131,11 @@ TEST(TypePatternMatch, Option)
   EXPECT_TYPE_MATCH("?int32", "?int32");
   EXPECT_TYPE_MATCH("?T", "?int32");
   EXPECT_TYPE_MATCH("T", "?int32");
-  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: S, v: S}",
-                    "100 * {x: ?int32, y: ?int32, u: int16, v: int16}");
-  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: ?S, v: S}",
-                    "100 * {x: ?int32, y: ?int32, u: ?int16, v: int16}");
+  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: S, v: S}", "100 * {x: ?int32, y: ?int32, u: int16, v: int16}");
+  EXPECT_TYPE_MATCH("M * {x: T, y: T, u: ?S, v: S}", "100 * {x: ?int32, y: ?int32, u: ?int16, v: int16}");
 
-  EXPECT_FALSE(ndt::type("M * {x: T, y: T, u: S, v: S}").match(
-      ndt::type("100 * {x: ?int32, y: ?int32, u: ?int16, v: int16}")));
+  EXPECT_FALSE(
+      ndt::type("M * {x: T, y: T, u: S, v: S}").match(ndt::type("100 * {x: ?int32, y: ?int32, u: ?int16, v: int16}")));
 }
 
 /*
@@ -191,14 +177,12 @@ TEST(TypePatternMatch, ArrFuncProto)
   EXPECT_TYPE_MATCH("() -> T", "() -> float32");
   EXPECT_TYPE_MATCH("(T) -> T", "(float32) -> float32");
   EXPECT_TYPE_MATCH("(S) -> T", "(int32) -> float32");
-  EXPECT_TYPE_MATCH("(S, A... * 2 * int16) -> T",
-                    "(int32, 5 * var * 2 * int16) -> float32");
+  EXPECT_TYPE_MATCH("(S, A... * 2 * int16) -> T", "(int32, 5 * var * 2 * int16) -> float32");
 
   EXPECT_FALSE(ndt::type("(int32) -> float32").match(ndt::type("() -> T")));
   EXPECT_FALSE(ndt::type("() -> float32").match(ndt::type("(T) -> T")));
   EXPECT_FALSE(ndt::type("(int32) -> float32").match(ndt::type("(T) -> T")));
-  EXPECT_FALSE(ndt::type("(int32, 5 * var * 2 * int16) -> float32")
-                   .match(ndt::type("(S, M * 2 * int16) -> T")));
+  EXPECT_FALSE(ndt::type("(int32, 5 * var * 2 * int16) -> float32").match(ndt::type("(S, M * 2 * int16) -> T")));
 }
 
 TEST(TypePatternMatch, VariadicArrFuncProto)
@@ -206,31 +190,25 @@ TEST(TypePatternMatch, VariadicArrFuncProto)
   EXPECT_TYPE_MATCH("(...) -> void", "() -> void");
   EXPECT_FALSE(ndt::type("() -> void").match(ndt::type("(...) -> void")));
   EXPECT_TYPE_MATCH("(...) -> void", "(kw: int32) -> void");
-  EXPECT_TYPE_MATCH("(int32, kw: T, ...) -> void",
-                    "(int32, kw: int32, x: float64) -> void");
-  EXPECT_FALSE(ndt::type("(int32, wk: T, ...) -> void")
-                   .match(ndt::type("(int32, kw: int32, x: float64) -> void")));
+  EXPECT_TYPE_MATCH("(int32, kw: T, ...) -> void", "(int32, kw: int32, x: float64) -> void");
+  EXPECT_FALSE(ndt::type("(int32, wk: T, ...) -> void").match(ndt::type("(int32, kw: int32, x: float64) -> void")));
   EXPECT_TYPE_MATCH("(...) -> void", "(int32, ..., kw: int32, ...) -> void");
   EXPECT_TYPE_MATCH("(S, ...) -> T", "(int32, float32) -> float32");
-  EXPECT_TYPE_MATCH(
-      "(Fixed**N * T, ..., func: (N * T) -> R) -> R",
-      "(2 * 3 * 4 * int32, float64, func: (3 * int32) -> bool) -> bool");
+  EXPECT_TYPE_MATCH("(Fixed**N * T, ..., func: (N * T) -> R) -> R",
+                    "(2 * 3 * 4 * int32, float64, func: (3 * int32) -> bool) -> bool");
 }
 
 TEST(TypePatternMatch, NestedArrFuncProto)
 {
-  EXPECT_TYPE_MATCH("(N * S, (M * S) -> T) -> N * T",
-                    "(3 * int32, (2 * int32) -> float64) -> 3 * float64");
-  EXPECT_FALSE(ndt::type("(N * S, (M * S) -> T) -> N * T").match(
-      ndt::type("(3 * int32, (2 * float64) -> float64) -> 3 * float64")));
+  EXPECT_TYPE_MATCH("(N * S, (M * S) -> T) -> N * T", "(3 * int32, (2 * int32) -> float64) -> 3 * float64");
+  EXPECT_FALSE(ndt::type("(N * S, (M * S) -> T) -> N * T")
+                   .match(ndt::type("(3 * int32, (2 * float64) -> float64) -> 3 * float64")));
   EXPECT_FALSE(ndt::type("(3 * int32, (2 * int32) -> float64) -> 2 * float64")
                    .match(ndt::type("(N * S, (M * S) -> T) -> N * T")));
-  EXPECT_TYPE_MATCH("(N * S, (M * S) -> T) -> N * T",
-                    "(3 * int32, (2 * int32) -> float64) -> 3 * float64");
-  EXPECT_TYPE_MATCH("(N * S, func: (M * S) -> T) -> N * T",
-                    "(3 * int32, func: (2 * int32) -> float64) -> 3 * float64");
-  EXPECT_FALSE(ndt::type("(N * S, funk: (M * S) -> T) -> N * T").match(
-      ndt::type("(3 * int32, func: (2 * int32) -> float64) -> 3 * float64")));
+  EXPECT_TYPE_MATCH("(N * S, (M * S) -> T) -> N * T", "(3 * int32, (2 * int32) -> float64) -> 3 * float64");
+  EXPECT_TYPE_MATCH("(N * S, func: (M * S) -> T) -> N * T", "(3 * int32, func: (2 * int32) -> float64) -> 3 * float64");
+  EXPECT_FALSE(ndt::type("(N * S, funk: (M * S) -> T) -> N * T")
+                   .match(ndt::type("(3 * int32, func: (2 * int32) -> float64) -> 3 * float64")));
 }
 
 TEST(TypePatternMatch, Pow)
@@ -245,10 +223,8 @@ TEST(TypePatternMatch, Pow)
   EXPECT_TYPE_MATCH("D * D**N * int32", "Fixed * Fixed * Fixed * int32");
 
   EXPECT_TYPE_MATCH("D * D**N * int32", "3 * 3 * 3 * int32");
-  EXPECT_FALSE(
-      ndt::type("D * D**N * int32").match(ndt::type("2 * 3 * 3 * int32")));
-  EXPECT_FALSE(
-      ndt::type("2 * 2 * 3 * int32").match(ndt::type("D * D**N * int32")));
+  EXPECT_FALSE(ndt::type("D * D**N * int32").match(ndt::type("2 * 3 * 3 * int32")));
+  EXPECT_FALSE(ndt::type("2 * 2 * 3 * int32").match(ndt::type("D * D**N * int32")));
   // Make sure an exponent of zero works as expected
   EXPECT_TYPE_MATCH("D**N * Fixed * int32", "5 * int32");
   EXPECT_TYPE_MATCH("3**N * Fixed * int32", "2 * int32");
@@ -269,13 +245,11 @@ TEST(TypePatternMatch, TypeVarConstructed)
 #endif
 }
 
-TEST(TypePatternMatch, Broadcast) {
+TEST(TypePatternMatch, Broadcast)
+{
   // Confirm that "T..." type variables broadcast together as they match
   std::map<std::string, ndt::type> tp_vars;
-  EXPECT_TRUE(
-      ndt::type("Dims... * int32").match(ndt::type("3 * 1 * int32"), tp_vars));
-  EXPECT_TRUE(ndt::type("Dims... * float32")
-                  .match(ndt::type("1 * 2 * float32"), tp_vars));
-  EXPECT_EQ(ndt::type("3 * 2 * bool"),
-            ndt::substitute(ndt::type("Dims... * bool"), tp_vars, true));
+  EXPECT_TRUE(ndt::type("Dims... * int32").match(ndt::type("3 * 1 * int32"), tp_vars));
+  EXPECT_TRUE(ndt::type("Dims... * float32").match(ndt::type("1 * 2 * float32"), tp_vars));
+  EXPECT_EQ(ndt::type("3 * 2 * bool"), ndt::substitute(ndt::type("Dims... * bool"), tp_vars, true));
 }

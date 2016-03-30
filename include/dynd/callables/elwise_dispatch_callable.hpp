@@ -23,6 +23,7 @@ namespace nd {
 
       elwise_dispatch_callable(const ndt::type &tp, const callable &child) : base_callable(tp), m_child(child) {
         m_abstract = true;
+        m_new_style = true;
       }
 
       void new_resolve(base_callable *DYND_UNUSED(parent), call_graph &g, ndt::type &dst_tp, intptr_t nsrc,
@@ -113,7 +114,7 @@ namespace nd {
           break;
         case var_dim_id:
           if (src_all_strided_or_var) {
-            callable f = make_callable<elwise_callable<var_dim_id, fixed_dim_id, N>>(m_child);
+            static callable f = make_callable<elwise_callable<var_dim_id, fixed_dim_id, N>>();
             if (!f->is_abstract()) {
               g.emplace_back(f.get());
             }

@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <map>
+#include <typeinfo>
 
 #include <dynd/kernels/kernel_prefix.hpp>
 #include <dynd/array.hpp>

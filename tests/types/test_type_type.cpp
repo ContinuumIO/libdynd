@@ -172,6 +172,7 @@ TEST(DTypeDType, FixedArrayRefCount)
   EXPECT_EQ(1, d.extended()->get_use_count());
 }
 
+
 TEST(DTypeDType, VarArrayRefCount)
 {
   nd::array a;

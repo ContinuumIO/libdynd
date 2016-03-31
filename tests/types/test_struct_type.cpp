@@ -241,6 +241,7 @@ TEST(StructType, SingleCompare)
 
   // Test lexicographic sorting
 
+
   // a == b
   a.p("a").vals() = 3;
   a.p("b").vals() = -2.25;
@@ -253,6 +254,7 @@ TEST(StructType, SingleCompare)
   // EXPECT_THROW((a <= b), not_comparable_error);
   EXPECT_TRUE((a == b).as<bool>());
   EXPECT_FALSE((a != b).as<bool>());
+  std::cout << "--------------------------" << std::endl;
   //  EXPECT_THROW((a >= b), not_comparable_error);
   //  EXPECT_THROW((a > b), not_comparable_error);
   //  EXPECT_FALSE(b.op_sorting_less(a));

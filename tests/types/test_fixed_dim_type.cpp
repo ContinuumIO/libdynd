@@ -100,6 +100,7 @@ TEST(FixedDimType, SimpleIndex)
   EXPECT_THROW(a(-3), index_out_of_bounds);
 }
 
+/*
 TEST(FixedDimType, AssignKernel_ScalarToFixed)
 {
   nd::array a, b;
@@ -154,6 +155,7 @@ TEST(FixedDimType, AssignKernel_FixedToScalarError)
                                       kernel_request_single, &eval::default_eval_context),
                broadcast_error);
 }
+*/
 
 TEST(FixedDimType, IsTypeSubarray)
 {

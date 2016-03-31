@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <map>
+#include <typeinfo>
 
 #include <dynd/kernels/kernel_prefix.hpp>
 #include <dynd/array.hpp>
@@ -82,9 +83,14 @@ namespace nd {
 
     size_t get_frame_size() { return m_frame_size; }
 
-    virtual void new_resolve(base_callable *DYND_UNUSED(parent), call_graph &DYND_UNUSED(g), ndt::type &dst_tp,
-                             intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp), size_t DYND_UNUSED(nkwd),
+    virtual void new_resolve(base_callable *DYND_UNUSED(parent), call_graph &DYND_UNUSED(cg), ndt::type &dst_tp,
+                             intptr_t nsrc, const ndt::type *src_tp, size_t DYND_UNUSED(nkwd),
                              const array *DYND_UNUSED(kwds), const std::map<std::string, ndt::type> &tp_vars) {
+      std::cout << "base_callable::new_resolve" << std::endl;
+      std::cout << "dst_tp = " << dst_tp << std::endl;
+      if (nsrc > 0) {
+        std::cout << "src_tp = " << src_tp[0] << std::endl;
+      }
       if (dst_tp.is_symbolic()) {
         dst_tp = ndt::substitute(dst_tp, tp_vars, true);
       }
@@ -94,7 +100,8 @@ namespace nd {
                                  kernel_request_t DYND_UNUSED(kernreq), const char *DYND_UNUSED(dst_arrmeta),
                                  const char *const *DYND_UNUSED(src_arrmeta), size_t DYND_UNUSED(nkwd),
                                  const array *DYND_UNUSED(kwds)) {
-      throw std::runtime_error("calling base_callable::new_instantiate");
+      throw std::runtime_error(std::string("calling base_callable::new_instantiate for ") +
+                               std::string(typeid(*this).name()));
     }
 
     virtual array alloc(const ndt::type *dst_tp) const { return empty(*dst_tp); }
@@ -161,10 +168,15 @@ namespace nd {
      *                 values.
      * \param kwds  A struct array of named auxiliary arguments.
      */
-    virtual void instantiate(char *data, kernel_builder *ckb, const ndt::type &dst_tp, const char *dst_arrmeta,
-                             intptr_t nsrc, const ndt::type *src_tp, const char *const *src_arrmeta,
-                             kernel_request_t kernreq, intptr_t nkwd, const array *kwds,
-                             const std::map<std::string, ndt::type> &tp_vars) = 0;
+    virtual void instantiate(char *DYND_UNUSED(data), kernel_builder *DYND_UNUSED(ckb),
+                             const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
+                             intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
+                             const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t DYND_UNUSED(kernreq),
+                             intptr_t DYND_UNUSED(nkwd), const array *DYND_UNUSED(kwds),
+                             const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars)) {
+      throw std::runtime_error(std::string("calling base_callable::old_instantiate for ") +
+                               std::string(typeid(*this).name()));
+    }
 
     virtual void overload(const ndt::type &DYND_UNUSED(ret_tp), intptr_t DYND_UNUSED(narg),
                           const ndt::type *DYND_UNUSED(arg_tp), const callable &DYND_UNUSED(value)) {

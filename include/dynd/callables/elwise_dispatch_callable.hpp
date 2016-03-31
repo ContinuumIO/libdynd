@@ -29,9 +29,11 @@ namespace nd {
       void new_resolve(base_callable *DYND_UNUSED(parent), call_graph &g, ndt::type &dst_tp, intptr_t nsrc,
                        const ndt::type *src_tp, size_t nkwd, const array *kwds,
                        const std::map<std::string, ndt::type> &tp_vars) {
+        std::cout << "elwise_dispatch_callable::new_resolve" << std::endl;
         //        m_child->new_resolve(stack, nkwd, kwds, tp_vars);
 
         if (dst_tp.is_symbolic()) {
+          std::cout << "elwise new resolve with " << dst_tp << std::endl;
           resolve_dst_type(nullptr, dst_tp, nsrc, src_tp, nkwd, kwds, tp_vars);
         }
 
@@ -171,8 +173,12 @@ namespace nd {
 
         child_dst_tp = child_af_tp->get_return_type();
         if (child_dst_tp.is_symbolic()) {
-          child->resolve_dst_type(NULL, child_dst_tp, nsrc, child_src_tp.empty() ? NULL : child_src_tp.data(), nkwd,
-                                  kwds, tp_vars);
+          call_graph g;
+          if (!is_abstract()) {
+            g.emplace_back(child.get());
+          }
+          child->new_resolve(nullptr, g, child_dst_tp, nsrc, child_src_tp.empty() ? NULL : child_src_tp.data(), nkwd,
+                             kwds, tp_vars);
         }
 
         // ...

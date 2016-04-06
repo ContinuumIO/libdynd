@@ -109,18 +109,14 @@ namespace nd {
 
     DYND_API ndt::type elwise_make_type(const ndt::callable_type *child_tp);
 
-    template <int... I>
-    callable forward_na(const ndt::type &ret_tp) {
-      ndt::type tp =
-          ndt::callable_type::make(ndt::make_type<ndt::option_type>(ret_tp), {ndt::type("Any"), ndt::type("Any")});
-      return make_callable<forward_na_callable<I...>>(tp, callable());
+    template <size_t... I>
+    callable forward_na(const ndt::type &child_tp) {
+      return make_callable<forward_na_callable<I...>>(child_tp);
     }
 
-    template <int... I>
+    template <size_t... I>
     callable forward_na(const callable &child) {
-      ndt::type tp = ndt::callable_type::make(ndt::make_type<ndt::option_type>(child.get_ret_type()),
-                                              {ndt::type("Any"), ndt::type("Any")});
-      return make_callable<forward_na_callable<I...>>(tp, child);
+      return make_callable<forward_na_callable<I...>>(child);
     }
 
     DYND_API callable outer(const callable &child);

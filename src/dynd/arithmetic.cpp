@@ -42,9 +42,9 @@ nd::callable make_binary_arithmetic() {
   const ndt::type &tp = ndt::type("(Any, Any) -> Any");
 
   auto dispatcher = nd::callable::new_make_all<KernelType, TypeIDSequence, TypeIDSequence>();
-  dispatcher.insert({{{option_id, any_kind_id}, nd::functional::forward_na<0>(ndt::type("Any"))},
-                     {{any_kind_id, option_id}, nd::functional::forward_na<1>(ndt::type("Any"))},
-                     {{option_id, option_id}, nd::functional::forward_na<0, 1>(ndt::type("Any"))},
+  dispatcher.insert({{{option_id, any_kind_id}, nd::functional::forward_na<0>(ndt::type("(Any, Any) -> Any"))},
+                     {{any_kind_id, option_id}, nd::functional::forward_na<1>(ndt::type("(Any, Any) -> Any"))},
+                     {{option_id, option_id}, nd::functional::forward_na<0, 1>(ndt::type("(Any, Any) -> Any"))},
                      {{dim_kind_id, scalar_kind_id}, nd::functional::elwise(tp)},
                      {{scalar_kind_id, dim_kind_id}, nd::functional::elwise(tp)},
                      {{dim_kind_id, dim_kind_id}, nd::functional::elwise(tp)}});

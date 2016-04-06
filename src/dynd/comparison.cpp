@@ -34,10 +34,10 @@ dispatcher<nd::callable> make_comparison_children() {
   }
 
   for (type_id_t i : i2a<numeric_ids>()) {
-    dispatcher.insert({{option_id, i}, nd::functional::forward_na<0>(ndt::type("Any"))});
-    dispatcher.insert({{i, option_id}, nd::functional::forward_na<1>(ndt::type("Any"))});
+    dispatcher.insert({{option_id, i}, nd::functional::forward_na<0>(ndt::type("(Any, Any) -> Any"))});
+    dispatcher.insert({{i, option_id}, nd::functional::forward_na<1>(ndt::type("(Any, Any) -> Any"))});
   }
-  dispatcher.insert({{option_id, option_id}, nd::functional::forward_na<0, 1>(ndt::type("Any"))});
+  dispatcher.insert({{option_id, option_id}, nd::functional::forward_na<0, 1>(ndt::type("(Any, Any) -> Any"))});
 
   for (type_id_t dim_tp_id : i2a<dim_ids>()) {
     dispatcher.insert({{dim_tp_id, option_id}, nd::functional::elwise(ndt::type("(Any, Any) -> Any"))});

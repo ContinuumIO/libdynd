@@ -8,6 +8,7 @@
 #include <dynd/callables/base_callable.hpp>
 #include <dynd/callables/base_elwise_callable.hpp>
 #include <dynd/kernels/elwise_kernel.hpp>
+#include <dynd/kernels/tracking_elwise_kernel.hpp>
 
 namespace dynd {
 namespace nd {
@@ -27,8 +28,16 @@ namespace nd {
     public:
       void resolve(call_graph &cg, const char *data) {
         const std::array<bool, N> &arg_broadcast = reinterpret_cast<const data_type *>(data)->arg_broadcast;
-        cg.emplace_back([arg_broadcast](kernel_builder &kb, kernel_request_t kernreq, const char *dst_arrmeta,
-                                        size_t DYND_UNUSED(nsrc), const char *const *src_arrmeta) {
+        bool tracking = reinterpret_cast<const data_type *>(data)->tracking;
+        size_t ndim = reinterpret_cast<const data_type *>(data)->ndim;
+        bool inner = reinterpret_cast<const data_type *>(data)->inner;
+
+        cg.emplace_back([arg_broadcast, tracking, ndim, inner](kernel_builder &kb, kernel_request_t kernreq,
+                                                               const char *dst_arrmeta, size_t DYND_UNUSED(nsrc),
+                                                               const char *const *src_arrmeta) {
+          std::cout << "elwise_callable::instantiate" << std::endl;
+          std::cout << "tracking = " << tracking << std::endl;
+
           intptr_t size = reinterpret_cast<const size_stride_t *>(dst_arrmeta)->dim_size;
           intptr_t dst_stride = reinterpret_cast<const size_stride_t *>(dst_arrmeta)->stride;
 
@@ -44,9 +53,23 @@ namespace nd {
             }
           }
 
-          kb.emplace_back<elwise_kernel<fixed_dim_id, fixed_dim_id, N>>(kernreq, size, dst_stride, src_stride.data());
-
-          kb(kernel_request_strided, dst_arrmeta + sizeof(size_stride_t), N, child_src_arrmeta.data());
+          if (tracking) {
+            if (inner) {
+              kb.emplace_back<inner_tracking_elwise_kernel<fixed_dim_id, fixed_dim_id, N>>(kernreq, size, dst_stride,
+                                                                                           src_stride.data(), ndim);
+//              size_t index_offset = kb.size();
+              kb.emplace_back(ndim * sizeof(size_t));
+              kb(kernel_request_strided, dst_arrmeta + sizeof(size_stride_t), N + 1, child_src_arrmeta.data());
+            } else {
+              kb.emplace_back<tracking_elwise_kernel<fixed_dim_id, fixed_dim_id, N>>(kernreq, size, dst_stride,
+                                                                                     src_stride.data());
+              kb(kernel_request_strided, dst_arrmeta + sizeof(size_stride_t), N, child_src_arrmeta.data());
+              // set offset here
+            }
+          } else {
+            kb.emplace_back<elwise_kernel<fixed_dim_id, fixed_dim_id, N>>(kernreq, size, dst_stride, src_stride.data());
+            kb(kernel_request_strided, dst_arrmeta + sizeof(size_stride_t), N, child_src_arrmeta.data());
+          }
         });
       }
 
@@ -159,7 +182,7 @@ namespace nd {
               src_offset.data(), src_size.data(), arg_var.data());
 
           kb(kernel_request_strided, dst_arrmeta + sizeof(ndt::var_dim_type::metadata_type), N,
-                         child_src_arrmeta.data());
+             child_src_arrmeta.data());
         });
       }
     };

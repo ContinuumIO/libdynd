@@ -75,36 +75,14 @@ ndt::type nd::functional::elwise_make_type(const ndt::callable_type *child_tp) {
   std::vector<ndt::type> out_param_types;
   std::string dimsname("Dims");
 
-  for (const ndt::type &t : param_types) {
-    out_param_types.push_back(ndt::make_ellipsis_dim(dimsname, t));
+  for (size_t i = 0; i < child_tp->get_npos(); ++i) {
+    if (param_types[i].get_id() == iteration_id) {
+    } else {
+      out_param_types.push_back(ndt::make_ellipsis_dim(dimsname, param_types[i]));
+    }
   }
 
   ndt::type kwd_tp = child_tp->get_kwd_struct();
-  /*
-    if (true) {
-      intptr_t old_field_count =
-          kwd_tp.extended<base_struct_type>()->get_field_count();
-      nd::array names =
-          nd::empty(ndt::make_fixed_dim(old_field_count + 2,
-    ndt::make_string()));
-      nd::array fields =
-          nd::empty(ndt::make_fixed_dim(old_field_count + 2, ndt::make_type()));
-      for (intptr_t i = 0; i < old_field_count; ++i) {
-        names(i)
-            .val_assign(kwd_tp.extended<base_struct_type>()->get_field_name(i));
-        fields(i)
-            .val_assign(kwd_tp.extended<base_struct_type>()->get_field_type(i));
-      }
-      names(old_field_count).val_assign("threads");
-      fields(old_field_count)
-          .val_assign(ndt::make_option(ndt::make_type<int>()));
-      names(old_field_count + 1).val_assign("blocks");
-      fields(old_field_count + 1)
-          .val_assign(ndt::make_option(ndt::make_type<int>()));
-      kwd_tp = ndt::struct_type::make(names, fields);
-    }
-  */
-
   ndt::type ret_tp = child_tp->get_return_type();
   ret_tp = ndt::make_ellipsis_dim(dimsname, ret_tp);
 
@@ -112,24 +90,34 @@ ndt::type nd::functional::elwise_make_type(const ndt::callable_type *child_tp) {
       ret_tp, ndt::make_type<ndt::tuple_type>(out_param_types.size(), out_param_types.data()), kwd_tp);
 }
 
-nd::callable nd::functional::elwise(const ndt::type &self_tp, const callable &child) {
+nd::callable nd::functional::elwise(const ndt::type &self_tp, const callable &child, std::initializer_list<size_t>) {
+  const std::vector<ndt::type> &arg_tp = child.get_arg_types();
+
+  bool has_iteration = false;
+  for (const ndt::type &tp : arg_tp) {
+    if (tp.get_id() == iteration_id) {
+      has_iteration = true;
+      break;
+    }
+  }
+
   switch (self_tp.extended<ndt::callable_type>()->get_npos()) {
   case 0:
-    return make_callable<elwise_dispatch_callable<0>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<0>>(self_tp, child, has_iteration);
   case 1:
-    return make_callable<elwise_dispatch_callable<1>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<1>>(self_tp, child, has_iteration);
   case 2:
-    return make_callable<elwise_dispatch_callable<2>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<2>>(self_tp, child, has_iteration);
   case 3:
-    return make_callable<elwise_dispatch_callable<3>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<3>>(self_tp, child, has_iteration);
   case 4:
-    return make_callable<elwise_dispatch_callable<4>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<4>>(self_tp, child, has_iteration);
   case 5:
-    return make_callable<elwise_dispatch_callable<5>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<5>>(self_tp, child, has_iteration);
   case 6:
-    return make_callable<elwise_dispatch_callable<6>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<6>>(self_tp, child, has_iteration);
   case 7:
-    return make_callable<elwise_dispatch_callable<7>>(self_tp, child);
+    return make_callable<elwise_dispatch_callable<7>>(self_tp, child, has_iteration);
   default:
     throw std::runtime_error("callable with nsrc > 7 not implemented yet");
   }

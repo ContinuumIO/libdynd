@@ -7,6 +7,7 @@
 
 #include <dynd/kernels/cuda_launch.hpp>
 #include <dynd/kernels/base_kernel.hpp>
+#include <dynd/types/iteration_type.hpp>
 
 namespace dynd {
 namespace nd {
@@ -19,6 +20,20 @@ namespace nd {
       apply_arg(const char *DYND_UNUSED(arrmeta), const nd::array *DYND_UNUSED(kwds)) {}
 
       D &get(char *data) { return *reinterpret_cast<D *>(data); }
+
+      char *next(char *data) { return data; }
+    };
+
+    template <size_t I>
+    struct apply_arg<iteration_t, I> {
+      apply_arg(const char *DYND_UNUSED(metadata), const array *DYND_UNUSED(kwds)) {}
+
+      iteration_t &get(char *arg) { return *reinterpret_cast<iteration_t *>(arg); }
+
+      char *next(char *arg) {
+//        ++reinterpret_cast<iteration_t *>(arg)->index[0];
+        return arg;
+      }
     };
 
     template <typename ElementType, size_t I>
@@ -27,11 +42,12 @@ namespace nd {
 
       apply_arg(const char *arrmeta, const nd::array *DYND_UNUSED(kwds)) : value(arrmeta, NULL) {}
 
-      fixed_dim<ElementType> &get(char *data)
-      {
+      fixed_dim<ElementType> &get(char *data) {
         value.set_data(data);
         return value;
       }
+
+      char *next(char *data) { return data; }
     };
 
     template <typename func_type, int N = args_of<typename funcproto_of<func_type>::type>::type::size>
@@ -43,9 +59,7 @@ namespace nd {
     template <typename... A, size_t... I>
     struct apply_args<type_sequence<A...>, index_sequence<I...>> : apply_arg<A, I>... {
       apply_args(const char *const *DYND_IGNORE_UNUSED(src_arrmeta), const nd::array *DYND_IGNORE_UNUSED(kwds))
-          : apply_arg<A, I>(src_arrmeta[I], kwds)...
-      {
-      }
+          : apply_arg<A, I>(src_arrmeta[I], kwds)... {}
     };
 
     template <typename T, size_t I>

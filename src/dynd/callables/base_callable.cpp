@@ -33,6 +33,8 @@ nd::array nd::base_callable::call(ndt::type &dst_tp, size_t nsrc, const ndt::typ
 nd::array nd::base_callable::call(ndt::type &dst_tp, size_t nsrc, const ndt::type *src_tp,
                                   const char *const *src_arrmeta, const array *src_data, size_t nkwd, const array *kwds,
                                   const std::map<std::string, ndt::type> &tp_vars) {
+  std::cout << "calling" << std::endl;
+
   call_graph cg;
   dst_tp = resolve(nullptr, nullptr, cg, dst_tp, nsrc, src_tp, nkwd, kwds, tp_vars);
 
@@ -40,9 +42,11 @@ nd::array nd::base_callable::call(ndt::type &dst_tp, size_t nsrc, const ndt::typ
   array dst = empty(dst_tp);
 
   // Generate and evaluate the kernel
+  std::cout << "building" << std::endl;
   kernel_builder kb(cg.get());
   kb(kernel_request_call, dst->metadata(), nsrc, src_arrmeta);
 
+  std::cout << "evaling" << std::endl;
   kernel_call_t fn = kb.get()->get_function<kernel_call_t>();
   fn(kb.get(), &dst, src_data);
 

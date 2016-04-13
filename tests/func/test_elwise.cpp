@@ -100,6 +100,27 @@ TEST(Elwise, BinaryResolve) {
   EXPECT_EQ(ndt::make_type<double[3]>(), tp);
 }
 
+TEST(Elwise, Iteration) {
+  nd::callable f = nd::functional::elwise([](double x, double y, iteration_t it) {
+    std::cout << "x, y = " << x << ", " << y << std::endl;
+    std::cout << "it.ndim = " << it.ndim << std::endl;
+    for (size_t i = 0; i < it.ndim; ++i) {
+      std::cout << "it.index[" << i << "] = " << it.index[i] << std::endl;
+    }
+
+    return 0;
+  });
+
+  std::cout << f << std::endl;
+  std::cout << "--" << std::endl;
+  f(nd::array{0.0, 1.0, 2.0}, nd::array{0.0, 1.0, 2.0});
+  std::cout << "--" << std::endl;
+  //f(nd::array{{0.0, 1.0}, {2.0, 3.0}}, 5.0);
+
+  //  f(nd::array{{0.0, 1.0}, {2.0, 3.0}}, 0.0);
+  std::exit(-1);
+}
+
 TEST(Elwise, UnaryFixedDim) {
   nd::callable f = nd::functional::elwise(nd::functional::apply([](dynd::string s) { return s.size(); }));
   EXPECT_ARRAY_EQ((nd::array{static_cast<size_t>(5), static_cast<size_t>(2), static_cast<size_t>(6)}),

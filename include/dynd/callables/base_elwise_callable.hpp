@@ -20,12 +20,17 @@ namespace nd {
     protected:
       struct codata_type {
         base_callable *child;
+        bool tracking;
+        size_t ndim;
       };
 
       struct data_type {
         std::array<bool, N> arg_broadcast;
         std::array<bool, N> arg_var;
         intptr_t res_alignment;
+        bool tracking;
+        size_t ndim;
+        bool inner;
       };
 
     public:
@@ -39,6 +44,8 @@ namespace nd {
                         size_t DYND_UNUSED(narg), const ndt::type *arg_tp, size_t nkwd, const array *kwds,
                         const std::map<std::string, ndt::type> &tp_vars) {
         data_type data;
+        data.tracking = reinterpret_cast<codata_type *>(codata)->tracking;
+        data.ndim = reinterpret_cast<codata_type *>(codata)->ndim;
 
         base_callable *child = reinterpret_cast<codata_type *>(codata)->child;
         const ndt::type &child_ret_tp = child->get_return_type();
@@ -103,6 +110,7 @@ namespace nd {
           }
         }
 
+        data.inner = !callback;
         resolve(cg, reinterpret_cast<char *>(&data));
 
         ndt::type resolved_ret_tp;
@@ -110,6 +118,21 @@ namespace nd {
           resolved_ret_tp = with_return_type(res_size, caller->resolve(this, codata, cg, res_element_tp, N,
                                                                        arg_element_tp.data(), nkwd, kwds, tp_vars));
         } else {
+/*
+          if (data.tracking) {
+            cg.emplace_back([](kernel_builder &kb, kernel_request_t kernreq, const char *dst_arrmeta,
+                               size_t DYND_UNUSED(nsrc), const char *const *src_arrmeta) {
+              const char *child_src_arrmeta[N + 1];
+              for (size_t i = 0; i < N; ++i) {
+                child_src_arrmeta[i] = src_arrmeta[i];
+              }
+              child_src_arrmeta[N] = nullptr;
+
+              kb(kernreq, dst_arrmeta, N + 1, src_arrmeta);
+            });
+          }
+*/
+
           resolved_ret_tp = with_return_type(
               res_size, child->resolve(this, nullptr, cg, res_variadic ? child->get_return_type() : res_element_tp, N,
                                        arg_element_tp.data(), nkwd, kwds, tp_vars));

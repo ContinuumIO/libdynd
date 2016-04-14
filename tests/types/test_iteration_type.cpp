@@ -14,6 +14,7 @@
 using namespace std;
 using namespace dynd;
 
+/*
 TEST(IterationType, Constructor) {
   ndt::type iteration_tp = ndt::make_type<ndt::iteration_type>();
   EXPECT_EQ(iteration_id, iteration_tp.get_id());
@@ -24,3 +25,4 @@ TEST(IterationType, Constructor) {
   EXPECT_TRUE(iteration_tp.is_symbolic());
   EXPECT_EQ(iteration_tp, ndt::type(iteration_tp.str())); // Round trip through a string
 }
+*/

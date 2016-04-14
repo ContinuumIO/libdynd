@@ -69,6 +69,7 @@ DYNDT_API vector<id_info> &detail::infos() {
                                {"Expr", expr_kind_id, base_ids<expr_kind_id>()},
                                {"adapt", adapt_id, base_ids<adapt_id>()},
                                {"expr", expr_id, base_ids<expr_id>()},
+                               {"Iteration", iteration_id, {any_kind_id}},
                                {"cuda_host", cuda_host_id, {any_kind_id}},
                                {"cuda_device", cuda_device_id, {any_kind_id}},
                                {"", kind_sym_id, {any_kind_id}},
@@ -78,8 +79,7 @@ DYNDT_API vector<id_info> &detail::infos() {
                                {"", typevar_constructed_id, {any_kind_id}},
                                {"", pow_dimsym_id, {any_kind_id}},
                                {"", ellipsis_dim_id, {any_kind_id}},
-                               {"", dim_fragment_id, {any_kind_id}},
-                               {"Iteration", iteration_id, {any_kind_id}}};
+                               {"", dim_fragment_id, {any_kind_id}}};
 
   return infos;
 }

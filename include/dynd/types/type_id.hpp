@@ -91,7 +91,7 @@ enum type_id_t {
   expr_id,  // Advanced expression types
 
   // A type for an iteration in a functional
-//  iteration_id,
+  iteration_id,
 
   // A CUDA host memory type
   cuda_host_id,

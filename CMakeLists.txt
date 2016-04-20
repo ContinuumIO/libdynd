@@ -69,7 +69,11 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     option(DYND_COVERAGE
            "Generate code coverage reports from the unit test suite."
            OFF)
-#
+# -DDYND_OVERRIDE_TARGET_DIR=<target_dir>, where to put libdynd and libdyndt .do/.dll
+#   This option is used by the `python setup.py develop` mode in dynd-python.
+    option(DYND_OVERRIDE_TARGET_DIR
+           "Override the target directory of libdynd and libdyndt"
+           "")
 ################################################
 endif()
 
@@ -157,6 +161,23 @@ configure_file(
 string(REPLACE "v" "" DYND_VERSION "${DYND_VERSION_STRING}")
 string(REPLACE "-" ";" DYND_VERSION "${DYND_VERSION}")
 list(GET DYND_VERSION 0 "${DYND_VERSION}")
+
+# Helper function for controlling the output directory in in-place build
+# mode. By setting the per-target properties, this works on all platforms.
+function(set_target_library_output_dir target dir)
+    set_target_properties(${target} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG ${dir}
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG ${dir})
+    set_target_properties(${target} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${dir}
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${dir})
+    set_target_properties(${target} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${dir}
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${dir})
+    set_target_properties(${target} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE ${dir}
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE ${dir})
+endfunction()
 
 set(libdyndt_SRC
     # Eval
@@ -486,6 +507,11 @@ set_property(
     TARGET libdynd
     PROPERTY COMPILE_DEFINITIONS DYND_EXPORT
 )
+
+if (NOT "${DYND_OVERRIDE_TARGET_DIR}" STREQUAL "")
+    set_target_library_output_dir(libdynd "${DYND_OVERRIDE_TARGET_DIR}")
+    set_target_library_output_dir(libdyndt "${DYND_OVERRIDE_TARGET_DIR}")
+endif()
 
 # Add preprocessor definitions from CMake
 configure_file("include/dynd/cmake_config.hpp.in"

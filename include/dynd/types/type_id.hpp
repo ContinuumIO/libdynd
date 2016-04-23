@@ -104,6 +104,8 @@ enum type_id_t {
   // A type for state in a functional
   state_id,
 
+  test_id,
+
   // Named symbolic types
   // "Int", matching both UInt and SInt
   int_sym_id,

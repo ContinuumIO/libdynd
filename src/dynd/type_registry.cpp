@@ -72,6 +72,7 @@ DYNDT_API vector<id_info> &detail::infos() {
                                {"cuda_host", cuda_host_id, {any_kind_id}},
                                {"cuda_device", cuda_device_id, {any_kind_id}},
                                {"State", state_id, {any_kind_id}},
+                               {"Test", test_id, {any_kind_id}},
                                {"", int_sym_id, {any_kind_id}},
                                {"", typevar_id, base_ids<typevar_id>()},
                                {"", typevar_dim_id, {any_kind_id}},

@@ -18,6 +18,7 @@ namespace dynd {
 namespace ndt {
 
   class DYNDT_API struct_type : public tuple_type {
+  protected:
     const std::vector<std::string> m_field_names;
     std::vector<std::pair<type, std::string>> m_field_tp;
 

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -12,7 +12,7 @@
 #include "../dynd_assertions.hpp"
 
 #include <dynd/json_parser.hpp>
-#include <dynd/func/neighborhood.hpp>
+#include <dynd/functional.hpp>
 #include <dynd/types/struct_type.hpp>
 
 using namespace std;

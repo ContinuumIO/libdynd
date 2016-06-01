@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 // The categorical type always represents categorical data
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <dynd/type.hpp>
 #include <dynd/array.hpp>
+#include <dynd/type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
 
 namespace {
@@ -33,9 +33,7 @@ namespace ndt {
     nd::array m_value_to_category_index;
 
   public:
-    categorical_type(const nd::array &categories, bool presorted = false);
-
-    virtual ~categorical_type() {}
+    categorical_type(type_id_t new_id, const nd::array &categories, bool presorted = false);
 
     void print_data(std::ostream &o, const char *arrmeta, const char *data) const;
 
@@ -43,8 +41,7 @@ namespace ndt {
 
     void get_shape(intptr_t ndim, intptr_t i, intptr_t *out_shape, const char *arrmeta, const char *data) const;
 
-    size_t get_category_count() const
-    {
+    size_t get_category_count() const {
       return (size_t) reinterpret_cast<const fixed_dim_type_arrmeta *>(m_categories.get()->metadata())->dim_size;
     }
 
@@ -62,8 +59,7 @@ namespace ndt {
     uint32_t get_value_from_category(const char *category_arrmeta, const char *category_data) const;
     uint32_t get_value_from_category(const nd::array &category) const;
 
-    const char *get_category_data_from_value(uint32_t value) const
-    {
+    const char *get_category_data_from_value(uint32_t value) const {
       if (value >= get_category_count()) {
         throw std::runtime_error("category value is out of bounds");
       }
@@ -84,7 +80,7 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_destruct(char *arrmeta) const;
     void arrmeta_debug_print(const char *arrmeta, std::ostream &o, const std::string &indent) const;
 
@@ -93,9 +89,10 @@ namespace ndt {
     friend struct assign_to_same_category_type;
     friend struct assign_from_same_category_type;
     friend struct assign_from_commensurate_category_type;
-
-    static type make(const nd::array &values) { return type(new categorical_type(values), false); }
   };
+
+  template <>
+  struct id_of<categorical_type> : std::integral_constant<type_id_t, categorical_id> {};
 
   DYND_API type factor_categorical(const nd::array &values);
 

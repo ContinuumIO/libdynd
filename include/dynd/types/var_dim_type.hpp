@@ -1,20 +1,22 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
+#include <dynd/buffer.hpp>
+#include <dynd/types/any_kind_type.hpp>
 #include <dynd/types/base_dim_type.hpp>
+#include <dynd/types/dim_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
 
-  class DYND_API var_dim_type : public base_dim_type {
-
+  class DYNDT_API var_dim_type : public base_dim_type {
   public:
     struct metadata_type {
-      intrusive_ptr<memory_block_data> blockref; // A reference to the memory block which contains the array's data.
+      nd::memory_block blockref; // A reference to the memory block which contains the array's data.
       intptr_t stride;
       intptr_t offset; // Each pointed-to destination is offset by this amount
     };
@@ -24,9 +26,17 @@ namespace ndt {
       size_t size;
     };
 
-    var_dim_type(const type &element_tp);
-
-    virtual ~var_dim_type();
+    var_dim_type(type_id_t id, const type &element_tp = make_type<any_kind_type>())
+        : base_dim_type(id, make_type<dim_kind_type>(), element_tp, sizeof(data_type), alignof(data_type), sizeof(metadata_type),
+                        type_flag_zeroinit | type_flag_blockref, false) {
+      // NOTE: The element type may have type_flag_destructor set. In this case,
+      //       the var_dim type does NOT need to also set it, because the lifetime
+      //       of the elements it allocates is owned by the
+      //       objectarray_memory_block,
+      //       not by the var_dim elements.
+      // Propagate just the value-inherited flags from the element
+      this->flags |= (element_tp.get_flags() & type_flags_value_inherited);
+    }
 
     size_t get_default_data_size() const { return sizeof(data_type); }
 
@@ -46,9 +56,9 @@ namespace ndt {
     type apply_linear_index(intptr_t nindices, const irange *indices, size_t current_i, const type &root_tp,
                             bool leading_dimension) const;
     intptr_t apply_linear_index(intptr_t nindices, const irange *indices, const char *arrmeta, const type &result_tp,
-                                char *out_arrmeta, const intrusive_ptr<memory_block_data> &embedded_reference,
-                                size_t current_i, const type &root_tp, bool leading_dimension, char **inout_data,
-                                intrusive_ptr<memory_block_data> &inout_dataref) const;
+                                char *out_arrmeta, const nd::memory_block &embedded_reference, size_t current_i,
+                                const type &root_tp, bool leading_dimension, char **inout_data,
+                                nd::memory_block &inout_dataref) const;
     type at_single(intptr_t i0, const char **inout_arrmeta, const char **inout_data) const;
 
     type get_type_at_dimension(char **inout_arrmeta, intptr_t i, intptr_t total_ndim = 0) const;
@@ -65,13 +75,13 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
     void arrmeta_debug_print(const char *arrmeta, std::ostream &o, const std::string &indent) const;
     size_t arrmeta_copy_construct_onedim(char *dst_arrmeta, const char *src_arrmeta,
-                                         const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                         const nd::memory_block &embedded_reference) const;
 
     void data_destruct(const char *arrmeta, char *data) const;
     void data_destruct_strided(const char *arrmeta, char *data, intptr_t stride, size_t count) const;
@@ -86,21 +96,12 @@ namespace ndt {
     std::map<std::string, std::pair<ndt::type, const char *>> get_dynamic_type_properties() const;
 
     virtual type with_element_type(const type &element_tp) const;
-
-    static type make(const type &element_tp) { return type(new var_dim_type(element_tp), false); }
-
-    static type make(const type &element_tp, intptr_t ndim)
-    {
-      type result = element_tp;
-      for (intptr_t i = 0; i < ndim; ++i) {
-        result = make(result);
-      }
-
-      return result;
-    }
   };
 
-  inline type make_var_dim(const type &element_tp) { return var_dim_type::make(element_tp); }
+  inline type make_var_dim(const type &element_tp) { return make_type<var_dim_type>(element_tp); }
+
+  template <>
+  struct id_of<var_dim_type> : std::integral_constant<type_id_t, var_dim_id> {};
 
 } // namespace dynd::ndt
 } // namespace dynd

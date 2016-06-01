@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -11,8 +11,8 @@
 #include "inc_gtest.hpp"
 #include "dynd_assertions.hpp"
 
-#include <dynd/func/fft.hpp>
-#include <dynd/func/random.hpp>
+#include <dynd/fft.hpp>
+#include <dynd/random.hpp>
 
 using namespace std;
 using namespace dynd;

@@ -1,12 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <iostream>
 #include <complex>
+#include <iostream>
 
 #include <dynd/config.hpp>
 
@@ -14,18 +14,19 @@ namespace dynd {
 class bytes;
 class string;
 
-namespace ndt {
-  class type;
-}
-
 enum type_id_t {
   // The value zero is reserved for an uninitialized type.
   uninitialized_id,
 
+  any_kind_id,    // "Any", matching any type (dimensions and dtype)
+  scalar_kind_id, // "Scalar" matchines any scalar type
+
+  bool_kind_id,
   // A 1-byte boolean type
   bool_id,
 
   // Signed integer types
+  int_kind_id,
   int8_id,
   int16_id,
   int32_id,
@@ -33,6 +34,7 @@ enum type_id_t {
   int128_id,
 
   // Unsigned integer types
+  uint_kind_id,
   uint8_id,
   uint16_id,
   uint32_id,
@@ -40,33 +42,29 @@ enum type_id_t {
   uint128_id,
 
   // Floating point types
+  float_kind_id,
   float16_id,
   float32_id,
   float64_id,
   float128_id,
 
   // Complex floating-point types
+  complex_kind_id,
   complex_float32_id,
   complex_float64_id,
 
   // Means no type, just like in C. (Different from NumPy)
   void_id,
 
-  any_kind_id,    // "Any", matching any type (dimensions and dtype)
-  scalar_kind_id, // "Scalar" matchines any scalar type
   dim_kind_id,
 
-  bool_kind_id,
-  int_kind_id,
-  uint_kind_id,
-  float_kind_id,
-  complex_kind_id,
-
   bytes_kind_id,
+  fixed_bytes_kind_id,
   fixed_bytes_id, // A bytes buffer of a fixed size
   bytes_id,       // blockref primitive types
 
   string_kind_id,
+  fixed_string_kind_id,
   fixed_string_id, // A NULL-terminated string buffer of a fixed size
   char_id,         // A single string character
   string_id,       // A variable-sized string type
@@ -76,12 +74,10 @@ enum type_id_t {
   // A struct type with variable layout
   struct_id,
 
-  // A fixed-sized strided array dimension type
-  fixed_dim_id,
-  // A variable-sized array dimension type
-  var_dim_id,
-  // A dimension made up of offsets
-  // offset_dim_id,
+  fixed_dim_kind_id,
+  fixed_dim_id, // A fixed-sized strided array dimension type
+  var_dim_id,   // A variable-sized array dimension type
+  // offset_dim_id, // A dimension made up of offsets
 
   categorical_id, // A categorical (enum-like) type
   option_id,
@@ -101,11 +97,8 @@ enum type_id_t {
   // A CUDA device (global) memory type
   cuda_device_id,
 
-  // Named symbolic types
-  // Types matching a single type_kind_t, like Bool, UInt, SInt, Real, etc.
-  kind_sym_id,
-  // "Int", matching both UInt and SInt
-  int_sym_id,
+  // A type for state in a functional
+  state_id,
 
   // Symbolic types
   typevar_id,
@@ -121,18 +114,13 @@ enum type_id_t {
 template <type_id_t Value>
 using id_constant = std::integral_constant<type_id_t, Value>;
 
-template <type_id_t... I>
-using type_id_sequence = integer_sequence<type_id_t, I...>;
+typedef type_sequence<int8_t, int16_t, int32_t, int64_t, int128> int_types;
+typedef type_sequence<bool1, uint8_t, uint16_t, uint32_t, uint64_t, uint128> uint_types;
+typedef type_sequence<float16, float, double, float128> float_types;
+typedef type_sequence<complex<float>, complex<double>> complex_types;
 
-typedef type_id_sequence<int8_id, int16_id, int32_id, int64_id, int128_id> int_ids;
-typedef type_id_sequence<bool_id, uint8_id, uint16_id, uint32_id, uint64_id, uint128_id> uint_ids;
-typedef type_id_sequence<float16_id, float32_id, float64_id, float128_id> float_ids;
-typedef type_id_sequence<complex_float32_id, complex_float64_id> complex_ids;
-
-typedef join<int_ids, uint_ids>::type integral_ids;
-typedef join<integral_ids, join<float_ids, complex_ids>::type>::type arithmetic_ids;
-
-typedef type_id_sequence<fixed_dim_id, var_dim_id> dim_ids;
+typedef join<int_types, uint_types>::type integral_types;
+typedef join<integral_types, join<float_types, complex_types>::type>::type arithmetic_types;
 
 enum type_flags_t {
   // A symbolic name instead of just "0"
@@ -183,15 +171,14 @@ enum {
   type_flags_value_inherited = type_flag_symbolic | type_flag_variadic
 };
 
-DYND_API std::ostream &operator<<(std::ostream &o, type_id_t tid);
+DYNDT_API std::ostream &operator<<(std::ostream &o, type_id_t tid);
 
 // Forward declaration so we can make the is_builtin_type function here
 namespace ndt {
   class base_type;
 } // namespace dynd::nd
 
-inline bool is_builtin_type(const ndt::base_type *dt)
-{
+inline bool is_builtin_type(const ndt::base_type *dt) {
   switch (reinterpret_cast<uintptr_t>(dt)) {
   case uninitialized_id:
   case bool_id:
@@ -240,436 +227,301 @@ namespace detail {
   };
 }
 
-// Type trait for the type id
-template <typename T>
-struct type_id_of;
+namespace ndt {
 
-template <typename T>
-struct type_id_of<const T> {
-  static const type_id_t value = type_id_of<T>::value;
-};
+  // Type trait for the type id
+  template <typename T>
+  struct id_of;
 
-// Can't use bool, because it doesn't have a guaranteed sizeof
-template <>
-struct type_id_of<bool1> {
-  static const type_id_t value = bool_id;
-};
+  // Can't use bool, because it doesn't have a guaranteed sizeof
+  template <>
+  struct id_of<bool1> {
+    static const type_id_t value = bool_id;
+  };
 
-template <>
-struct type_id_of<char> {
-  static const type_id_t value = ((char)-1) < 0 ? int8_id : uint8_id;
-};
+  template <>
+  struct id_of<bool> : std::integral_constant<type_id_t, bool_id> {};
 
-template <>
-struct type_id_of<signed char> {
-  static const type_id_t value = int8_id;
-};
+  template <>
+  struct id_of<char> : std::integral_constant<type_id_t, ((char)-1) < 0 ? int8_id : uint8_id> {};
 
-template <>
-struct type_id_of<short> {
-  static const type_id_t value = int16_id;
-};
+  template <>
+  struct id_of<signed char> : std::integral_constant<type_id_t, int8_id> {};
 
-template <>
-struct type_id_of<int> {
-  static const type_id_t value = int32_id;
-};
+  template <>
+  struct id_of<short> : std::integral_constant<type_id_t, int16_id> {};
 
-template <>
-struct type_id_of<long> {
-  static const type_id_t value = static_cast<type_id_t>(int8_id + detail::log2_x<sizeof(long)>::value);
-};
+  template <>
+  struct id_of<int> : std::integral_constant<type_id_t, int32_id> {};
 
-template <>
-struct type_id_of<long long> {
-  static const type_id_t value = int64_id;
-};
+  template <>
+  struct id_of<long>
+      : std::integral_constant<type_id_t, static_cast<type_id_t>(int8_id + detail::log2_x<sizeof(long)>::value)> {};
 
-template <>
-struct type_id_of<int128> {
-  static const type_id_t value = int128_id;
-};
+  template <>
+  struct id_of<long long> : std::integral_constant<type_id_t, int64_id> {};
 
-template <>
-struct type_id_of<uint8_t> {
-  static const type_id_t value = uint8_id;
-};
+  template <>
+  struct id_of<int128> : std::integral_constant<type_id_t, int128_id> {};
 
-template <>
-struct type_id_of<uint16_t> {
-  static const type_id_t value = uint16_id;
-};
+  template <>
+  struct id_of<uint8_t> : std::integral_constant<type_id_t, uint8_id> {};
 
-template <>
-struct type_id_of<unsigned int> {
-  static const type_id_t value = uint32_id;
-};
+  template <>
+  struct id_of<uint16_t> : std::integral_constant<type_id_t, uint16_id> {};
 
-template <>
-struct type_id_of<unsigned long> {
-  static const type_id_t value = static_cast<type_id_t>(uint8_id + detail::log2_x<sizeof(unsigned long)>::value);
-};
+  template <>
+  struct id_of<unsigned int> : std::integral_constant<type_id_t, uint32_id> {};
 
-template <>
-struct type_id_of<unsigned long long> {
-  static const type_id_t value = uint64_id;
-};
+  template <>
+  struct id_of<unsigned long>
+      : std::integral_constant<type_id_t,
+                               static_cast<type_id_t>(uint8_id + detail::log2_x<sizeof(unsigned long)>::value)> {};
 
-template <>
-struct type_id_of<uint128> {
-  static const type_id_t value = uint128_id;
-};
+  template <>
+  struct id_of<unsigned long long> : std::integral_constant<type_id_t, uint64_id> {};
 
-template <>
-struct type_id_of<float16> {
-  static const type_id_t value = float16_id;
-};
+  template <>
+  struct id_of<uint128> : std::integral_constant<type_id_t, uint128_id> {};
 
-template <>
-struct type_id_of<float32> {
-  static const type_id_t value = float32_id;
-};
+  template <>
+  struct id_of<float16> : std::integral_constant<type_id_t, float16_id> {};
 
-template <>
-struct type_id_of<float64> {
-  static const type_id_t value = float64_id;
-};
+  template <>
+  struct id_of<float32> : std::integral_constant<type_id_t, float32_id> {};
 
-template <>
-struct type_id_of<float128> {
-  static const type_id_t value = float128_id;
-};
+  template <>
+  struct id_of<float64> : std::integral_constant<type_id_t, float64_id> {};
 
-template <>
-struct type_id_of<complex64> {
-  static const type_id_t value = complex_float32_id;
-};
+  template <>
+  struct id_of<float128> : std::integral_constant<type_id_t, float128_id> {};
 
-template <>
-struct type_id_of<complex128> {
-  static const type_id_t value = complex_float64_id;
-};
+  template <>
+  struct id_of<complex64> : std::integral_constant<type_id_t, complex_float32_id> {};
 
-template <>
-struct type_id_of<void> {
-  static const type_id_t value = void_id;
-};
+  template <>
+  struct id_of<complex128> : std::integral_constant<type_id_t, complex_float64_id> {};
 
-template <>
-struct type_id_of<ndt::type> {
-  static const type_id_t value = type_id;
-};
+  template <>
+  struct id_of<void> : std::integral_constant<type_id_t, void_id> {};
 
-// Also allow type_id_of<std::complex<>> as synonyms for
-// type_id_of<dynd_complex<>>
-template <>
-struct type_id_of<std::complex<float>> {
-  static const type_id_t value = complex_float32_id;
-};
-
-template <>
-struct type_id_of<std::complex<double>> {
-  static const type_id_t value = complex_float64_id;
-};
-
-template <type_id_t TypeID>
-struct type_of;
-
-template <>
-struct type_of<bool_id> {
-  typedef bool1 type;
-};
-template <>
-struct type_of<int8_id> {
-  typedef int8 type;
-};
-template <>
-struct type_of<int16_id> {
-  typedef int16 type;
-};
-template <>
-struct type_of<int32_id> {
-  typedef int32 type;
-};
-template <>
-struct type_of<int64_id> {
-  typedef int64 type;
-};
-template <>
-struct type_of<int128_id> {
-  typedef int128 type;
-};
-template <>
-struct type_of<uint8_id> {
-  typedef uint8 type;
-};
-template <>
-struct type_of<uint16_id> {
-  typedef uint16 type;
-};
-template <>
-struct type_of<uint32_id> {
-  typedef uint32 type;
-};
-template <>
-struct type_of<uint64_id> {
-  typedef uint64 type;
-};
-template <>
-struct type_of<uint128_id> {
-  typedef uint128 type;
-};
-template <>
-struct type_of<float16_id> {
-  typedef float16 type;
-};
-template <>
-struct type_of<float32_id> {
-  typedef float32 type;
-};
-template <>
-struct type_of<float64_id> {
-  typedef float64 type;
-};
-template <>
-struct type_of<float128_id> {
-  typedef float128 type;
-};
-template <>
-struct type_of<complex_float32_id> {
-  typedef complex64 type;
-};
-template <>
-struct type_of<complex_float64_id> {
-  typedef complex128 type;
-};
-
-template <>
-struct type_of<bytes_id> {
-  typedef bytes type;
-};
-
-template <>
-struct type_of<string_id> {
-  typedef string type;
-};
-
-template <>
-struct type_of<type_id> {
-  typedef ndt::type type;
-};
+} // namespace dynd::ndt
 
 template <type_id_t ID>
 struct base_id_of;
 
 template <>
-struct base_id_of<bool_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<scalar_kind_id> : id_constant<any_kind_id> {};
 
 template <>
-struct base_id_of<bool_id> : id_constant<bool_kind_id> {
-};
+struct base_id_of<bool_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<int_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<bool_id> : id_constant<bool_kind_id> {};
 
 template <>
-struct base_id_of<int8_id> : id_constant<int_kind_id> {
-};
+struct base_id_of<int_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<int16_id> : id_constant<int_kind_id> {
-};
+struct base_id_of<int8_id> : id_constant<int_kind_id> {};
 
 template <>
-struct base_id_of<int32_id> : id_constant<int_kind_id> {
-};
+struct base_id_of<int16_id> : id_constant<int_kind_id> {};
 
 template <>
-struct base_id_of<int64_id> : id_constant<int_kind_id> {
-};
+struct base_id_of<int32_id> : id_constant<int_kind_id> {};
 
 template <>
-struct base_id_of<int128_id> : id_constant<int_kind_id> {
-};
+struct base_id_of<int64_id> : id_constant<int_kind_id> {};
 
 template <>
-struct base_id_of<uint_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<int128_id> : id_constant<int_kind_id> {};
 
 template <>
-struct base_id_of<uint8_id> : id_constant<uint_kind_id> {
-};
+struct base_id_of<uint_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<uint16_id> : id_constant<uint_kind_id> {
-};
+struct base_id_of<uint8_id> : id_constant<uint_kind_id> {};
 
 template <>
-struct base_id_of<uint32_id> : id_constant<uint_kind_id> {
-};
+struct base_id_of<uint16_id> : id_constant<uint_kind_id> {};
 
 template <>
-struct base_id_of<uint64_id> : id_constant<uint_kind_id> {
-};
+struct base_id_of<uint32_id> : id_constant<uint_kind_id> {};
 
 template <>
-struct base_id_of<uint128_id> : id_constant<uint_kind_id> {
-};
+struct base_id_of<uint64_id> : id_constant<uint_kind_id> {};
 
 template <>
-struct base_id_of<float_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<uint128_id> : id_constant<uint_kind_id> {};
 
 template <>
-struct base_id_of<float16_id> : id_constant<float_kind_id> {
-};
+struct base_id_of<float_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<float32_id> : id_constant<float_kind_id> {
-};
+struct base_id_of<float16_id> : id_constant<float_kind_id> {};
 
 template <>
-struct base_id_of<float64_id> : id_constant<float_kind_id> {
-};
+struct base_id_of<float32_id> : id_constant<float_kind_id> {};
 
 template <>
-struct base_id_of<float128_id> : id_constant<float_kind_id> {
-};
+struct base_id_of<float64_id> : id_constant<float_kind_id> {};
 
 template <>
-struct base_id_of<complex_float32_id> : id_constant<complex_kind_id> {
-};
+struct base_id_of<float128_id> : id_constant<float_kind_id> {};
 
 template <>
-struct base_id_of<complex_float64_id> : id_constant<complex_kind_id> {
-};
+struct base_id_of<complex_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<void_id> : id_constant<any_kind_id> {
-};
+struct base_id_of<complex_float32_id> : id_constant<complex_kind_id> {};
 
 template <>
-struct base_id_of<bytes_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<complex_float64_id> : id_constant<complex_kind_id> {};
 
 template <>
-struct base_id_of<fixed_bytes_id> : id_constant<bytes_kind_id> {
-};
+struct base_id_of<void_id> : id_constant<any_kind_id> {};
 
 template <>
-struct base_id_of<bytes_id> : id_constant<bytes_kind_id> {
-};
+struct base_id_of<bytes_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<string_kind_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<fixed_bytes_kind_id> : id_constant<bytes_kind_id> {};
 
 template <>
-struct base_id_of<char_id> : id_constant<string_kind_id> {
-};
+struct base_id_of<fixed_bytes_id> : id_constant<fixed_bytes_kind_id> {};
 
 template <>
-struct base_id_of<fixed_string_id> : id_constant<string_kind_id> {
-};
+struct base_id_of<bytes_id> : id_constant<bytes_kind_id> {};
 
 template <>
-struct base_id_of<string_id> : id_constant<string_kind_id> {
-};
+struct base_id_of<string_kind_id> : id_constant<scalar_kind_id> {};
 
 template <>
-struct base_id_of<fixed_dim_id> : id_constant<dim_kind_id> {
-};
+struct base_id_of<fixed_string_kind_id> : id_constant<string_kind_id> {};
 
 template <>
-struct base_id_of<var_dim_id> : id_constant<dim_kind_id> {
-};
+struct base_id_of<char_id> : id_constant<string_kind_id> {};
 
 template <>
-struct base_id_of<pointer_id> : id_constant<any_kind_id> {
-};
+struct base_id_of<fixed_string_id> : id_constant<fixed_string_kind_id> {};
 
 template <>
-struct base_id_of<tuple_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<string_id> : id_constant<string_kind_id> {};
 
 template <>
-struct base_id_of<struct_id> : id_constant<tuple_id> {
-};
+struct base_id_of<fixed_dim_kind_id> : id_constant<dim_kind_id> {};
 
 template <>
-struct base_id_of<option_id> : id_constant<any_kind_id> {
-};
+struct base_id_of<fixed_dim_id> : id_constant<fixed_dim_kind_id> {};
 
 template <>
-struct base_id_of<categorical_id> : id_constant<any_kind_id> {
-};
+struct base_id_of<var_dim_id> : id_constant<dim_kind_id> {};
 
 template <>
-struct base_id_of<expr_id> : id_constant<any_kind_id> {
-};
+struct base_id_of<pointer_id> : id_constant<any_kind_id> {};
 
 template <>
-struct base_id_of<type_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<memory_id> : id_constant<any_kind_id> {};
 
 template <>
-struct base_id_of<callable_id> : id_constant<scalar_kind_id> {
-};
+struct base_id_of<expr_kind_id> : id_constant<any_kind_id> {};
 
 template <>
-struct base_id_of<array_id> : id_constant<scalar_kind_id> {
+struct base_id_of<adapt_id> : id_constant<expr_kind_id> {};
+
+template <>
+struct base_id_of<tuple_id> : id_constant<scalar_kind_id> {};
+
+template <>
+struct base_id_of<struct_id> : id_constant<scalar_kind_id> {};
+
+template <>
+struct base_id_of<option_id> : id_constant<any_kind_id> {};
+
+template <>
+struct base_id_of<categorical_id> : id_constant<any_kind_id> {};
+
+template <>
+struct base_id_of<expr_id> : id_constant<any_kind_id> {};
+
+template <>
+struct base_id_of<type_id> : id_constant<scalar_kind_id> {};
+
+template <>
+struct base_id_of<callable_id> : id_constant<scalar_kind_id> {};
+
+template <>
+struct base_id_of<array_id> : id_constant<scalar_kind_id> {};
+
+template <>
+struct base_id_of<dim_kind_id> : id_constant<any_kind_id> {};
+
+template <>
+struct base_id_of<typevar_id> : id_constant<scalar_kind_id> {};
+
+template <typename ReturnType, typename Arg0Type, typename Enable = void>
+struct is_lossless_assignable {
+  static const bool value = false;
 };
 
-namespace detail {
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type, std::enable_if_t<is_floating_point<ReturnType>::value &&
+                                                                     is_signed_integral<Arg0Type>::value>> {
+  static const bool value = true;
+};
 
-  template <type_id_t DstTypeID, type_id_t DstBaseID, type_id_t SrcTypeID, type_id_t SrcBaseID>
-  struct is_lossless_assignable {
-    static const bool value = false;
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type, std::enable_if_t<is_floating_point<ReturnType>::value &&
+                                                                     is_unsigned_integral<Arg0Type>::value>> {
+  static const bool value = true;
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, float_kind_id, SrcTypeID, int_kind_id> {
-    static const bool value = true;
-  };
+template <typename ReturnType>
+struct is_lossless_assignable<ReturnType, bool1, std::enable_if_t<is_complex<ReturnType>::value>> {
+  static const bool value = true;
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, float_kind_id, SrcTypeID, uint_kind_id> {
-    static const bool value = true;
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type,
+                              std::enable_if_t<is_complex<ReturnType>::value && is_signed_integral<Arg0Type>::value>> {
+  static const bool value = false;
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, complex_kind_id, SrcTypeID, bool_kind_id> {
-    static const bool value = true;
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<
+    ReturnType, Arg0Type, std::enable_if_t<is_complex<ReturnType>::value && is_unsigned_integral<Arg0Type>::value>> {
+  static const bool value = false;
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, complex_kind_id, SrcTypeID, int_kind_id> {
-    static const bool value = false;
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type,
+                              std::enable_if_t<is_complex<ReturnType>::value && is_floating_point<Arg0Type>::value>> {
+  static const bool value = (sizeof(ReturnType) / 2) > sizeof(Arg0Type);
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, complex_kind_id, SrcTypeID, uint_kind_id> {
-    static const bool value = false;
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type, std::enable_if_t<is_signed_integral<ReturnType>::value &&
+                                                                     is_signed_integral<Arg0Type>::value>> {
+  static const bool value = sizeof(ReturnType) > sizeof(Arg0Type);
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID>
-  struct is_lossless_assignable<DstTypeID, complex_kind_id, SrcTypeID, float_kind_id> {
-    static const bool value = (sizeof(typename type_of<DstTypeID>::type) / 2) >
-                              sizeof(typename type_of<SrcTypeID>::type);
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type, std::enable_if_t<is_unsigned_integral<ReturnType>::value &&
+                                                                     is_unsigned_integral<Arg0Type>::value>> {
+  static const bool value = sizeof(ReturnType) > sizeof(Arg0Type);
+};
 
-  template <type_id_t DstTypeID, type_id_t SrcTypeID, type_id_t BaseTypeID>
-  struct is_lossless_assignable<DstTypeID, BaseTypeID, SrcTypeID, BaseTypeID> {
-    static const bool value = sizeof(typename type_of<DstTypeID>::type) > sizeof(typename type_of<SrcTypeID>::type);
-  };
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type, std::enable_if_t<is_floating_point<ReturnType>::value &&
+                                                                     is_floating_point<Arg0Type>::value>> {
+  static const bool value = sizeof(ReturnType) > sizeof(Arg0Type);
+};
 
-} // namespace dynd::detail
-
-template <type_id_t DstTypeID, type_id_t Src0TypeID>
-struct is_lossless_assignable : detail::is_lossless_assignable<DstTypeID, base_id_of<DstTypeID>::value, Src0TypeID,
-                                                               base_id_of<Src0TypeID>::value> {
+template <typename ReturnType, typename Arg0Type>
+struct is_lossless_assignable<ReturnType, Arg0Type,
+                              std::enable_if_t<is_complex<ReturnType>::value && is_complex<Arg0Type>::value>> {
+  static const bool value = sizeof(ReturnType) > sizeof(Arg0Type);
 };
 
 // Metaprogram for determining if a type is a valid C++ scalar
@@ -776,15 +628,12 @@ struct is_dynd_scalar<std::complex<double>> {
 // a type property.
 template <typename T>
 struct property_type_id_of {
-  static const type_id_t value = type_id_of<T>::value;
+  static const type_id_t value = ndt::id_of<T>::value;
 };
 
 template <>
 struct property_type_id_of<std::string> {
   static const type_id_t value = string_id;
 };
-
-
-DYND_API bool is_base_id_of(type_id_t base_id, type_id_t id);
 
 } // namespace dynd

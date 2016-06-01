@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -8,6 +8,7 @@
 #include <dynd/bytes.hpp>
 #include <dynd/type.hpp>
 #include <dynd/types/base_bytes_type.hpp>
+#include <dynd/types/bytes_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
@@ -16,13 +17,22 @@ namespace ndt {
    * The bytes type uses memory_block references to store
    * arbitrarily sized runs of bytes.
    */
-  class DYND_API bytes_type : public base_bytes_type {
+  class DYNDT_API bytes_type : public base_bytes_type {
     size_t m_alignment;
 
   public:
     typedef bytes data_type;
 
-    bytes_type(size_t alignment);
+    bytes_type(type_id_t id, size_t alignment = 1)
+        : base_bytes_type(id, make_type<bytes_kind_type>(), sizeof(bytes), alignof(bytes),
+                          type_flag_zeroinit | type_flag_destructor, 0),
+          m_alignment(alignment) {
+      if (alignment != 1 && alignment != 2 && alignment != 4 && alignment != 8 && alignment != 16) {
+        std::stringstream ss;
+        ss << "Cannot make a dynd bytes type with alignment " << alignment << ", it must be a small power of two";
+        throw std::runtime_error(ss.str());
+      }
+    }
 
     /** Alignment of the bytes data being pointed to. */
     size_t get_target_alignment() const { return m_alignment; }
@@ -47,15 +57,13 @@ namespace ndt {
     void data_destruct_strided(const char *arrmeta, char *data, intptr_t stride, size_t count) const;
 
     std::map<std::string, std::pair<ndt::type, const char *>> get_dynamic_type_properties() const;
-
-    static const type &make()
-    {
-      static const type bytes_tp(new bytes_type(1), false);
-      return *reinterpret_cast<const type *>(&bytes_tp);
-    }
-
-    static type make(size_t alignment) { return type(new bytes_type(alignment), false); }
   };
+
+  template <>
+  struct id_of<bytes> : std::integral_constant<type_id_t, bytes_id> {};
+
+  template <>
+  struct id_of<bytes_type> : std::integral_constant<type_id_t, bytes_id> {};
 
   template <>
   struct traits<bytes> {
@@ -63,7 +71,7 @@ namespace ndt {
 
     static const bool is_same_layout = true;
 
-    static type equivalent() { return type(bytes_id); }
+    static type equivalent() { return make_type<bytes_type>(); }
 
     static bytes na() { return bytes(); }
   };

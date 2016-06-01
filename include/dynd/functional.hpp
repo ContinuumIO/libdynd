@@ -1,209 +1,170 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <numeric>
-
-#include <dynd/kernels/adapt_kernel.hpp>
-#include <dynd/kernels/call_kernel.hpp>
-#include <dynd/kernels/forward_na_kernel.hpp>
-#include <dynd/func/elwise.hpp>
-#include <dynd/func/outer.hpp>
-#include <dynd/func/permute.hpp>
-#include <dynd/iterator.hpp>
 #include <dynd/callable.hpp>
-#include <dynd/kernels/multidispatch_kernel.hpp>
-#include <dynd/callables/dispatcher_callable.hpp>
+#include <dynd/callables/apply_function_callable.hpp>
+#include <dynd/callables/apply_member_function_callable.hpp>
+#include <dynd/callables/construct_then_apply_callable_callable.hpp>
+#include <dynd/callables/forward_na_callable.hpp>
+#include <dynd/types/state_type.hpp>
 
 namespace dynd {
 namespace nd {
+
+  const callable &get_elwise2();
+  extern DYND_API callable elwise;
+
+  callable get_elwise(const ndt::type &ret_tp);
+
   namespace functional {
 
-    template <typename FuncType>
-    callable call(const ndt::type &tp)
-    {
-      return callable::make<call_kernel<FuncType>>(tp);
+    DYND_API callable adapt(const ndt::type &value_tp, const callable &forward);
+
+    /**
+     * Makes a callable out of function ``func``, using the provided keyword
+     * parameter names. This function takes ``func`` as a template
+     * parameter, so can call it efficiently.
+     */
+    template <typename func_type, func_type func, typename... T>
+    callable apply(T &&... names) {
+      return make_callable<apply_function_callable<func_type, func, arity_of<func_type>::value - sizeof...(T)>>(
+          std::forward<T>(names)...);
     }
 
-    template <typename DispatcherType>
-    callable dispatch(const ndt::type &tp, const DispatcherType &dispatcher)
-    {
-      return make_callable<dispatcher_callable<DispatcherType>, multidispatch_kernel<DispatcherType>>(tp, dispatcher);
+    /**
+     * Makes a callable out of the function object ``func``, using the provided
+     * keyword parameter names. This version makes a copy of provided ``func``
+     * object.
+     */
+    template <typename func_type, typename... T>
+    typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func,
+                                                                                          T &&... names) {
+      static_assert(all_char_string_params<T...>::value, "All the names must be strings");
+      return make_callable<apply_callable_callable<func_type, arity_of<func_type>::value - sizeof...(T)>>(
+          func, std::forward<T>(names)...);
     }
 
-    namespace detail {
-
-      template <typename IteratorType, typename DispatcherType, typename OnNullType>
-      callable multidispatch(const ndt::type &tp, const IteratorType &begin_child, const IteratorType &end_child,
-                             const DispatcherType &dispatcher, const OnNullType &on_null)
-      {
-        typedef typename std::result_of<DispatcherType(const ndt::type &, intptr_t, const ndt::type *)>::type key_type;
-
-        std::map<key_type, callable> children;
-
-        for (IteratorType it = begin_child; it != end_child; ++it) {
-          const callable &child = *it;
-          if (child.is_null()) {
-            continue;
-          }
-
-          std::map<std::string, ndt::type> tp_vars;
-          if (!tp.match(child.get_array_type(), tp_vars)) {
-          }
-
-          const ndt::type &ret_tp = child.get_ret_type();
-          const array &arg_tp = child.get_arg_types();
-
-          children[dispatcher(ret_tp, arg_tp.get_dim_size(), reinterpret_cast<const ndt::type *>(arg_tp.cdata()))] =
-              child;
-        }
-
-        return functional::dispatch(tp, [children, dispatcher, on_null](const ndt::type &dst_tp, intptr_t nsrc,
-                                                                        const ndt::type *src_tp) mutable -> callable & {
-          callable &child = children[dispatcher(dst_tp, nsrc, src_tp)];
-          if (child.is_null()) {
-            return on_null();
-          }
-
-          return child;
-        });
-      }
-
-      template <typename IteratorType, typename OnNullType>
-      callable multidispatch(const ndt::type &tp, const IteratorType &begin_child, const IteratorType &end_child,
-                             const OnNullType &on_null)
-      {
-        if (!tp.extended<ndt::callable_type>()->is_pos_variadic()) {
-          switch (tp.extended<ndt::callable_type>()->get_npos()) {
-          case 0:
-            throw std::runtime_error("cannot multidispatch on a function with no arguments");
-          case 1:
-            return multidispatch(tp, begin_child, end_child,
-                                 [](const ndt::type &DYND_UNUSED(dst_tp), intptr_t DYND_UNUSED(nsrc),
-                                    const ndt::type *src_tp) { return src_tp[0].get_id(); },
-                                 on_null);
-          case 2:
-            return multidispatch(tp, begin_child, end_child,
-                                 [](const ndt::type &DYND_UNUSED(dst_tp), intptr_t DYND_UNUSED(nsrc),
-                                    const ndt::type *src_tp) -> std::array<type_id_t, 2> {
-                                   return {{src_tp[0].get_id(), src_tp[1].get_id()}};
-                                 },
-                                 on_null);
-          case 3:
-            return multidispatch(tp, begin_child, end_child,
-                                 [](const ndt::type &DYND_UNUSED(dst_tp), intptr_t DYND_UNUSED(nsrc),
-                                    const ndt::type *src_tp) -> std::array<type_id_t, 3> {
-                                   return {{src_tp[0].get_id(), src_tp[1].get_id(), src_tp[2].get_id()}};
-                                 },
-                                 on_null);
-          default:
-            break;
-          }
-        }
-
-        return multidispatch(tp, begin_child, end_child,
-                             [](const ndt::type &DYND_UNUSED(dst_tp), intptr_t nsrc, const ndt::type *src_tp) {
-                               std::vector<type_id_t> key;
-                               for (std::intptr_t i = 0; i < nsrc; ++i) {
-                                 key.push_back(src_tp[i].get_id());
-                               }
-                               return key;
-                             },
-                             on_null);
-      }
-
-      template <typename IteratorType, typename OnNullType>
-      callable multidispatch(const ndt::type &tp, const IteratorType &begin_child, const IteratorType &end_child,
-                             const std::vector<intptr_t> &permutation, const OnNullType &on_null)
-      {
-        return multidispatch(tp, begin_child, end_child,
-                             [permutation](const ndt::type &DYND_UNUSED(dst_tp), std::intptr_t DYND_UNUSED(nsrc),
-                                           const ndt::type *src_tp) {
-                               std::vector<type_id_t> key;
-                               for (std::intptr_t i : permutation) {
-                                 key.push_back((src_tp + i)->get_id());
-                               }
-                               return key;
-                             },
-                             on_null);
-      }
-
-    } // namespace dynd::nd::functional::detail
-
-    template <typename IteratorType>
-    callable multidispatch(const ndt::type &tp, const IteratorType &begin_child, const IteratorType &end_child)
-    {
-      return detail::multidispatch(tp, begin_child, end_child, []() -> callable & {
-        std::stringstream ss;
-        ss << "no viable overload for nd::functional::multidispatch "
-              "with argument types";
-        throw std::runtime_error(ss.str());
-      });
+    template <typename func_type, typename... T>
+    callable apply(func_type *func, T &&... names) {
+      return make_callable<apply_callable_callable<func_type *, arity_of<func_type>::value - sizeof...(T)>>(
+          func, std::forward<T>(names)...);
     }
 
-    template <typename IteratorType>
-    callable multidispatch(const IteratorType &begin_child, const IteratorType &end_child)
-    {
-      return multidispatch(ndt::type("(...) -> Any"), begin_child, end_child);
+    /**
+     * Makes a callable out of the provided function object type, which
+     * constructs and calls the function object on demand.
+     */
+    template <typename func_type, typename... KwdTypes, typename... T>
+    callable apply(T &&... names) {
+      return make_callable<construct_then_apply_callable_callable<func_type, KwdTypes...>>(std::forward<T>(names)...);
     }
 
-    inline callable multidispatch(const std::initializer_list<callable> &children)
-    {
-      return multidispatch(std::begin(children), std::end(children));
+    template <typename T, typename R, typename... A, typename... S>
+    callable apply(T *obj, R (T::*mem_func)(A...), S &&... names) {
+      return make_callable<apply_member_function_callable<T *, R (T::*)(A...), sizeof...(A) - sizeof...(S)>>(
+          obj, mem_func, std::forward<S>(names)...);
     }
 
-    inline callable multidispatch(const ndt::type &tp, const std::initializer_list<callable> &children)
-    {
-      return multidispatch(tp, std::begin(children), std::end(children));
-    }
+    /**
+     * Returns an callable which composes the two callables together.
+     * The buffer used to connect them is made out of the provided ``buf_tp``.
+     */
+    DYND_API callable compose(const callable &first, const callable &second, const ndt::type &buf_tp = ndt::type());
 
-    template <typename IteratorType>
-    callable multidispatch(const ndt::type &tp, const IteratorType &begin_child, const IteratorType &end_child,
-                           const std::vector<intptr_t> &permutation)
-    {
-      return detail::multidispatch(tp, begin_child, end_child, permutation, []() -> callable & {
-        std::stringstream ss;
-        ss << "no viable overload for nd::functional::multidispatch "
-              "with argument types";
-        throw std::runtime_error(ss.str());
-      });
-    }
+    /**
+     * Makes a ckernel that ignores the src values, and writes
+     * constant values to the output.
+     */
+    DYND_API callable constant(const array &val);
 
-    template <typename IteratorType>
-    callable multidispatch(const IteratorType &begin_child, const IteratorType &end_child,
-                           const std::vector<intptr_t> &permutation)
-    {
-      return multidispatch(ndt::type("(...) -> Any"), begin_child, end_child, permutation);
-    }
+    /**
+     * Adds an adapter ckernel which wraps a child binary expr ckernel
+     * as a unary reduction ckernel. The three types of the binary
+     * expr kernel must all be equal.
+     *
+     * \param ckb  The ckernel_builder into which the kernel adapter is placed.
+     * \param ckb_offset  The offset within the ckernel_builder at which to
+     *place the adapter.
+     * \param right_associative  If true, the reduction is to be evaluated right
+     *to left,
+     *                           (x0 * (x1 * (x2 * x3))), if false, the
+     *reduction is to be
+     *                           evaluted left to right (((x0 * x1) * x2) * x3).
+     * \param kernreq  The type of kernel to produce (single or strided).
+     *
+     * \returns  The ckb_offset where the child ckernel should be placed.
+     */
+    DYND_API callable left_compound(const callable &child);
 
-    inline callable multidispatch(const std::initializer_list<callable> &children,
-                                  const std::vector<intptr_t> &permutation)
-    {
-      return multidispatch(std::begin(children), std::end(children), permutation);
-    }
+    DYND_API callable right_compound(const callable &child);
 
-    inline callable multidispatch(const ndt::type &tp, const std::initializer_list<callable> &children,
-                                  const std::vector<intptr_t> &permutation)
-    {
-      return multidispatch(tp, std::begin(children), std::end(children), permutation);
-    }
+    /**
+     * Lifts the provided ckernel, broadcasting it as necessary to execute
+     * across the additional dimensions in the ``lifted_types`` array.
+     *
+     * \param child  The callable being lifted
+     */
+    DYND_API callable elwise(const callable &child, bool res_ignore = false);
 
-    inline callable adapt(const ndt::type &value_tp, const callable &forward)
-    {
-      return callable::make<adapt_kernel>(ndt::callable_type::make(value_tp, {ndt::type("Any")}),
-                                          adapt_kernel::static_data_type{value_tp, forward});
+    DYND_API ndt::type elwise_make_type(const ndt::callable_type *child_tp, bool ret_variadic);
+
+    template <int... I>
+    callable forward_na(const ndt::type &ret_tp, std::initializer_list<ndt::type> arg_tp) {
+      ndt::type tp = ndt::make_type<ndt::callable_type>(ndt::make_type<ndt::option_type>(ret_tp), arg_tp);
+      return make_callable<forward_na_callable<I...>>(tp, callable());
     }
 
     template <int... I>
-    callable forward_na(const callable &child)
-    {
-      ndt::type tp = ndt::callable_type::make(ndt::make_type<ndt::option_type>(child.get_ret_type()),
-                                              {ndt::type("Any"), ndt::type("Any")});
-      return callable::make<forward_na_kernel<I...>>(tp, child);
+    callable forward_na(const callable &child) {
+      ndt::type arg0_tp = child->get_arg_types()[0];
+      ndt::type arg1_tp = child->get_arg_types()[1];
+
+      size_t ind[sizeof...(I)] = {I...};
+      for (size_t i = 0; i < sizeof...(I); ++i) {
+        if (ind[i] == 0) {
+          arg0_tp = ndt::make_type<ndt::option_type>(arg0_tp);
+        }
+        if (ind[i] == 1) {
+          arg1_tp = ndt::make_type<ndt::option_type>(arg1_tp);
+        }
+      }
+
+      ndt::type tp = ndt::make_type<ndt::callable_type>(ndt::make_type<ndt::option_type>(child->get_ret_type()),
+                                                        {arg0_tp, arg1_tp});
+      return make_callable<forward_na_callable<I...>>(tp, child);
     }
+
+    DYND_API callable outer(const callable &child);
+
+    DYND_API ndt::type outer_make_type(const ndt::callable_type *child_tp);
+
+    /**
+     * Create an callable which applies a given window_op in a
+     * rolling window fashion.
+     *
+     * \param neighborhood_op  An callable object which transforms a
+     *neighborhood
+     *into
+     *                         a single output value. Signature
+     *                         '(Fixed * Fixed * NH, Fixed * Fixed * MSK) ->
+     *OUT',
+     */
+    DYND_API callable neighborhood(const callable &child, const callable &boundary_child = callable());
+
+    /**
+     * Lifts the provided callable, broadcasting it as necessary to execute
+     * across the additional dimensions in the ``lifted_types`` array.
+     */
+    DYND_API callable reduction(const callable &child);
+
+    DYND_API callable reduction(const callable &child,
+                                const std::initializer_list<std::pair<const char *, array>> &kwds);
+
+    DYND_API callable where(const callable &child);
 
   } // namespace dynd::nd::functional
 } // namespace dynd::nd

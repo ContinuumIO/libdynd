@@ -1,11 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
 #include <dynd/type.hpp>
+#include <dynd/types/any_kind_type.hpp>
 
 #define DYND_BOOL_NA (2)
 #define DYND_INT8_NA (std::numeric_limits<int8_t>::min())
@@ -30,30 +31,40 @@ struct option {
 };
 
 template <typename ValueType>
-option<ValueType> opt()
-{
+option<ValueType> opt() {
   return option<ValueType>();
 }
 
 template <typename ValueType>
-option<ValueType> opt(ValueType value)
-{
+option<ValueType> opt(ValueType value) {
   return option<ValueType>(value);
 }
 
-void assign_na_builtin(type_id_t value_id, char *data);
-bool is_avail_builtin(type_id_t value_id, const char *data);
+DYNDT_API void assign_na_builtin(type_id_t value_id, char *data);
+DYNDT_API bool is_avail_builtin(type_id_t value_id, const char *data);
 
 namespace ndt {
 
   /**
    * The option type represents data which may or may not be there.
    */
-  class DYND_API option_type : public base_type {
+  class DYNDT_API option_type : public base_type {
     type m_value_tp;
 
   public:
-    option_type(const type &value_tp);
+    typedef any_kind_type base;
+
+    option_type(type_id_t id, const type &value_tp = make_type<any_kind_type>())
+        : base_type(id, make_type<any_kind_type>(), value_tp.get_data_size(), value_tp.get_data_alignment(),
+                    value_tp.get_flags() & (type_flags_value_inherited | type_flags_operand_inherited),
+                    value_tp.get_arrmeta_size(), value_tp.get_ndim(), 0),
+          m_value_tp(value_tp) {
+      if (value_tp.get_id() == option_id) {
+        std::stringstream ss;
+        ss << "Cannot construct an option type out of " << value_tp << ", it is already an option type";
+        throw type_error(ss.str());
+      }
+    }
 
     size_t get_default_data_size() const { return m_value_tp.get_default_data_size(); }
 
@@ -78,7 +89,7 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
@@ -91,6 +102,9 @@ namespace ndt {
 
     std::map<std::string, std::pair<ndt::type, const char *>> get_dynamic_type_properties() const;
   };
+
+  template <>
+  struct id_of<option_type> : std::integral_constant<type_id_t, option_id> {};
 
   template <typename ValueType>
   struct traits<option<ValueType>> {

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -12,7 +12,7 @@
 
 namespace dynd {
 
-class DYND_API float128 {
+class DYNDT_API float128 {
 public:
 #if defined(DYND_BIG_ENDIAN)
   uint64_t m_hi, m_lo;

@@ -1,15 +1,16 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include <dynd/array.hpp>
+#include <dynd/shortvector.hpp>
 #include <dynd/types/base_dim_type.hpp>
+#include <dynd/types/dim_kind_type.hpp>
 
 namespace dynd {
 
@@ -25,14 +26,19 @@ enum {
 
 namespace ndt {
 
-  class DYND_API dim_fragment_type : public base_dim_type {
+  class DYNDT_API dim_fragment_type : public base_dim_type {
     dimvector m_tagged_dims;
 
   public:
-    dim_fragment_type(intptr_t ndim, const intptr_t *tagged_dims);
-    dim_fragment_type(intptr_t ndim, const type &tp);
+    dim_fragment_type(type_id_t id, intptr_t ndim, const intptr_t *tagged_dims)
+        : base_dim_type(id, make_type<dim_kind_type>(), make_type<void>(), 0, 1, 0, type_flag_symbolic, false),
+          m_tagged_dims(ndim, tagged_dims) {
+      this->m_ndim = static_cast<uint8_t>(ndim);
+    }
 
-    virtual ~dim_fragment_type() {}
+    dim_fragment_type(type_id_t new_id, intptr_t ndim, const type &tp);
+
+    dim_fragment_type(type_id_t new_id) : dim_fragment_type(new_id, 0, nullptr) {}
 
     /**
      * The tagged_dims should be interpreted as an array of
@@ -62,9 +68,9 @@ namespace ndt {
     type apply_linear_index(intptr_t nindices, const irange *indices, size_t current_i, const type &root_tp,
                             bool leading_dimension) const;
     intptr_t apply_linear_index(intptr_t nindices, const irange *indices, const char *arrmeta, const type &result_tp,
-                                char *out_arrmeta, const intrusive_ptr<memory_block_data> &embedded_reference,
-                                size_t current_i, const type &root_tp, bool leading_dimension, char **inout_data,
-                                intrusive_ptr<memory_block_data> &inout_dataref) const;
+                                char *out_arrmeta, const nd::memory_block &embedded_reference, size_t current_i,
+                                const type &root_tp, bool leading_dimension, char **inout_data,
+                                nd::memory_block &inout_dataref) const;
 
     intptr_t get_dim_size(const char *arrmeta, const char *data) const;
 
@@ -74,36 +80,32 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     size_t arrmeta_copy_construct_onedim(char *dst_arrmeta, const char *src_arrmeta,
-                                         const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                         const nd::memory_block &embedded_reference) const;
     void arrmeta_destruct(char *arrmeta) const;
 
     virtual type with_element_type(const type &element_tp) const;
   }; // class dim_fragment_type
 
-  /** Makes an empty dim fragment */
-  DYND_API const type &make_dim_fragment();
+  template <>
+  struct id_of<dim_fragment_type> : std::integral_constant<type_id_t, dim_fragment_id> {};
 
   /** Makes a dim fragment out of the tagged dims provided */
-  inline type make_dim_fragment(intptr_t ndim, const intptr_t *tagged_dims)
-  {
+  inline type make_dim_fragment(intptr_t ndim, const intptr_t *tagged_dims) {
     if (ndim > 0) {
-      return type(new dim_fragment_type(ndim, tagged_dims), false);
-    }
-    else {
-      return make_dim_fragment();
+      return make_type<dim_fragment_type>(ndim, tagged_dims);
+    } else {
+      return make_type<dim_fragment_type>();
     }
   }
 
   /** Make a dim fragment from the provided type */
-  inline type make_dim_fragment(intptr_t ndim, const type &tp)
-  {
+  inline type make_dim_fragment(intptr_t ndim, const type &tp) {
     if (ndim > 0) {
-      return type(new dim_fragment_type(ndim, tp), false);
-    }
-    else {
-      return make_dim_fragment();
+      return make_type<dim_fragment_type>(ndim, tp);
+    } else {
+      return make_type<dim_fragment_type>();
     }
   }
 

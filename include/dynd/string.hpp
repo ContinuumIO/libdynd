@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -40,9 +40,9 @@ void string_concat(size_t nop, StringType &d, const StringType *const *s)
 template <class StringType>
 intptr_t string_count(const StringType &haystack, const StringType &needle)
 {
-  detail::string_counter<StringType> f;
+  detail::string_counter f;
 
-  f(haystack, needle);
+  detail::string_search(haystack, needle, f);
 
   return f.finish();
 }
@@ -54,9 +54,23 @@ intptr_t string_count(const StringType &haystack, const StringType &needle)
 template <class StringType>
 intptr_t string_find(const StringType &haystack, const StringType &needle)
 {
-  detail::string_finder<StringType> f;
+  detail::string_finder f;
 
-  f(haystack, needle);
+  detail::string_search(haystack, needle, f);
+
+  return f.finish();
+}
+
+/*
+  Returns byte index of the last occurrence of needle in haystack.
+  Returns -1 if not found.
+*/
+template <class StringType>
+intptr_t string_rfind(const StringType &haystack, const StringType &needle)
+{
+  detail::string_finder f;
+
+  detail::string_search_reverse(haystack, needle, f);
 
   return f.finish();
 }
@@ -90,7 +104,7 @@ void string_replace(StringType &dst, const StringType &src, const StringType &ol
     }
     else {
       detail::string_inplace_replacer<StringType> replacer(dst, new_str);
-      replacer(src, old_str);
+      detail::string_search(src, old_str, replacer);
     }
   }
   else {
@@ -103,37 +117,61 @@ void string_replace(StringType &dst, const StringType &src, const StringType &ol
     dst.resize((intptr_t)src.size() + delta);
 
     detail::string_copy_replacer<StringType> replacer(dst, src, old_str, new_str);
-    replacer(src, old_str);
+    detail::string_search(src, old_str, replacer);
     replacer.finish();
   }
 }
 
+/*
+  Returns `true` if `str` starts with `sub`.
+*/
+template <class StringType>
+bool string_startswith(const StringType &str, const StringType &sub)
+{
+  if (sub.size() > str.size()) {
+    return false;
+  }
+
+  return memcmp(str.begin(), sub.begin(), sub.size()) == 0;
+}
+
+/*
+  Returns `true` if `str` ends with `sub`.
+*/
+template <class StringType>
+bool string_endswith(const StringType &str, const StringType &sub)
+{
+  if (sub.size() > str.size()) {
+    return false;
+  }
+
+  return memcmp(str.begin() + str.size() - sub.size(), sub.begin(), sub.size()) == 0;
+}
+
+/*
+  Returns `true` if `str` contains `sub`.
+*/
+template <class StringType>
+bool string_contains(const StringType &str, const StringType &sub)
+{
+  detail::string_contains f;
+
+  detail::string_search(str, sub, f);
+
+  return f.finish();
+}
+
 namespace nd {
 
-  extern DYND_API struct DYND_API string_concatenation : declfunc<string_concatenation> {
-    static callable make();
-    static callable &get();
-  } string_concatenation;
-
-  extern DYND_API struct DYND_API string_count : declfunc<string_count> {
-    static callable make();
-    static callable &get();
-  } string_count;
-
-  extern DYND_API struct DYND_API string_find : declfunc<string_find> {
-    static callable make();
-    static callable &get();
-  } string_find;
-
-  extern DYND_API struct DYND_API string_replace : declfunc<string_replace> {
-    static callable make();
-    static callable &get();
-  } string_replace;
-
-  extern DYND_API struct DYND_API string_split : declfunc<string_split> {
-    static callable make();
-    static callable &get();
-  } string_split;
+  extern DYND_API callable string_concatenation;
+  extern DYND_API callable string_count;
+  extern DYND_API callable string_find;
+  extern DYND_API callable string_rfind;
+  extern DYND_API callable string_replace;
+  extern DYND_API callable string_split;
+  extern DYND_API callable string_startswith;
+  extern DYND_API callable string_endswith;
+  extern DYND_API callable string_contains;
 
 } // namespace dynd::nd
 } // namespace dynd

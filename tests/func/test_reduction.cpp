@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -10,7 +10,7 @@
 
 #include "inc_gtest.hpp"
 
-#include <dynd/func/reduction.hpp>
+#include <dynd/functional.hpp>
 
 #include "dynd_assertions.hpp"
 
@@ -36,33 +36,28 @@ TEST(Reduction, BuiltinSum_Lift0D_WithIdentity)
 }
 */
 
-TEST(Reduction, BuiltinSum_Lift1D_NoIdentity)
-{
-  nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
+TEST(Reduction, BuiltinSum_Lift1D_NoIdentity) {
+  nd::callable f = nd::functional::reduction([](double x, double y) { return x + y; });
 
-  EXPECT_ARRAY_EQ(1.5 - 22.0 + 3.75 + 1.125 - 3.375, f(initializer_list<double>{1.5, -22.0, 3.75, 1.125, -3.375}));
-  EXPECT_ARRAY_EQ(3.75, f(initializer_list<double>{3.75}));
+  EXPECT_ARRAY_EQ(1.5 - 22.0 + 3.75 + 1.125 - 3.375, f(nd::array{1.5, -22.0, 3.75, 1.125, -3.375}));
+  EXPECT_ARRAY_EQ(3.75, f(nd::array{3.75}));
 }
 
-TEST(Reduction, BuiltinSum_Lift1D_WithIdentity)
-{
+TEST(Reduction, BuiltinSum_Lift1D_WithIdentity) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ(100.0 + 1.5 - 22.0 + 3.75 + 1.125 - 3.375,
                   f({initializer_list<double>{1.5, -22., 3.75, 1.125, -3.375}}, {{"identity", 100.0}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce)
-{
-  nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce) {
+  nd::callable f = nd::functional::reduction([](double x, double y) { return x + y; });
 
-  EXPECT_ARRAY_EQ(1.5 + 2.0 + 7.0 - 2.25 + 7.0 + 2.125,
-                  f(initializer_list<initializer_list<double>>{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}));
-  EXPECT_ARRAY_EQ(1.5 - 2.0, f(initializer_list<initializer_list<double>>{{1.5, -2.0}}));
+  EXPECT_ARRAY_EQ(1.5 + 2.0 + 7.0 - 2.25 + 7.0 + 2.125, f(nd::array{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}));
+  EXPECT_ARRAY_EQ(1.5 - 2.0, f(nd::array{{1.5, -2.0}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim)
-{
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ(
@@ -70,19 +65,15 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceReduce_KeepDim)
       f({initializer_list<initializer_list<double>>{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}}, {{"keepdims", true}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce)
-{
-  nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce) {
+  nd::callable f = nd::functional::reduction([](double x, double y) { return x + y; });
 
-  EXPECT_ARRAY_EQ(initializer_list<double>({1.5 + 2.0 + 7.0, -2.25 + 7.0 + 2.125}),
-                  f({initializer_list<initializer_list<double>>{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}},
-                    {{"axes", nd::array(initializer_list<int>{1})}}));
-  EXPECT_ARRAY_EQ(initializer_list<double>{1.5 - 2.0}, f({initializer_list<initializer_list<double>>{{1.5, -2.0}}},
-                                                         {{"axes", nd::array(initializer_list<int>{1})}}));
+  EXPECT_ARRAY_EQ((nd::array{1.5 + 2.0 + 7.0, -2.25 + 7.0 + 2.125}),
+                  f({nd::array{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}}, {{"axes", nd::array{1}}}));
+  EXPECT_ARRAY_EQ(nd::array{1.5 - 2.0}, f({nd::array{{1.5, -2.0}}}, {{"axes", nd::array{1}}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce_KeepDim)
-{
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce_KeepDim) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ((initializer_list<initializer_list<double>>{{1.5 + 2.0 + 7.0}, {-2.25 + 7.0 + 2.125}}),
@@ -90,19 +81,15 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_BroadcastReduce_KeepDim)
                     {{"axes", nd::array(initializer_list<int>{1})}, {"keepdims", true}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast)
-{
-  nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast) {
+  nd::callable f = nd::functional::reduction([](double x, double y) { return x + y; });
 
-  EXPECT_ARRAY_EQ((initializer_list<double>{1.5 - 2.25, 2.0 + 7.0, 7.0 + 2.125}),
-                  f({initializer_list<initializer_list<double>>{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}},
-                    {{"axes", nd::array(initializer_list<int>{0})}}));
-  EXPECT_ARRAY_EQ((initializer_list<double>{1.5, -2.0}), f({initializer_list<initializer_list<double>>{{1.5, -2.0}}},
-                                                           {{"axes", nd::array(initializer_list<int>{0})}}));
+  EXPECT_ARRAY_EQ((nd::array{1.5 - 2.25, 2.0 + 7.0, 7.0 + 2.125}),
+                  f({nd::array{{1.5, 2.0, 7.0}, {-2.25, 7.0, 2.125}}}, {{"axes", nd::array{0}}}));
+  EXPECT_ARRAY_EQ((nd::array{1.5, -2.0}), f({nd::array{{1.5, -2.0}}}, {{"axes", nd::array{0}}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim)
-{
+TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ((initializer_list<initializer_list<double>>{{1.5 - 2.25, 2.0 + 7.0, 7.0 + 2.125}}),
@@ -110,8 +97,7 @@ TEST(Reduction, BuiltinSum_Lift2D_StridedStrided_ReduceBroadcast_KeepDim)
                     {{"axes", nd::array(initializer_list<int>{0})}, {"keepdims", true}}));
 }
 
-TEST(Reduction, FixedVar)
-{
+TEST(Reduction, FixedVar) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   nd::array a = nd::empty("3 * var * float64");
@@ -122,8 +108,7 @@ TEST(Reduction, FixedVar)
   EXPECT_ARRAY_EQ(45.0, f(a));
 }
 
-TEST(Reduction, FixedVarWithAxes)
-{
+TEST(Reduction, FixedVarWithAxes) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   nd::array a = nd::empty("3 * var * float64");
@@ -134,8 +119,7 @@ TEST(Reduction, FixedVarWithAxes)
   EXPECT_ARRAY_EQ((nd::array{3.0, 12.0, 30.0}), f({a}, {{"axes", nd::array{1}}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce)
-{
+TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ(1.5 - 2.375 + 2.0 + 1.25 + 7.0 - 0.5 - 2.25 + 1.0 + 7.0 + 2.125 + 0.25,
@@ -143,8 +127,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceReduceReduce)
                                                                                  {{-2.25, 1}, {7, 0}, {2.125, 0.25}}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_BroadcastReduceReduce)
-{
+TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_BroadcastReduceReduce) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ((nd::array{1.5 - 2.375 + 2.0 + 1.25 + 7.0 - 0.5, -2.25 + 1.0 + 7.0 + 2.125 + 0.25}),
@@ -152,8 +135,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_BroadcastReduceReduce)
                     {{"axes", {1, 2}}}));
 }
 
-TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceBroadcastReduce)
-{
+TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceBroadcastReduce) {
   nd::callable f = nd::functional::reduction(nd::functional::apply([](double x, double y) { return x + y; }));
 
   EXPECT_ARRAY_EQ(
@@ -161,8 +143,7 @@ TEST(Reduction, BuiltinSum_Lift3D_StridedStridedStrided_ReduceBroadcastReduce)
       f({{{{1.5, -2.375}, {2.0, 1.25}, {7.0, -0.5}}, {{-2.25, 1.0}, {7.0, 0.0}, {2.125, 0.25}}}}, {{"axes", {0, 2}}}));
 }
 
-TEST(Reduction, Except)
-{
+TEST(Reduction, Except) {
   // Cannot have a null child
   EXPECT_THROW(nd::functional::reduction(nd::callable()), invalid_argument);
 

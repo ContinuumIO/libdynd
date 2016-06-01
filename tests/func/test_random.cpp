@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -11,7 +11,7 @@
 #include "inc_gtest.hpp"
 #include "dynd_assertions.hpp"
 
-#include <dynd/func/random.hpp>
+#include <dynd/random.hpp>
 
 typedef testing::Types<int32_t, int64_t, uint32_t, uint64_t> IntegralTypes;
 typedef testing::Types<float, double> RealTypes;
@@ -27,8 +27,7 @@ public:
 
 TYPED_TEST_CASE_P(Random);
 
-TYPED_TEST_P(Random, Uniform)
-{
+TYPED_TEST_P(Random, Uniform) {
   typename TestFixture::DType a = 0;
   typename TestFixture::DType b = 10;
   intptr_t size = 10000;

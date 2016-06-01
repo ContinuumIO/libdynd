@@ -1,15 +1,17 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
+#include "inc_gtest.hpp"
 #include <complex>
 #include <iostream>
 #include <stdexcept>
-#include "inc_gtest.hpp"
 
+#include <dynd/array.hpp>
 #include <dynd/type.hpp>
 #include <dynd/types/any_kind_type.hpp>
+#include <dynd/types/bool_kind_type.hpp>
 #include <dynd/types/bytes_type.hpp>
 #include <dynd/types/fixed_bytes_kind_type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
@@ -17,14 +19,12 @@
 using namespace std;
 using namespace dynd;
 
-TEST(Type, NDTTypeObject)
-{
+TEST(Type, NDTTypeObject) {
   // The ndt::type just contains one ndt::base_type *
   EXPECT_EQ(sizeof(ndt::base_type *), sizeof(ndt::type));
 }
 
-TEST(Type, BasicConstructor)
-{
+TEST(Type, BasicConstructor) {
   ndt::type d;
 
   // Default-constructed type properties
@@ -34,9 +34,9 @@ TEST(Type, BasicConstructor)
   EXPECT_TRUE(d.is_builtin());
 
   // void type
-  d = ndt::type(void_id);
+  d = ndt::make_type<void>();
   EXPECT_EQ(void_id, d.get_id());
-  EXPECT_EQ(any_kind_id, d.get_base_id());
+  EXPECT_EQ(scalar_kind_id, d.get_base_id());
   EXPECT_EQ(1u, d.get_data_alignment());
   EXPECT_EQ(0u, d.get_data_size());
   EXPECT_TRUE(d.is_builtin());
@@ -44,7 +44,7 @@ TEST(Type, BasicConstructor)
   EXPECT_EQ(d, ndt::type(d.str()));
 
   // bool type
-  d = ndt::type(bool_id);
+  d = ndt::make_type<bool>();
   EXPECT_EQ(bool_id, d.get_id());
   EXPECT_EQ(bool_kind_id, d.get_base_id());
   EXPECT_EQ(1u, d.get_data_alignment());
@@ -54,7 +54,7 @@ TEST(Type, BasicConstructor)
   EXPECT_EQ(d, ndt::type(d.str()));
 
   // int8 type
-  d = ndt::type(int8_id);
+  d = ndt::make_type<int8_t>();
   EXPECT_EQ(int8_id, d.get_id());
   EXPECT_EQ(int_kind_id, d.get_base_id());
   EXPECT_EQ(1u, d.get_data_alignment());
@@ -64,7 +64,7 @@ TEST(Type, BasicConstructor)
   EXPECT_EQ(d, ndt::type(d.str()));
 
   // int16 type
-  d = ndt::type(int16_id);
+  d = ndt::make_type<int16_t>();
   EXPECT_EQ(int_kind_id, d.get_base_id());
   EXPECT_EQ(2u, d.get_data_alignment());
   EXPECT_EQ(2u, d.get_data_size());
@@ -73,7 +73,7 @@ TEST(Type, BasicConstructor)
   EXPECT_EQ(d, ndt::type(d.str()));
 
   // int32 type
-  d = ndt::type(int32_id);
+  d = ndt::make_type<int32_t>();
   EXPECT_EQ(int32_id, d.get_id());
   EXPECT_EQ(int_kind_id, d.get_base_id());
   EXPECT_EQ(4u, d.get_data_alignment());
@@ -161,33 +161,7 @@ TEST(Type, BasicConstructor)
   EXPECT_EQ(d, ndt::type(d.str()));
 }
 
-TEST(Type, TypeIDConstructor)
-{
-  EXPECT_EQ(bool_id, ndt::type(bool_id).get_id());
-  EXPECT_EQ(int8_id, ndt::type(int8_id).get_id());
-  EXPECT_EQ(int16_id, ndt::type(int16_id).get_id());
-  EXPECT_EQ(int32_id, ndt::type(int32_id).get_id());
-  EXPECT_EQ(int64_id, ndt::type(int64_id).get_id());
-  EXPECT_EQ(int128_id, ndt::type(int128_id).get_id());
-  EXPECT_EQ(uint8_id, ndt::type(uint8_id).get_id());
-  EXPECT_EQ(uint16_id, ndt::type(uint16_id).get_id());
-  EXPECT_EQ(uint32_id, ndt::type(uint32_id).get_id());
-  EXPECT_EQ(uint64_id, ndt::type(uint64_id).get_id());
-  EXPECT_EQ(uint128_id, ndt::type(uint128_id).get_id());
-  EXPECT_EQ(float16_id, ndt::type(float16_id).get_id());
-  EXPECT_EQ(float32_id, ndt::type(float32_id).get_id());
-  EXPECT_EQ(float64_id, ndt::type(float64_id).get_id());
-  EXPECT_EQ(float128_id, ndt::type(float128_id).get_id());
-  EXPECT_EQ(complex_float32_id, ndt::type(complex_float32_id).get_id());
-  EXPECT_EQ(complex_float64_id, ndt::type(complex_float64_id).get_id());
-  EXPECT_EQ(void_id, ndt::type(void_id).get_id());
-  EXPECT_EQ(ndt::bytes_type::make(), ndt::type(bytes_id));
-  EXPECT_EQ(ndt::fixed_bytes_kind_type::make(), ndt::type(fixed_bytes_id));
-  EXPECT_EQ(ndt::pointer_type::make(ndt::any_kind_type::make()), ndt::type(pointer_id));
-}
-
-TEST(TypeFor, InitializerList)
-{
+TEST(TypeFor, InitializerList) {
   EXPECT_EQ(ndt::make_type<ndt::fixed_dim_type>(1, ndt::make_type<int>()), ndt::type_for({0}));
   EXPECT_EQ(ndt::make_type<ndt::fixed_dim_type>(2, ndt::make_type<int>()), ndt::type_for({10, -2}));
   EXPECT_EQ(ndt::make_type<ndt::fixed_dim_type>(7, ndt::make_type<int>()), ndt::type_for({0, 1, 2, 3, 4, 5, 6}));
@@ -201,4 +175,43 @@ TEST(TypeFor, InitializerList)
             ndt::type_for({{0}, {1, 2}}));
   EXPECT_EQ(ndt::make_type<ndt::fixed_dim_type>(2, ndt::make_type<ndt::var_dim_type>(ndt::make_type<int>())),
             ndt::type_for({{0, 1}, {2}}));
+}
+
+TEST(Fundamental, IDOf) {
+  EXPECT_EQ(bool_id, ndt::id_of<bool>::value);
+
+  EXPECT_EQ(int8_id, ndt::id_of<int8_t>::value);
+  EXPECT_EQ(int16_id, ndt::id_of<int16_t>::value);
+  EXPECT_EQ(int32_id, ndt::id_of<int32_t>::value);
+  EXPECT_EQ(int64_id, ndt::id_of<int64_t>::value);
+  EXPECT_EQ(int128_id, ndt::id_of<int128>::value);
+
+  EXPECT_EQ(uint8_id, ndt::id_of<uint8_t>::value);
+  EXPECT_EQ(uint16_id, ndt::id_of<uint16_t>::value);
+  EXPECT_EQ(uint32_id, ndt::id_of<uint32_t>::value);
+  EXPECT_EQ(uint64_id, ndt::id_of<uint64_t>::value);
+  EXPECT_EQ(uint128_id, ndt::id_of<uint128>::value);
+
+  EXPECT_EQ(float16_id, ndt::id_of<float16>::value);
+  EXPECT_EQ(float32_id, ndt::id_of<float>::value);
+  EXPECT_EQ(float64_id, ndt::id_of<double>::value);
+  EXPECT_EQ(float128_id, ndt::id_of<float128>::value);
+
+  EXPECT_EQ(complex_float32_id, ndt::id_of<dynd::complex<float>>::value);
+  EXPECT_EQ(complex_float64_id, ndt::id_of<dynd::complex<double>>::value);
+
+  EXPECT_EQ(void_id, ndt::id_of<void>::value);
+
+  /*
+    EXPECT_EQ(ndt::make_type<ndt::fixed_bytes_kind_type>(), ndt::type(fixed_bytes_id));
+    EXPECT_EQ(ndt::make_type<ndt::pointer_type>(ndt::make_type<ndt::any_kind_type>()), ndt::type(pointer_id));
+  */
+}
+
+TEST(BoolType, Constructor) {
+  const ndt::type &bool_tp = ndt::make_type<bool>();
+
+  vector<ndt::type> bases{ndt::make_type<ndt::bool_kind_type>(), ndt::make_type<ndt::scalar_kind_type>(),
+                          ndt::make_type<ndt::any_kind_type>()};
+  EXPECT_EQ(bases, bool_tp.bases());
 }

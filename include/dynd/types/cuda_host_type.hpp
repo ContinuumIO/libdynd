@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -12,13 +12,11 @@ namespace dynd {
 
 #ifdef DYND_CUDA
 
-class DYND_API cuda_host_type : public base_memory_type {
+class DYNDT_API cuda_host_type : public base_memory_type {
   unsigned int m_cuda_host_flags;
 
 public:
   cuda_host_type(const ndt::type &element_tp, unsigned int cuda_host_flags = cudaHostAllocDefault);
-
-  virtual ~cuda_host_type();
 
   unsigned int get_cuda_host_flags() const { return m_cuda_host_flags; }
 

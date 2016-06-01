@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -7,10 +7,6 @@
 
 using namespace std;
 using namespace dynd;
-
-ndt::scalar_kind_type::scalar_kind_type() : base_type(scalar_kind_id, 0, 0, type_flag_symbolic, 0, 0, 0) {}
-
-ndt::scalar_kind_type::~scalar_kind_type() {}
 
 bool ndt::scalar_kind_type::operator==(const base_type &other) const
 {

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -16,10 +16,7 @@ namespace nd {
    *
    * \returns  The index of the found element, or -1 if not found.
    */
-  extern DYND_API struct DYND_API binary_search : declfunc<binary_search> {
-    static callable make();
-    static callable &get();
-  } binary_search;
+  extern DYND_API callable binary_search;
 
 } // namespace dynd::nd
 } // namespace dynd

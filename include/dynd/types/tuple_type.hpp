@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -14,7 +14,7 @@
 namespace dynd {
 namespace ndt {
 
-  class DYND_API tuple_type : public base_type {
+  class DYNDT_API tuple_type : public base_type {
   protected:
     /**
      * The number of values in m_field_types and m_arrmeta_offsets.
@@ -22,12 +22,12 @@ namespace ndt {
     intptr_t m_field_count;
 
     /**
-     * Immutable vector of field types. Always has type "N * type".
+     * Immutable vector of field types.
      */
-    const std::vector<type> m_field_types;
+    std::vector<type> m_field_types;
 
     /**
-     * Immutable vector of arrmeta offsets. Always has type "N * uintptr".
+     * Immutable vector of arrmeta offsets.
      */
     std::vector<uintptr_t> m_arrmeta_offsets;
 
@@ -37,32 +37,47 @@ namespace ndt {
      */
     bool m_variadic;
 
-    tuple_type(type_id_t type_id, const std::vector<type> &field_types, uint32_t flags, bool layout_in_arrmeta,
-               bool variadic);
-
-    uintptr_t *get_arrmeta_data_offsets(char *arrmeta) const { return reinterpret_cast<uintptr_t *>(arrmeta); }
-
   public:
-    tuple_type(const std::vector<type> &field_types, bool variadic);
+    tuple_type(type_id_t id, size_t size, const type *element_tp, bool variadic = false,
+               uint32_t flags = type_flag_none)
+        : base_type(id, make_type<scalar_kind_type>(), 0, 1,
+                    flags | type_flag_indexable | (variadic ? type_flag_symbolic : 0), 0, 0, 0),
+          m_field_count(size), m_field_types(size), m_arrmeta_offsets(size), m_variadic(variadic) {
+      // Calculate the needed element alignment and arrmeta offsets
+      size_t arrmeta_offset = get_field_count() * sizeof(size_t);
 
-    /** The array of the field data offsets */
-    inline const uintptr_t *get_data_offsets(const char *arrmeta) const
-    {
-      return reinterpret_cast<const uintptr_t *>(arrmeta);
+      this->m_data_alignment = 1;
+
+      for (intptr_t i = 0; i < m_field_count; ++i) {
+        m_field_types[i] = element_tp[i];
+      }
+
+      for (intptr_t i = 0; i != m_field_count; ++i) {
+        const type &ft = get_field_type(i);
+        size_t field_alignment = ft.get_data_alignment();
+        // Accumulate the biggest field alignment as the type alignment
+        if (field_alignment > this->m_data_alignment) {
+          this->m_data_alignment = (uint8_t)field_alignment;
+        }
+        // Inherit any operand flags from the fields
+        this->flags |= (ft.get_flags() & type_flags_operand_inherited);
+        // Calculate the arrmeta offsets
+        m_arrmeta_offsets[i] = arrmeta_offset;
+        arrmeta_offset += ft.get_arrmeta_size();
+      }
+
+      this->m_metadata_size = arrmeta_offset;
     }
 
-    /** The number of fields in the struct. This is the size of the other
-     * arrays.
-     */
+    tuple_type(type_id_t id, std::initializer_list<type> element_tp, bool variadic = false)
+        : tuple_type(id, element_tp.size(), element_tp.begin(), variadic, type_flag_none) {}
+
+    tuple_type(type_id_t id, bool variadic = false) : tuple_type(id, 0, nullptr, variadic, type_flag_none) {}
+
     intptr_t get_field_count() const { return m_field_count; }
-    /** The type of the tuple */
     const ndt::type get_type() const { return ndt::type_for(m_field_types); }
-
-    /** The field types */
     const std::vector<type> &get_field_types() const { return m_field_types; }
-
     const type *get_field_types_raw() const { return m_field_types.data(); }
-    /** The field arrmeta offsets */
     const std::vector<uintptr_t> &get_arrmeta_offsets() const { return m_arrmeta_offsets; }
     const uintptr_t *get_arrmeta_offsets_raw() const { return m_arrmeta_offsets.data(); }
 
@@ -84,9 +99,9 @@ namespace ndt {
     type apply_linear_index(intptr_t nindices, const irange *indices, size_t current_i, const type &root_tp,
                             bool leading_dimension) const;
     intptr_t apply_linear_index(intptr_t nindices, const irange *indices, const char *arrmeta, const type &result_tp,
-                                char *out_arrmeta, const intrusive_ptr<memory_block_data> &embedded_reference,
-                                size_t current_i, const type &root_tp, bool leading_dimension, char **inout_data,
-                                intrusive_ptr<memory_block_data> &inout_dataref) const;
+                                char *out_arrmeta, const nd::memory_block &embedded_reference, size_t current_i,
+                                const type &root_tp, bool leading_dimension, char **inout_data,
+                                nd::memory_block &inout_dataref) const;
 
     void print_type(std::ostream &o) const;
 
@@ -100,7 +115,7 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
@@ -120,8 +135,7 @@ namespace ndt {
      * Fills in the array of default data offsets based on the data sizes
      * and alignments of the types.
      */
-    static void fill_default_data_offsets(intptr_t nfields, const type *field_tps, uintptr_t *out_data_offsets)
-    {
+    static void fill_default_data_offsets(intptr_t nfields, const type *field_tps, uintptr_t *out_data_offsets) {
       if (nfields > 0) {
         out_data_offsets[0] = 0;
         size_t offs = 0;
@@ -132,16 +146,10 @@ namespace ndt {
         }
       }
     }
-
-    /** Makes a tuple type with the specified types */
-    static type make(const std::vector<type> &field_types, bool variadic = false)
-    {
-      return type(new tuple_type(field_types, variadic), false);
-    }
-
-    /** Makes an empty tuple */
-    static type make(bool variadic = false) { return make(std::vector<type>(), variadic); }
   };
+
+  template <>
+  struct id_of<tuple_type> : std::integral_constant<type_id_t, tuple_id> {};
 
 } // namespace dynd::ndt
 } // namespace dynd

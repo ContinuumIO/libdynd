@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-15 DyND Developers
+# Copyright (C) 2011-16 DyND Developers
 # BSD 2-Clause License, see LICENSE.txt
 #
 
@@ -10,8 +10,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/benchmark ${CMAKE_CURRENT_BINARY
 
 set(benchmarks_SRC
     benchmark_libdynd.cpp
-    benchmark_dispatch_map.cpp
-#    array/benchmark_empty.cpp
+    dispatcher.cpp
+#    benchmark_dispatch_map.cpp
+    array/benchmark_empty.cpp
 #    func/benchmark_apply.cpp
 #    func/benchmark_arithmetic.cpp
 #    func/benchmark_random.cpp
@@ -46,6 +47,7 @@ else()
         libdynd
         pthread
         benchmark
+#        profiler
         )
 endif()
 

@@ -1,12 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <dynd/types/base_type.hpp>
 #include <dynd/type.hpp>
+#include <dynd/types/base_type.hpp>
 
 namespace dynd {
 namespace ndt {
@@ -21,14 +21,23 @@ namespace ndt {
    * dynd. This memory can be tracked via the object in
    * memblock/external_memory_block.hpp.
    */
-  class DYND_API base_memory_type : public base_type {
+  class DYNDT_API base_memory_type : public base_type {
   protected:
     type m_element_tp;
     size_t m_storage_arrmeta_offset;
 
   public:
-    base_memory_type(type_id_t type_id, const type &element_tp, size_t data_size, size_t alignment,
-                     size_t storage_arrmeta_offset, uint32_t flags);
+    base_memory_type(type_id_t id, const type &base_tp, const type &element_tp, size_t data_size, size_t alignment,
+                     size_t storage_arrmeta_offset, uint32_t flags)
+        : base_type(id, base_tp, data_size, alignment, flags, storage_arrmeta_offset + element_tp.get_arrmeta_size(),
+                    element_tp.get_ndim(), 0),
+          m_element_tp(element_tp), m_storage_arrmeta_offset(storage_arrmeta_offset) {
+      if (element_tp.get_base_id() == memory_id) {
+        std::stringstream ss;
+        ss << "a memory space cannot be specified for type " << element_tp;
+        throw std::runtime_error(ss.str());
+      }
+    }
 
     const type &get_element_type() const { return m_element_tp; }
 
@@ -46,9 +55,9 @@ namespace ndt {
                             bool leading_dimension) const;
 
     intptr_t apply_linear_index(intptr_t nindices, const irange *indices, const char *arrmeta, const type &result_type,
-                                char *out_arrmeta, const intrusive_ptr<memory_block_data> &embedded_reference,
-                                size_t current_i, const type &root_tp, bool leading_dimension, char **inout_data,
-                                intrusive_ptr<memory_block_data> &inout_dataref) const;
+                                char *out_arrmeta, const nd::memory_block &embedded_reference, size_t current_i,
+                                const type &root_tp, bool leading_dimension, char **inout_data,
+                                nd::memory_block &inout_dataref) const;
 
     type at_single(intptr_t i0, const char **inout_arrmeta, const char **inout_data) const;
 
@@ -58,8 +67,7 @@ namespace ndt {
 
     virtual bool operator==(const base_type &rhs) const = 0;
 
-    inline bool is_type_subarray(const type &subarray_tp) const
-    {
+    inline bool is_type_subarray(const type &subarray_tp) const {
       return (!subarray_tp.is_builtin() && (*this) == (*subarray_tp.extended())) ||
              m_element_tp.is_type_subarray(subarray_tp);
     }
@@ -72,7 +80,7 @@ namespace ndt {
 
     virtual void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     virtual void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                        const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                        const nd::memory_block &embedded_reference) const;
     virtual void arrmeta_destruct(char *arrmeta) const;
 
     virtual void data_alloc(char **data, size_t size) const = 0;

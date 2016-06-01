@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 // The char type represents a single character of a specified encoding.
@@ -9,21 +9,35 @@
 
 #pragma once
 
-#include <dynd/type.hpp>
 #include <dynd/string_encodings.hpp>
+#include <dynd/type.hpp>
+#include <dynd/types/string_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
 
-  class DYND_API char_type : public base_type {
-    // This encoding can be ascii, latin1, ucs2, or utf32.
+  class DYNDT_API char_type : public base_type {
+    // This encoding can be ascii, ucs2, or utf32.
     // Not a variable-sized encoding.
     string_encoding_t m_encoding;
 
   public:
-    char_type(string_encoding_t encoding = string_encoding_utf_32);
-
-    virtual ~char_type();
+    char_type(type_id_t id, string_encoding_t encoding = string_encoding_utf_32)
+        : base_type(id, make_type<string_kind_type>(), string_encoding_char_size_table[encoding],
+                    string_encoding_char_size_table[encoding], type_flag_none, 0, 0, 0),
+          m_encoding(encoding) {
+      switch (encoding) {
+      case string_encoding_ascii:
+      case string_encoding_ucs_2:
+      case string_encoding_utf_32:
+        break;
+      default: {
+        std::stringstream ss;
+        ss << "dynd char type requires fixed-size encoding, " << encoding << " is not supported";
+        throw std::runtime_error(ss.str());
+      }
+      }
+    }
 
     string_encoding_t get_encoding() const { return m_encoding; }
 
@@ -47,15 +61,14 @@ namespace ndt {
 
     void arrmeta_default_construct(char *DYND_UNUSED(arrmeta), bool DYND_UNUSED(blockref_alloc)) const {}
     void arrmeta_copy_construct(char *DYND_UNUSED(dst_arrmeta), const char *DYND_UNUSED(src_arrmeta),
-                                const intrusive_ptr<memory_block_data> &DYND_UNUSED(embedded_reference)) const
-    {
-    }
+                                const nd::memory_block &DYND_UNUSED(embedded_reference)) const {}
     void arrmeta_destruct(char *DYND_UNUSED(arrmeta)) const {}
     void arrmeta_debug_print(const char *DYND_UNUSED(arrmeta), std::ostream &DYND_UNUSED(o),
-                             const std::string &DYND_UNUSED(indent)) const
-    {
-    }
+                             const std::string &DYND_UNUSED(indent)) const {}
   };
+
+  template <>
+  struct id_of<char_type> : std::integral_constant<type_id_t, char_id> {};
 
 } // namespace dynd::ndt
 } // namespace dynd

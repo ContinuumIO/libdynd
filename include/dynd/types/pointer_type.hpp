@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -15,28 +15,32 @@
 
 #pragma once
 
+#include <dynd/buffer.hpp>
 #include <dynd/type.hpp>
+#include <dynd/types/any_kind_type.hpp>
 
 namespace dynd {
 
-struct DYND_API pointer_type_arrmeta {
+struct DYNDT_API pointer_type_arrmeta {
   /**
    * A reference to the memory block which contains the data.
    */
-  intrusive_ptr<memory_block_data> blockref;
+  nd::memory_block blockref;
   /* Each pointed-to destination is offset by this amount */
   intptr_t offset;
 };
 
 namespace ndt {
 
-  class DYND_API pointer_type : public base_expr_type {
+  class DYNDT_API pointer_type : public base_type {
     type m_target_tp;
 
   public:
-    pointer_type(const type &target_tp);
-
-    virtual ~pointer_type();
+    pointer_type(type_id_t id, const type &target_tp = make_type<any_kind_type>())
+        : base_type(id, make_type<any_kind_type>(), sizeof(char *), alignof(char *),
+                    target_tp.get_flags() | type_flag_zeroinit | type_flag_blockref,
+                    target_tp.get_arrmeta_size() + sizeof(pointer_type_arrmeta), 0, 0),
+          m_target_tp(target_tp) {}
 
     const type &get_value_type() const { return m_target_tp.value_type(); }
     const type &get_operand_type() const;
@@ -47,14 +51,12 @@ namespace ndt {
 
     void print_type(std::ostream &o) const;
 
-    inline bool is_type_subarray(const type &subarray_tp) const
-    {
+    inline bool is_type_subarray(const type &subarray_tp) const {
       // Uniform dimensions can share one implementation
       return (!subarray_tp.is_builtin() && (*this) == (*subarray_tp.extended())) ||
              m_target_tp.is_type_subarray(subarray_tp);
     }
 
-    bool is_expression() const;
     bool is_unique_data_owner(const char *arrmeta) const;
     void transform_child_types(type_transform_fn_t transform_fn, intptr_t arrmeta_offset, void *extra,
                                type &out_transformed_tp, bool &out_was_transformed) const;
@@ -63,9 +65,9 @@ namespace ndt {
     type apply_linear_index(intptr_t nindices, const irange *indices, size_t current_i, const type &root_tp,
                             bool leading_dimension) const;
     intptr_t apply_linear_index(intptr_t nindices, const irange *indices, const char *arrmeta, const type &result_tp,
-                                char *out_arrmeta, const intrusive_ptr<memory_block_data> &embedded_reference,
-                                size_t current_i, const type &root_tp, bool leading_dimension, char **inout_data,
-                                intrusive_ptr<memory_block_data> &inout_dataref) const;
+                                char *out_arrmeta, const nd::memory_block &embedded_reference, size_t current_i,
+                                const type &root_tp, bool leading_dimension, char **inout_data,
+                                nd::memory_block &inout_dataref) const;
     type at_single(intptr_t i0, const char **inout_arrmeta, const char **inout_data) const;
 
     type get_type_at_dimension(char **inout_arrmeta, intptr_t i, intptr_t total_ndim = 0) const;
@@ -82,7 +84,7 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
@@ -91,9 +93,10 @@ namespace ndt {
     bool match(const type &candidate_tp, std::map<std::string, type> &tp_vars) const;
 
     std::map<std::string, std::pair<ndt::type, const char *>> get_dynamic_type_properties() const;
-
-    static type make(const type &target_tp);
   };
+
+  template <>
+  struct id_of<pointer_type> : std::integral_constant<type_id_t, pointer_id> {};
 
   template <typename T>
   struct traits<T *> {
@@ -101,10 +104,8 @@ namespace ndt {
 
     static const bool is_same_layout = true;
 
-    static type equivalent() { return pointer_type::make(make_type<T>()); }
+    static type equivalent() { return make_type<pointer_type>(make_type<T>()); }
   };
-
-  inline type make_pointer_type(const type &target_tp) { return pointer_type::make(target_tp); }
 
 } // namespace dynd::ndt
 } // namespace dynd

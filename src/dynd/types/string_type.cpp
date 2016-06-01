@@ -1,10 +1,8 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#include <dynd/callable.hpp>
-#include <dynd/kernels/base_kernel.hpp>
 #include <dynd/types/string_type.hpp>
 #include <dynd/memblock/pod_memory_block.hpp>
 #include <dynd/types/fixed_string_type.hpp>
@@ -15,11 +13,6 @@
 
 using namespace std;
 using namespace dynd;
-
-ndt::string_type::string_type()
-    : base_string_type(string_id, sizeof(string), alignof(string), type_flag_zeroinit | type_flag_destructor, 0)
-{
-}
 
 void ndt::string_type::get_string_range(const char **out_begin, const char **out_end, const char *DYND_UNUSED(arrmeta),
                                         const char *data) const
@@ -122,6 +115,9 @@ bool ndt::string_type::operator==(const base_type &rhs) const
   }
 }
 
+void ndt::string_type::arrmeta_debug_print(const char *DYND_UNUSED(arrmeta), std::ostream &DYND_UNUSED(o),
+                                           const std::string &DYND_UNUSED(indent)) const {}
+
 void ndt::string_type::data_destruct(const char *DYND_UNUSED(arrmeta), char *data) const
 {
   reinterpret_cast<string *>(data)->~string();
@@ -139,7 +135,7 @@ void ndt::string_type::data_destruct_strided(const char *DYND_UNUSED(arrmeta), c
 std::map<std::string, std::pair<ndt::type, const char *>> ndt::string_type::get_dynamic_type_properties() const
 {
   std::map<std::string, std::pair<ndt::type, const char *>> properties;
-  properties["encoding"] = {ndt::type("uint32"), reinterpret_cast<const char *>(&m_encoding)};
+  properties["encoding"] = {ndt::type("string"), reinterpret_cast<const char *>(&m_encoding_repr)};
 
   return properties;
 }

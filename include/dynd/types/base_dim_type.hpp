@@ -1,12 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <dynd/types/base_type.hpp>
 #include <dynd/type.hpp>
+#include <dynd/types/base_type.hpp>
 
 namespace dynd {
 namespace ndt {
@@ -16,39 +16,39 @@ namespace ndt {
    * has kind dim_kind, it must be a subclass of
    * base_dim_type.
    */
-  class DYND_API base_dim_type : public base_type {
+  class DYNDT_API base_dim_type : public base_type {
   protected:
     type m_element_tp;
     size_t m_element_arrmeta_offset;
 
   public:
-    base_dim_type(type_id_t tp_id, const type &element_tp, size_t data_size, size_t data_alignment,
-                  size_t element_arrmeta_offset, uint32_t flags, bool strided);
+    base_dim_type(type_id_t id, const type &base_tp, const type &element_tp, size_t data_size, size_t data_alignment,
+                  size_t element_arrmeta_offset, uint32_t flags, bool strided)
+        : base_type(id, base_tp, data_size, data_alignment, flags | type_flag_indexable,
+                    element_arrmeta_offset + element_tp.get_arrmeta_size(), 1 + element_tp.get_ndim(),
+                    strided ? (1 + element_tp.get_strided_ndim()) : 0),
+          m_element_tp(element_tp), m_element_arrmeta_offset(element_arrmeta_offset) {}
 
     /** The element type. */
     const type &get_element_type() const { return m_element_tp; }
 
     void get_element_types(std::size_t ndim, const type **element_tp) const;
 
-    std::vector<const type *> get_element_types(std::size_t ndim) const
-    {
+    std::vector<const type *> get_element_types(std::size_t ndim) const {
       std::vector<const type *> element_tp(ndim);
       get_element_types(ndim, element_tp.data());
 
       return element_tp;
     }
 
-    bool is_type_subarray(const type &subarray_tp) const
-    {
+    bool is_type_subarray(const type &subarray_tp) const {
       // Uniform dimensions can share one implementation
       intptr_t this_ndim = get_ndim(), stp_ndim = subarray_tp.get_ndim();
       if (this_ndim > stp_ndim) {
         return get_element_type().is_type_subarray(subarray_tp);
-      }
-      else if (this_ndim == stp_ndim) {
+      } else if (this_ndim == stp_ndim) {
         return (*this) == (*subarray_tp.extended());
-      }
-      else {
+      } else {
         return false;
       }
     }
@@ -70,8 +70,7 @@ namespace ndt {
      */
     virtual intptr_t get_dim_size(const char *arrmeta = NULL, const char *data = NULL) const = 0;
 
-    intptr_t get_size(const char *arrmeta) const
-    {
+    intptr_t get_size(const char *arrmeta) const {
       std::intptr_t dim_size = get_dim_size(arrmeta, NULL);
       if (dim_size == -1) {
         return -1;
@@ -97,7 +96,7 @@ namespace ndt {
      *                            hold a reference to that memory.
      */
     virtual size_t arrmeta_copy_construct_onedim(char *dst_arrmeta, const char *src_arrmeta,
-                                                 const intrusive_ptr<memory_block_data> &embedded_reference) const = 0;
+                                                 const nd::memory_block &embedded_reference) const = 0;
 
     virtual bool match(const type &candidate_tp, std::map<std::string, type> &tp_vars) const;
 

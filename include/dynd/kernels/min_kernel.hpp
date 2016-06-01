@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -11,26 +11,23 @@
 namespace dynd {
 namespace nd {
 
-  template <type_id_t Src0TypeID>
-  struct min_kernel : base_strided_kernel<min_kernel<Src0TypeID>, 1> {
-    typedef typename type_of<Src0TypeID>::type src0_type;
-    typedef src0_type dst_type;
+  template <typename Arg0Type>
+  struct min_kernel : base_strided_kernel<min_kernel<Arg0Type>, 1> {
+    typedef Arg0Type dst_type;
 
-    void single(char *dst, char *const *src)
-    {
-      if (*reinterpret_cast<src0_type *>(src[0]) < *reinterpret_cast<dst_type *>(dst)) {
-        *reinterpret_cast<dst_type *>(dst) = *reinterpret_cast<src0_type *>(src[0]);
+    void single(char *dst, char *const *src) {
+      if (*reinterpret_cast<Arg0Type *>(src[0]) < *reinterpret_cast<dst_type *>(dst)) {
+        *reinterpret_cast<dst_type *>(dst) = *reinterpret_cast<Arg0Type *>(src[0]);
       }
     }
 
-    void strided(char *dst, intptr_t dst_stride, char *const *src, const intptr_t *src_stride, size_t count)
-    {
+    void strided(char *dst, intptr_t dst_stride, char *const *src, const intptr_t *src_stride, size_t count) {
 
       char *src0 = src[0];
       intptr_t src0_stride = src_stride[0];
       for (size_t i = 0; i < count; ++i) {
-        if (*reinterpret_cast<src0_type *>(src0) < *reinterpret_cast<dst_type *>(dst)) {
-          *reinterpret_cast<dst_type *>(dst) = *reinterpret_cast<src0_type *>(src0);
+        if (*reinterpret_cast<Arg0Type *>(src0) < *reinterpret_cast<dst_type *>(dst)) {
+          *reinterpret_cast<dst_type *>(dst) = *reinterpret_cast<Arg0Type *>(src0);
         }
         dst += dst_stride;
         src0 += src0_stride;
@@ -39,38 +36,22 @@ namespace nd {
   };
 
   template <>
-  struct min_kernel<complex_float32_id> : base_strided_kernel<min_kernel<complex_float32_id>, 1> {
-    typedef complex<float> src0_type;
-    typedef src0_type dst_type;
+  struct min_kernel<complex<float>> : base_strided_kernel<min_kernel<complex<float>>, 1> {
+    typedef complex<float> dst_type;
 
-    void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
-    {
+    void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src)) {
       throw std::runtime_error("nd::min is not implemented for complex types");
     }
   };
 
   template <>
-  struct min_kernel<complex_float64_id> : base_strided_kernel<min_kernel<complex_float64_id>, 1> {
-    typedef complex<double> src0_type;
-    typedef src0_type dst_type;
+  struct min_kernel<complex<double>> : base_strided_kernel<min_kernel<complex<double>>, 1> {
+    typedef complex<double> dst_type;
 
-    void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
-    {
+    void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src)) {
       throw std::runtime_error("nd::min is not implemented for complex types");
     }
   };
 
 } // namespace dynd::nd
-
-namespace ndt {
-
-  template <type_id_t Src0TypeID>
-  struct traits<nd::min_kernel<Src0TypeID>> {
-    static type equivalent()
-    {
-      return callable_type::make(ndt::make_type<typename nd::min_kernel<Src0TypeID>::dst_type>(), type(Src0TypeID));
-    }
-  };
-
-} // namespace dynd::ndt
 } // namespace dynd

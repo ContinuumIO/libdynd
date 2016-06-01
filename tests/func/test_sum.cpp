@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -10,7 +10,7 @@
 
 #include "inc_gtest.hpp"
 
-#include <dynd/func/sum.hpp>
+#include <dynd/arithmetic.hpp>
 #include <dynd/logic.hpp>
 
 #include "dynd_assertions.hpp"

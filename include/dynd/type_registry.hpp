@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -10,48 +10,73 @@
 #include <dynd/type.hpp>
 
 namespace dynd {
-namespace ndt {
 
-  struct type_info {
-    size_t nbases;
-    const type_id_t *_bases;
-    type kind_tp;
+struct id_info {
+  std::string name;
+  std::vector<type_id_t> base_ids;
+  std::vector<char> is_base_id;
 
-    std::vector<type_id_t> m_bases;
+  id_info() = default;
 
-    std::bitset<64> bits;
-
-    type_info(size_t nbases, const type_id_t *bases, const type &kind_tp)
-        : nbases(nbases), _bases(bases), kind_tp(kind_tp), bits(0)
-    {
-      for (size_t i = 0; i < nbases; ++i) {
-        type_id_t base_id = _bases[i];
-        bits |= (1L << base_id);
-        this->m_bases.push_back(_bases[i]);
-      }
+  id_info(const char *name, type_id_t id, const std::vector<type_id_t> &base_ids)
+      : name(name), base_ids(base_ids), is_base_id(128)
+  {
+    is_base_id[id] = true;
+    for (type_id_t base_id : base_ids) {
+      is_base_id[base_id] = true;
     }
+  }
+};
 
-    const std::vector<type_id_t> &bases() const { return m_bases; }
-  };
+namespace detail {
 
-  extern DYND_API class type_registry {
-    std::vector<type_info> m_infos;
+  extern DYNDT_API std::vector<id_info> &infos();
 
-  public:
-    type_registry();
+} // namespace dynd::detail
 
-    ~type_registry();
+DYNDT_API type_id_t new_id(const char *name, type_id_t base_id);
 
-    DYND_API size_t size() const;
+inline type_id_t min_id() { return static_cast<type_id_t>(1); }
 
-    type_id_t min() const { return uninitialized_id; }
+inline type_id_t max_id()
+{
+  const std::vector<id_info> &infos = detail::infos();
+  return static_cast<type_id_t>(infos.size() - 1);
+}
 
-    type_id_t max() const { return static_cast<type_id_t>(size() - 1); }
+inline type_id_t base_id(type_id_t id)
+{
+  const std::vector<id_info> &infos = detail::infos();
+  return infos[id].base_ids.front();
+}
 
-    DYND_API type_id_t insert(type_id_t base_id, const type &kind_tp);
+template <type_id_t ID>
+std::enable_if_t<ID == any_kind_id, std::vector<type_id_t>> base_ids()
+{
+  return {};
+}
 
-    DYND_API const type_info &operator[](type_id_t tp_id) const;
-  } type_registry;
+template <type_id_t ID>
+std::enable_if_t<ID != any_kind_id, std::vector<type_id_t>> base_ids()
+{
+  std::vector<type_id_t> res{base_id_of<ID>::value};
+  for (type_id_t base_id : base_ids<base_id_of<ID>::value>()) {
+    res.push_back(base_id);
+  }
 
-} // namespace dynd::ndt
+  return res;
+}
+
+inline const std::vector<type_id_t> &base_ids(type_id_t id)
+{
+  const std::vector<id_info> &infos = detail::infos();
+  return infos[id].base_ids;
+}
+
+inline bool is_base_id_of(type_id_t base_id, type_id_t id)
+{
+  const std::vector<id_info> &infos = detail::infos();
+  return infos[id].is_base_id[base_id] != 0;
+}
+
 } // namespace dynd

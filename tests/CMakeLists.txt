@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-15 DyND Developers
+# Copyright (C) 2011-16 DyND Developers
 # BSD 2-Clause License, see LICENSE.txt
 #
 
@@ -21,12 +21,15 @@ endif()
 
 set(tests_SRC
     dynd_assertions.hpp
-    types/test_adapt_type.cpp
+#    types/test_adapt_type.cpp
     types/test_array_type.cpp
+    types/test_bool_kind_type.cpp
     types/test_bytes_type.cpp
 #    types/test_categorical_kind_type.cpp
 #    types/test_categorical_type.cpp
+    types/test_callable_type.cpp
     types/test_complex_type.cpp
+    types/test_complex_kind_type.cpp
     types/test_char_type.cpp
     types/test_cuda_host_type.cpp
     types/test_cuda_device_type.cpp
@@ -37,9 +40,12 @@ set(tests_SRC
     types/test_fixed_bytes_type.cpp
     types/test_fixed_string_kind_type.cpp
     types/test_fixed_string_type.cpp
+    types/test_float_kind_type.cpp
+    types/test_int_kind_type.cpp
     types/test_option_type.cpp
     types/test_pointer_type.cpp
     types/test_scalar_kind_type.cpp
+    types/test_state_type.cpp
     types/test_string_type.cpp
     types/test_struct_type.cpp
     types/test_symbolic_types.cpp
@@ -52,6 +58,7 @@ set(tests_SRC
     types/test_type_substitute.cpp
     types/test_type_pattern_match.cpp
 #    types/test_type_promotion.cpp
+    types/test_uint_kind_type.cpp
     types/test_var_dim_type.cpp
     func/test_apply.cpp
     func/test_arithmetic.cpp
@@ -61,28 +68,25 @@ set(tests_SRC
     func/test_compound.cpp
     func/test_constant.cpp
     func/test_elwise.cpp
-    func/test_fft.cpp
-    func/test_index.cpp
+#    func/test_fft.cpp
+#    func/test_index.cpp
     func/test_logic.cpp
     func/test_math.cpp
     func/test_max.cpp
     func/test_mean.cpp
     func/test_multidispatch.cpp
-    func/test_neighborhood.cpp
+#    func/test_neighborhood.cpp
     func/test_option.cpp
-    func/test_outer.cpp
-    func/test_permute.cpp
     func/test_random.cpp
+    func/test_outer.cpp
     func/test_reduction.cpp
     func/test_registry.cpp
-    func/test_rolling.cpp
     func/test_search.cpp
     func/test_sort.cpp
-    func/test_struct.cpp
     func/test_sum.cpp
     func/test_take.cpp
-    func/test_take_by_pointer.cpp
     func/test_view.cpp
+    func/test_where.cpp
     array/test_array.cpp
     array/test_array_range.cpp
     array/test_array_assign.cpp
@@ -96,16 +100,18 @@ set(tests_SRC
     array/test_memmap.cpp
     array/test_view.cpp
     array/test_with.cpp
+    test_access.cpp
     test_bool1.cpp
     test_config.cpp
     test_dispatch_map.cpp
     test_float16.cpp
-    test_integer_sequence.cpp
     test_io.cpp
     test_iterator.cpp
+#    test_mkl.cpp
+    test_range.cpp
     test_shape_tools.cpp
     test_type_sequence.cpp
-    test_parse.cpp
+#    test_parse.cpp
     test_platform.cpp
     test_pointer.cpp
     ../thirdparty/gtest/gtest-all.cc
@@ -117,6 +123,14 @@ include_directories(
     .
     )
 
+if(DYND_BUILD_PLUGINS)
+    include_directories(../plugins/mkl/include)
+    include_directories(/opt/intel/compilers_and_libraries_2016.3.210/linux/mkl/include)
+
+    set(tests_SRC ${tests_SRC}
+        test_mkl.cpp)
+endif()
+
 source_group("Other Tests" REGULAR_EXPRESSION "\\/test_[^\\/]*\\.cpp$")
 source_group("Array Tests" REGULAR_EXPRESSION "\\/array\\/test_[^\\/]*\\.cpp$")
 source_group("Types Tests" REGULAR_EXPRESSION "\\/types\\/test_[^\\/]*\\.cpp$")
@@ -124,6 +138,10 @@ source_group("Func Tests" REGULAR_EXPRESSION "\\/func\\/test_[^\\/]*\\.cpp$")
 
 add_executable(test_libdynd ${tests_SRC})
 set(LINK_LIBS ${LINK_LIBS} libdynd)
+
+if(DYND_BUILD_PLUGINS)
+    set(LINK_LIBS ${LINK_LIBS} dynd_mkl)
+endif()
 
 if(WIN32)
     target_link_libraries(test_libdynd
@@ -175,3 +193,10 @@ endif()
 
 #test_expected_compile_succeed(builderror_includendarray.cpp)
 #test_expected_compile_error(builderror_badassignment.cpp)
+
+if (DYND_COVERAGE)
+  SETUP_TARGET_FOR_COVERAGE(
+    coverage
+    test_libdynd
+    coverage)
+endif()

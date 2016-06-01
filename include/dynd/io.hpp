@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -10,10 +10,7 @@
 namespace dynd {
 namespace nd {
 
-  extern DYND_API struct DYND_API serialize : declfunc<serialize> {
-    static callable make();
-    static callable &get();
-  } serialize;
+  extern DYND_API callable serialize;
 
 } // namespace dynd::nd
 } // namespace dynd

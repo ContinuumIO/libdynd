@@ -1,41 +1,17 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #include <algorithm>
 
+#include <dynd/string_encodings.hpp>
 #include <dynd/types/fixed_string_type.hpp>
 #include <dynd/types/string_type.hpp>
 #include <dynd/exceptions.hpp>
 
 using namespace std;
 using namespace dynd;
-
-ndt::fixed_string_type::fixed_string_type(intptr_t stringsize, string_encoding_t encoding)
-    : base_string_type(fixed_string_id, 0, 1, type_flag_none, 0), m_stringsize(stringsize), m_encoding(encoding)
-{
-  switch (encoding) {
-  case string_encoding_ascii:
-  case string_encoding_utf_8:
-    this->m_data_size = m_stringsize;
-    this->m_data_alignment = 1;
-    break;
-  case string_encoding_ucs_2:
-  case string_encoding_utf_16:
-    this->m_data_size = m_stringsize * 2;
-    this->m_data_alignment = 2;
-    break;
-  case string_encoding_utf_32:
-    this->m_data_size = m_stringsize * 4;
-    this->m_data_alignment = 4;
-    break;
-  default:
-    throw runtime_error("Unrecognized string encoding in dynd fixed_string type constructor");
-  }
-}
-
-ndt::fixed_string_type::~fixed_string_type() {}
 
 void ndt::fixed_string_type::get_string_range(const char **out_begin, const char **out_end,
                                               const char *DYND_UNUSED(arrmeta), const char *data) const
@@ -124,7 +100,7 @@ void ndt::fixed_string_type::print_type(std::ostream &o) const
 {
   o << "fixed_string[" << m_stringsize;
   if (m_encoding != string_encoding_utf_8) {
-    o << ",'" << m_encoding << "'";
+    o << ", '" << m_encoding << "'";
   }
   o << "]";
 }
@@ -151,4 +127,12 @@ bool ndt::fixed_string_type::operator==(const base_type &rhs) const
     const fixed_string_type *dt = static_cast<const fixed_string_type *>(&rhs);
     return m_encoding == dt->m_encoding && m_stringsize == dt->m_stringsize;
   }
+}
+
+std::map<std::string, std::pair<ndt::type, const char *>> ndt::fixed_string_type::get_dynamic_type_properties() const
+{
+  std::map<std::string, std::pair<ndt::type, const char *>> properties;
+  properties["encoding"] = {ndt::type("string"), reinterpret_cast<const char *>(&m_encoding_repr)};
+
+  return properties;
 }

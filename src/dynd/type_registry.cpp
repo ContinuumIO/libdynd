@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -10,8 +10,8 @@
 #include <dynd/types/char_type.hpp>
 #include <dynd/types/fixed_bytes_kind_type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
-#include <dynd/types/fixed_string_type.hpp>
 #include <dynd/types/fixed_string_kind_type.hpp>
+#include <dynd/types/fixed_string_type.hpp>
 #include <dynd/types/scalar_kind_type.hpp>
 #include <dynd/types/struct_type.hpp>
 #include <dynd/types/var_dim_type.hpp>
@@ -19,130 +19,82 @@
 using namespace std;
 using namespace dynd;
 
-ndt::type_registry::type_registry()
-{
-  m_infos.emplace_back(0, nullptr,
-                       type(reinterpret_cast<const base_type *>(uninitialized_id), false)); // uninitialized_id
+DYNDT_API vector<id_info> &detail::infos() {
+  static vector<id_info> infos{{},
+                               {"Any", any_kind_id, base_ids<any_kind_id>()},
+                               {"Scalar", scalar_kind_id, base_ids<scalar_kind_id>()},
+                               {"Bool", bool_kind_id, base_ids<bool_kind_id>()},
+                               {"bool", bool_id, base_ids<bool_id>()},
+                               {"Int", int_kind_id, base_ids<int_kind_id>()},
+                               {"int8", int8_id, base_ids<int8_id>()},
+                               {"int16", int16_id, base_ids<int16_id>()},
+                               {"int32", int32_id, base_ids<int32_id>()},
+                               {"int64", int64_id, base_ids<int64_id>()},
+                               {"int128", int128_id, base_ids<int128_id>()},
+                               {"UInt", uint_kind_id, base_ids<uint_kind_id>()},
+                               {"uint8", uint8_id, base_ids<uint8_id>()},
+                               {"uint16", uint16_id, base_ids<uint16_id>()},
+                               {"uint32", uint32_id, base_ids<uint32_id>()},
+                               {"uint64", uint64_id, base_ids<uint64_id>()},
+                               {"uint128", uint128_id, base_ids<uint128_id>()},
+                               {"Float", float_kind_id, base_ids<float_kind_id>()},
+                               {"float16", float16_id, base_ids<float16_id>()},
+                               {"float32", float32_id, base_ids<float32_id>()},
+                               {"float64", float64_id, base_ids<float64_id>()},
+                               {"float128", float128_id, base_ids<float128_id>()},
+                               {"Complex", complex_kind_id, base_ids<complex_kind_id>()},
+                               {"complex32", complex_float32_id, base_ids<complex_float32_id>()},
+                               {"complex64", complex_float64_id, base_ids<complex_float64_id>()},
+                               {"void", void_id, base_ids<void_id>()},
+                               {"Dim", dim_kind_id, base_ids<dim_kind_id>()},
+                               {"Bytes", bytes_kind_id, base_ids<bytes_kind_id>()},
+                               {"FixedBytes", fixed_bytes_kind_id, base_ids<fixed_bytes_kind_id>()},
+                               {"fixed_bytes", fixed_bytes_id, base_ids<fixed_bytes_id>()},
+                               {"bytes", bytes_id, base_ids<bytes_id>()},
+                               {"String", string_kind_id, base_ids<string_kind_id>()},
+                               {"FixedString", fixed_string_kind_id, base_ids<fixed_string_kind_id>()},
+                               {"fixed_string", fixed_string_id, base_ids<fixed_string_id>()},
+                               {"char", char_id, base_ids<char_id>()},
+                               {"string", string_id, base_ids<string_id>()},
+                               {"tuple", tuple_id, base_ids<tuple_id>()},
+                               {"struct", struct_id, base_ids<struct_id>()},
+                               {"Fixed", fixed_dim_kind_id, base_ids<fixed_dim_kind_id>()},
+                               {"fixed", fixed_dim_id, base_ids<fixed_dim_id>()},
+                               {"var", var_dim_id, base_ids<var_dim_id>()},
+                               {"categorical", categorical_id, base_ids<categorical_id>()},
+                               {"option", option_id, base_ids<option_id>()},
+                               {"pointer", pointer_id, base_ids<pointer_id>()},
+                               {"memory", memory_id, base_ids<memory_id>()},
+                               {"type", type_id, base_ids<type_id>()},
+                               {"array", array_id, base_ids<array_id>()},
+                               {"callable", callable_id, base_ids<callable_id>()},
+                               {"Expr", expr_kind_id, base_ids<expr_kind_id>()},
+                               {"adapt", adapt_id, base_ids<adapt_id>()},
+                               {"expr", expr_id, base_ids<expr_id>()},
+                               {"cuda_host", cuda_host_id, {any_kind_id}},
+                               {"cuda_device", cuda_device_id, {any_kind_id}},
+                               {"State", state_id, {any_kind_id}},
+                               {"", typevar_id, base_ids<typevar_id>()},
+                               {"", typevar_dim_id, {any_kind_id}},
+                               {"", typevar_constructed_id, {any_kind_id}},
+                               {"", pow_dimsym_id, {any_kind_id}},
+                               {"", ellipsis_dim_id, {any_kind_id}},
+                               {"", dim_fragment_id, {any_kind_id}}};
 
-  static const type_id_t bool_base_ids[3] = {bool_kind_id, scalar_kind_id, any_kind_id};
-  m_infos.emplace_back(3, bool_base_ids, type(reinterpret_cast<const base_type *>(bool_id), false)); // bool_id
-
-  static const type_id_t int_bases[3] = {int_kind_id, scalar_kind_id, any_kind_id};
-  m_infos.emplace_back(3, int_bases, type(reinterpret_cast<const base_type *>(int8_id), false));   // int8_id
-  m_infos.emplace_back(3, int_bases, type(reinterpret_cast<const base_type *>(int16_id), false));  // int16_id
-  m_infos.emplace_back(3, int_bases, type(reinterpret_cast<const base_type *>(int32_id), false));  // int32_id
-  m_infos.emplace_back(3, int_bases, type(reinterpret_cast<const base_type *>(int64_id), false));  // int64_id
-  m_infos.emplace_back(3, int_bases, type(reinterpret_cast<const base_type *>(int128_id), false)); // int128_id
-
-  static const type_id_t uint_bases[3] = {uint_kind_id, scalar_kind_id, any_kind_id};
-  m_infos.emplace_back(3, uint_bases, type(reinterpret_cast<const base_type *>(uint8_id), false));   // uint8_id
-  m_infos.emplace_back(3, uint_bases, type(reinterpret_cast<const base_type *>(uint16_id), false));  // uint16_id
-  m_infos.emplace_back(3, uint_bases, type(reinterpret_cast<const base_type *>(uint32_id), false));  // uint32_id
-  m_infos.emplace_back(3, uint_bases, type(reinterpret_cast<const base_type *>(uint64_id), false));  // uint64_id
-  m_infos.emplace_back(3, uint_bases, type(reinterpret_cast<const base_type *>(uint128_id), false)); // uint128_id
-
-  static const type_id_t float_bases[3] = {float_kind_id, scalar_kind_id, any_kind_id};
-  m_infos.emplace_back(3, float_bases, type(reinterpret_cast<const base_type *>(float16_id), false));  // float16_id
-  m_infos.emplace_back(3, float_bases, type(reinterpret_cast<const base_type *>(float32_id), false));  // float32_id
-  m_infos.emplace_back(3, float_bases, type(reinterpret_cast<const base_type *>(float64_id), false));  // float64_id
-  m_infos.emplace_back(3, float_bases, type(reinterpret_cast<const base_type *>(float128_id), false)); // float128_id
-
-  static const type_id_t complex_bases[3] = {complex_kind_id, scalar_kind_id, any_kind_id};
-  m_infos.emplace_back(3, complex_bases,
-                       type(reinterpret_cast<const base_type *>(complex_float32_id), false)); // complex32_id
-  m_infos.emplace_back(3, complex_bases,
-                       type(reinterpret_cast<const base_type *>(complex_float64_id), false)); // complex64_id
-
-  static const type_id_t void_bases[1] = {any_kind_id};
-  m_infos.emplace_back(1, void_bases, type(reinterpret_cast<const base_type *>(void_id), false)); // void_id
-
-  m_infos.emplace_back(0, nullptr, make_type<any_kind_type>()); // any_kind_id
-  insert(any_kind_id, make_type<scalar_kind_type>());           // scalar_kind_id
-  insert(any_kind_id, type());                                  // dim_kind_id
-
-  insert(scalar_kind_id, type()); // bool_kind_id
-  insert(base_id_of<int_kind_id>::value, type());
-  insert(base_id_of<uint_kind_id>::value, type());
-  insert(base_id_of<float_kind_id>::value, type());
-  insert(scalar_kind_id, type()); // complex_kind_id
-
-  insert(base_id_of<bytes_kind_id>::value, type());
-  insert(base_id_of<fixed_bytes_id>::value, fixed_bytes_kind_type::make());
-  insert(base_id_of<bytes_id>::value, bytes_type::make());
-
-  insert(base_id_of<string_kind_id>::value, type());
-  insert(base_id_of<fixed_string_id>::value, fixed_string_kind_type::make());
-  insert(base_id_of<char_id>::value, make_type<char_type>());
-  insert(base_id_of<string_id>::value, make_type<string_type>());
-
-  insert(base_id_of<tuple_id>::value, tuple_type::make(true));
-  insert(base_id_of<struct_id>::value, struct_type::make(true));
-
-  insert(base_id_of<fixed_dim_id>::value, base_fixed_dim_type::make(any_kind_type::make()));
-  insert(base_id_of<var_dim_id>::value, var_dim_type::make(any_kind_type::make()));
-
-  insert(scalar_kind_id, categorical_kind_type::make());          // categorical_id
-  insert(any_kind_id, type("?Any"));                              // option_id
-  insert(any_kind_id, pointer_type::make(any_kind_type::make())); // pointer_id
-  insert(any_kind_id, type());                                    // memory_id
-
-  insert(base_id_of<type_id>::value, make_type<type_type>());
-  insert(base_id_of<array_id>::value, type());
-  insert(base_id_of<callable_id>::value, type());
-
-  insert(any_kind_id, type());  // expr_kind_id
-  insert(expr_kind_id, type()); // adapt_id
-  insert(expr_kind_id, type()); // expr_id
-
-  insert(any_kind_id, type()); // cuda_host_id
-  insert(any_kind_id, type()); // cuda_device_id
-
-  insert(any_kind_id, type()); // kind_sym_id
-  insert(any_kind_id, type()); // int_sym_id
-
-  insert(any_kind_id, type()); // typevar_id
-  insert(any_kind_id, type()); // typevar_dim_id
-  insert(any_kind_id, type()); // typevar_constructed_id
-  insert(any_kind_id, type()); // pow_dimsym_id
-  insert(any_kind_id, type()); // ellipsis_dim_id
-  insert(any_kind_id, type()); // dim_fragment_id
-
-  for (size_t i = 0; i < size(); ++i) {
-    m_infos[i].bits |= 1L << i;
-  }
+  return infos;
 }
 
-ndt::type_registry::~type_registry()
-{
-  for (auto iter = m_infos.begin() + any_kind_id; iter != m_infos.end(); ++iter) {
-    delete[] iter->_bases;
-    iter->_bases = nullptr;
+DYNDT_API type_id_t dynd::new_id(const char *name, type_id_t base_id) {
+  vector<id_info> &infos = detail::infos();
+
+  type_id_t id = static_cast<type_id_t>(infos.size());
+
+  vector<type_id_t> base_ids{base_id};
+  for (type_id_t id : infos[base_id].base_ids) {
+    base_ids.push_back(id);
   }
-}
 
-DYND_API size_t ndt::type_registry::size() const { return m_infos.size(); }
-
-DYND_API type_id_t ndt::type_registry::insert(type_id_t base_id, const type &kind_tp)
-{
-  type_id_t id = static_cast<type_id_t>(size());
-  const type_info &base_tp_info = m_infos[base_id];
-
-  size_t nbases = base_tp_info.nbases + 1;
-  type_id_t *bases = new type_id_t[nbases]{base_id};
-  memcpy(bases + 1, base_tp_info._bases, base_tp_info.nbases);
-
-  m_infos.emplace_back(nbases, bases, kind_tp);
+  infos.emplace_back(name, id, base_ids);
 
   return id;
 }
-
-DYND_API const ndt::type_info &ndt::type_registry::operator[](type_id_t id) const
-{
-  if (id >= static_cast<type_id_t>(size())) {
-    throw runtime_error("invalid type id");
-  }
-
-  return m_infos[id];
-}
-
-DYND_API class ndt::type_registry ndt::type_registry;

@@ -1,21 +1,16 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
+#include <map>
 #include <memory>
 
-#include <dynd/callables/static_data_callable.hpp>
-#include <dynd/config.hpp>
-#include <dynd/kernels/apply_callable_kernel.hpp>
-#include <dynd/kernels/apply_function_kernel.hpp>
-#include <dynd/kernels/apply_member_function_kernel.hpp>
-#include <dynd/kernels/construct_then_apply_callable_kernel.hpp>
-#include <dynd/types/callable_type.hpp>
-#include <dynd/types/option_type.hpp>
-#include <dynd/types/substitute_typevars.hpp>
+#include <dynd/callables/apply_callable_callable.hpp>
+#include <dynd/dispatcher.hpp>
+#include <dynd/type_registry.hpp>
 
 namespace dynd {
 namespace nd {
@@ -27,14 +22,11 @@ namespace nd {
      * output type, and the "dst" keyword argument always provides an
      * output array.
      */
-    inline bool is_special_kwd(const ndt::callable_type *DYND_UNUSED(self_tp), array &dst, const std::string &name,
-                               const nd::array &value)
-    {
+    inline bool is_special_kwd(array &dst, const std::string &name, const nd::array &value) {
       if (name == "dst_tp") {
         dst = nd::empty(value.as<ndt::type>());
         return true;
-      }
-      else if (name == "dst") {
+      } else if (name == "dst") {
         dst = value;
         return true;
       }
@@ -42,31 +34,18 @@ namespace nd {
       return false;
     }
 
-    DYND_API void check_narg(const ndt::callable_type *af_tp, intptr_t narg);
+    DYND_API void check_narg(const base_callable *self, size_t narg);
 
-    DYND_API void check_arg(const ndt::callable_type *af_tp, intptr_t i, const ndt::type &actual_tp,
+    DYND_API void check_arg(const base_callable *self, intptr_t i, const ndt::type &actual_tp,
                             const char *actual_arrmeta, std::map<std::string, ndt::type> &tp_vars);
 
-    template <typename KernelType>
-    kernel_targets_t get_targets()
-    {
-      return kernel_targets_t{reinterpret_cast<void *>(KernelType::single_wrapper), NULL,
-                              reinterpret_cast<void *>(NULL)};
-    }
-
-    template <typename KernelType>
-    const volatile char *get_ir()
-    {
-      return KernelType::ir;
-    }
-
-    template <template <type_id_t...> class KernelType>
+    template <template <typename...> class KernelType>
     struct make_all;
 
-  } // namespace dynd::nd::detail
+    template <template <typename...> class KernelType, template <typename...> class Condition>
+    struct make_all_if;
 
-  typedef array callable_arg_t;
-  typedef std::pair<const char *, array> callable_kwd_t;
+  } // namespace dynd::nd::detail
 
   /**
    * Holds a single instance of a callable in an nd::array,
@@ -78,385 +57,288 @@ namespace nd {
 
     callable() = default;
 
-    callable(const ndt::type &self_tp, kernel_single_t single, kernel_strided_t strided)
-        : intrusive_ptr<base_callable>(
-              new (sizeof(kernel_targets_t)) base_callable(
-                  self_tp, kernel_targets_t{reinterpret_cast<void *>(single), NULL, reinterpret_cast<void *>(strided)}),
-              true)
-    {
-    }
-
-    callable(const ndt::type &self_tp, kernel_targets_t targets, const volatile char *ir, callable_alloc_t alloc,
-             callable_data_init_t data_init, callable_resolve_dst_type_t resolve_dst_type,
-             callable_instantiate_t instantiate)
-        : intrusive_ptr<base_callable>(
-              new base_callable(self_tp, targets, ir, alloc, data_init, resolve_dst_type, instantiate), true)
-    {
-    }
-
-    template <typename T>
-    callable(const ndt::type &self_tp, kernel_targets_t targets, const volatile char *ir, T &&static_data,
-             callable_alloc_t alloc, callable_data_init_t data_init, callable_resolve_dst_type_t resolve_dst_type,
-             callable_instantiate_t instantiate)
-        : intrusive_ptr<base_callable>(
-              new static_data_callable<typename std::remove_reference<T>::type>(
-                  self_tp, targets, ir, alloc, data_init, resolve_dst_type, instantiate, std::forward<T>(static_data)),
-              true)
-    {
-    }
-
     template <typename CallableType, typename... T, typename = std::enable_if_t<all_char_string_params<T...>::value>>
-    explicit callable(CallableType f, T &&... names);
+    callable(CallableType f, T &&... names)
+        : callable(new functional::apply_callable_callable<CallableType, arity_of<CallableType>::value - sizeof...(T)>(
+                       f, std::forward<T>(names)...),
+                   true) {}
 
     bool is_null() const { return get() == NULL; }
 
     callable_property get_flags() const { return right_associative; }
 
-    const ndt::callable_type *get_type() const
-    {
-      if (get() == NULL) {
-        return NULL;
+    ndt::type resolve(const ndt::type &dst_tp, size_t nsrc, const ndt::type *src_tp, size_t nkwd, const array *kwds) {
+      std::map<std::string, ndt::type> tp_vars;
+
+      call_graph cg;
+      return m_ptr->resolve(nullptr, nullptr, cg, dst_tp, nsrc, src_tp, nkwd, kwds, tp_vars);
+    }
+
+    ndt::type resolve(const ndt::type &dst_tp, std::initializer_list<ndt::type> src_tp,
+                      std::initializer_list<array> kwds) {
+      return resolve(dst_tp, src_tp.size(), src_tp.begin(), kwds.size(), kwds.begin());
+    }
+
+    ndt::type resolve(std::initializer_list<ndt::type> src_tp, std::initializer_list<array> kwds) {
+      return resolve(m_ptr->get_ret_type(), src_tp.size(), src_tp.begin(), kwds.size(), kwds.begin());
+    }
+
+    template <template <typename> class CallableType, typename I0>
+    void overload() {
+      std::vector<callable> callables;
+      std::array<int, 1> arr;
+      for_each<I0>(detail::make_all<CallableType>(), callables, arr);
+
+      for (const callable &f : callables) {
+        get()->overload(f);
       }
-
-      return get()->tp.extended<ndt::callable_type>();
     }
 
-    const ndt::type &get_array_type() const { return get()->tp; }
+    /*
+        void overload(const ndt::type &ret_tp, intptr_t narg, const ndt::type *arg_tp, const callable &value) {
+          get()->overload(ret_tp, narg, arg_tp, value);
+        }
 
-    const ndt::type &get_ret_type() const { return get_type()->get_return_type(); }
+        void overload(const ndt::type &ret_tp, const std::initializer_list<ndt::type> &arg_tp, const callable &value) {
+          overload(ret_tp, arg_tp.size(), arg_tp.begin(), value);
+        }
+    */
 
-    std::intptr_t get_narg() const { return get_type()->get_npos(); }
-
-    const ndt::type &get_arg_type(std::intptr_t i) const { return get_type()->get_pos_type(i); }
-
-    const std::vector<ndt::type> &get_arg_types() const { return get_type()->get_pos_types(); }
-
-    const callable &get_overload(const ndt::type &ret_tp, intptr_t narg, const ndt::type *arg_tp) const
-    {
-      return get()->overload(ret_tp, narg, arg_tp);
+    const callable &specialize(const ndt::type &ret_tp, intptr_t narg, const ndt::type *arg_tp) const {
+      return get()->specialize(ret_tp, narg, arg_tp);
     }
 
-    const callable &get_overload(const ndt::type &ret_tp, const std::initializer_list<ndt::type> &arg_tp) const
-    {
-      return get_overload(ret_tp, arg_tp.size(), arg_tp.begin());
+    const callable &specialize(const ndt::type &ret_tp, const std::initializer_list<ndt::type> &arg_tp) const {
+      return specialize(ret_tp, arg_tp.size(), arg_tp.begin());
     }
 
-    void set_overload(const ndt::type &ret_tp, intptr_t narg, const ndt::type *arg_tp, const callable &value)
-    {
-      get()->overload(ret_tp, narg, arg_tp) = value;
-    }
-
-    void set_overload(const ndt::type &ret_tp, const std::initializer_list<ndt::type> &arg_tp, const callable &value)
-    {
-      set_overload(ret_tp, arg_tp.size(), arg_tp.begin(), value);
-    }
-
-    array call(size_t args_size, const array *args_values, size_t kwds_size,
-               const std::pair<const char *, array> *kwds_values);
+    array call(size_t narg, const array *args, size_t nkwd, const std::pair<const char *, array> *unordered_kwds) const;
 
     template <typename... ArgTypes>
-    array operator()(ArgTypes &&... args)
-    {
+    array operator()(ArgTypes &&... args) const {
       array tmp[sizeof...(ArgTypes)] = {std::forward<ArgTypes>(args)...};
       return call(sizeof...(ArgTypes), tmp, 0, nullptr);
     }
 
-    array operator()() { return call(0, nullptr, 0, nullptr); }
+    array operator()() const { return call(0, nullptr, 0, nullptr); }
+
+    array operator()(std::initializer_list<std::pair<const char *, array>> kwds) const {
+      return call(0, nullptr, kwds.size(), kwds.begin());
+    }
 
     array operator()(const std::initializer_list<array> &args,
-                     const std::initializer_list<std::pair<const char *, array>> &kwds)
-    {
+                     const std::initializer_list<std::pair<const char *, array>> &kwds) const {
       return call(args.size(), args.begin(), kwds.size(), kwds.begin());
     }
 
-    template <typename DstType, typename... ArgTypes>
-    array operator()(ArgTypes &&... args)
-    {
-      array tmp[sizeof...(ArgTypes)] = {std::forward<ArgTypes>(args)...};
-      std::pair<const char *, array> kwds = {"dst_tp", ndt::make_type<DstType>()};
-      return call(sizeof...(ArgTypes), tmp, 1, &kwds);
+    template <template <typename> class KernelType, typename I0, typename... A>
+    static dispatcher<1, callable> make_all(dispatch_t dispatch, A &&... a) {
+      std::vector<callable> callables;
+      std::array<int, 1> arr;
+      for_each<I0>(detail::make_all<KernelType>(), callables, arr, std::forward<A>(a)...);
+
+      return dispatcher<1, callable>(dispatch, callables.begin(), callables.end());
     }
 
-    template <typename KernelType>
-    static typename std::enable_if<ndt::has_traits<KernelType>::value, callable>::type make()
-    {
-      return callable(ndt::traits<KernelType>::equivalent(), detail::get_targets<KernelType>(),
-                      detail::get_ir<KernelType>(), &KernelType::alloc, &KernelType::data_init,
-                      &KernelType::resolve_dst_type, &KernelType::instantiate);
+    template <template <typename...> class KernelType, typename I0, typename I1, typename... I, typename... A>
+    static dispatcher<2 + sizeof...(I), callable> make_all(dispatch_t dispatch, A &&... a) {
+      std::vector<callable> callables;
+      std::array<int, 2 + sizeof...(I)> arr;
+      for_each<typename outer<I0, I1, I...>::type>(detail::make_all<KernelType>(), callables, arr,
+                                                   std::forward<A>(a)...);
+
+      return dispatcher<2 + sizeof...(I), callable>(dispatch, callables.begin(), callables.end());
     }
 
-    template <typename KernelType>
-    static typename std::enable_if<!ndt::has_traits<KernelType>::value, callable>::type make(const ndt::type &tp)
-    {
-      return callable(tp, detail::get_targets<KernelType>(), detail::get_ir<KernelType>(), &KernelType::alloc,
-                      &KernelType::data_init, &KernelType::resolve_dst_type, &KernelType::instantiate);
-    }
-
-    template <typename KernelType, typename StaticDataType>
-    static typename std::enable_if<ndt::has_traits<KernelType>::value, callable>::type
-    make(StaticDataType &&static_data)
-    {
-      return callable(ndt::traits<KernelType>::equivalent(), detail::get_targets<KernelType>(),
-                      detail::get_ir<KernelType>(), std::forward<StaticDataType>(static_data), &KernelType::alloc,
-                      &KernelType::data_init, &KernelType::resolve_dst_type, &KernelType::instantiate);
-    }
-
-    template <typename KernelType, typename StaticDataType>
-    static typename std::enable_if<!ndt::has_traits<KernelType>::value, callable>::type
-    make(const ndt::type &tp, StaticDataType &&static_data)
-    {
-      return callable(tp, detail::get_targets<KernelType>(), detail::get_ir<KernelType>(),
-                      std::forward<StaticDataType>(static_data), &KernelType::alloc, &KernelType::data_init,
-                      &KernelType::resolve_dst_type, &KernelType::instantiate);
-    }
-
-    template <template <int> class CKT, typename T>
-    static callable make(const ndt::type &self_tp, T &&data)
-    {
-      switch (self_tp.extended<ndt::callable_type>()->get_npos()) {
-      case 0:
-        return make<CKT<0>>(self_tp, std::forward<T>(data));
-      case 1:
-        return make<CKT<1>>(self_tp, std::forward<T>(data));
-      case 2:
-        return make<CKT<2>>(self_tp, std::forward<T>(data));
-      case 3:
-        return make<CKT<3>>(self_tp, std::forward<T>(data));
-      case 4:
-        return make<CKT<4>>(self_tp, std::forward<T>(data));
-      case 5:
-        return make<CKT<5>>(self_tp, std::forward<T>(data));
-      case 6:
-        return make<CKT<6>>(self_tp, std::forward<T>(data));
-      case 7:
-        return make<CKT<7>>(self_tp, std::forward<T>(data));
-      default:
-        throw std::runtime_error("callable with nsrc > 7 not implemented yet");
-      }
-    }
-
-    template <template <type_id_t> class KernelType, typename I0, typename... A>
-    static std::map<type_id_t, callable> make_all(A &&... a)
-    {
-      std::map<type_id_t, callable> callables;
-      for_each<I0>(detail::make_all<KernelType>(), callables, std::forward<A>(a)...);
-
-      return callables;
-    }
-
-    template <template <type_id_t, type_id_t, type_id_t...> class KernelType, typename I0, typename I1, typename... I,
+    template <template <typename> class KernelType, template <typename> class Condition, typename Type0Sequence,
               typename... A>
-    static std::map<std::array<type_id_t, 2 + sizeof...(I)>, callable> make_all(A &&... a)
-    {
-      std::map<std::array<type_id_t, 2 + sizeof...(I)>, callable> callables;
-      for_each<typename outer<I0, I1, I...>::type>(detail::make_all<KernelType>(), callables, std::forward<A>(a)...);
+    static dispatcher<1, callable> make_all_if(dispatch_t dispatch, A &&... a) {
+      std::vector<callable> callables;
+      std::array<int, 1> arr;
+      for_each<Type0Sequence>(detail::make_all_if<KernelType, Condition>(), callables, arr, std::forward<A>(a)...);
 
-      return callables;
+      return dispatcher<1, callable>(dispatch, callables.begin(), callables.end());
+    }
+
+    template <template <typename, typename, typename...> class KernelType,
+              template <typename, typename, typename...> class Condition, typename I0, typename I1, typename... I,
+              typename... A>
+    static dispatcher<2 + sizeof...(I), callable> make_all_if(dispatch_t dispatch, A &&... a) {
+      std::vector<callable> callables;
+      std::array<int, 2 + sizeof...(I)> arr;
+      for_each<typename outer<I0, I1, I...>::type>(detail::make_all_if<KernelType, Condition>(), callables, arr,
+                                                   std::forward<A>(a)...);
+
+      return dispatcher<2 + sizeof...(I), callable>(dispatch, callables.begin(), callables.end());
+    }
+  };
+
+  class reg_entry {
+    bool m_is_namespace;
+    callable m_value;
+    std::map<std::string, reg_entry> m_namespace;
+
+  public:
+    typedef typename std::map<std::string, reg_entry>::iterator iterator;
+
+    reg_entry() = default;
+
+    reg_entry(const callable &entry) : m_is_namespace(false), m_value(entry) {}
+
+    reg_entry(std::initializer_list<std::pair<const std::string, reg_entry>> values)
+        : m_is_namespace(true), m_namespace(values) {}
+
+    reg_entry(const std::map<std::string, reg_entry> &values) : m_is_namespace(true), m_namespace(values) {}
+
+    callable &value() { return m_value; }
+    const callable &value() const { return m_value; }
+
+    std::map<std::string, reg_entry> &all() { return m_namespace; }
+
+    bool is_namespace() const { return m_is_namespace; }
+
+    void insert(const std::pair<const std::string, reg_entry> &entry) { m_namespace.insert(entry); }
+
+    iterator begin() { return m_namespace.begin(); }
+
+    iterator end() { return m_namespace.end(); }
+
+    iterator find(const std::string &name) { return m_namespace.find(name); }
+
+    reg_entry &operator=(const reg_entry &rhs) {
+      m_is_namespace = rhs.m_is_namespace;
+      if (m_is_namespace) {
+        m_namespace = rhs.m_namespace;
+      } else {
+        m_value = rhs.m_value;
+      }
+
+      return *this;
     }
   };
 
   template <typename CallableType, typename... ArgTypes>
-  callable make_callable(ArgTypes &&... args)
-  {
+  std::enable_if_t<std::is_base_of<base_callable, CallableType>::value, callable> make_callable(ArgTypes &&... args) {
     return callable(new CallableType(std::forward<ArgTypes>(args)...), true);
   }
 
-  template <typename CallableType, typename KernelType, typename... ArgTypes>
-  std::enable_if_t<ndt::has_traits<KernelType>::value, callable> make_callable(ArgTypes &&... args)
-  {
-    return callable(new CallableType(ndt::traits<KernelType>::equivalent(), detail::get_targets<KernelType>(),
-                                     detail::get_ir<KernelType>(), &KernelType::alloc, &KernelType::data_init,
-                                     &KernelType::resolve_dst_type, &KernelType::instantiate,
-                                     std::forward<ArgTypes>(args)...),
-                    true);
+  template <typename KernelType, typename... ArgTypes>
+  std::enable_if_t<std::is_base_of<base_kernel<KernelType>, KernelType>::value, callable>
+  make_callable(const ndt::type &tp) {
+    return make_callable<default_instantiable_callable<KernelType>>(tp);
   }
 
-  template <typename CallableType, typename KernelType, typename... ArgTypes>
-  std::enable_if_t<!ndt::has_traits<KernelType>::value, callable> make_callable(const ndt::type &tp,
-                                                                                ArgTypes &&... args)
-  {
-    return callable(new CallableType(tp, detail::get_targets<KernelType>(), detail::get_ir<KernelType>(),
-                                     &KernelType::alloc, &KernelType::data_init, &KernelType::resolve_dst_type,
-                                     &KernelType::instantiate, std::forward<ArgTypes>(args)...),
-                    true);
+  template <template <size_t NArg> class CallableType, typename... ArgTypes>
+  callable make_callable(size_t narg, ArgTypes &&... args) {
+    switch (narg) {
+    case 0:
+      return make_callable<CallableType<0>>(std::forward<ArgTypes>(args)...);
+    case 1:
+      return make_callable<CallableType<1>>(std::forward<ArgTypes>(args)...);
+    case 2:
+      return make_callable<CallableType<2>>(std::forward<ArgTypes>(args)...);
+    case 3:
+      return make_callable<CallableType<3>>(std::forward<ArgTypes>(args)...);
+    case 4:
+      return make_callable<CallableType<4>>(std::forward<ArgTypes>(args)...);
+    case 5:
+      return make_callable<CallableType<5>>(std::forward<ArgTypes>(args)...);
+    case 6:
+      return make_callable<CallableType<6>>(std::forward<ArgTypes>(args)...);
+    case 7:
+      return make_callable<CallableType<7>>(std::forward<ArgTypes>(args)...);
+    default:
+      throw std::runtime_error("callable with nsrc > 7 not implemented yet");
+    }
   }
 
-  inline std::ostream &operator<<(std::ostream &o, const callable &rhs)
-  {
-    return o << "<callable <" << rhs.get()->tp << "> at " << reinterpret_cast<const void *>(rhs.get()) << ">";
+  inline std::ostream &operator<<(std::ostream &o, const callable &rhs) {
+    return o << "<callable <" << rhs->get_type() << "> at " << reinterpret_cast<const void *>(rhs.get()) << ">";
   }
 
   namespace detail {
 
-    template <template <type_id_t...> class KernelType, typename S>
-    struct apply;
-
-    template <template <type_id_t...> class KernelType, type_id_t... I>
-    struct apply<KernelType, type_id_sequence<I...>> {
-      typedef KernelType<I...> type;
-    };
-
-    template <template <type_id_t...> class KernelType>
+    template <template <typename...> class CallableType>
     struct make_all {
-      template <type_id_t TypeID, typename... A>
-      void on_each(std::map<type_id_t, callable> &callables, A &&... a) const
-      {
-        callables[TypeID] = callable::make<KernelType<TypeID>>(std::forward<A>(a)...);
+      template <typename Type, typename... ArgTypes>
+      void on_each(std::vector<callable> &callables, std::array<int, 1>, ArgTypes &&... args) const {
+        callables.push_back(make_callable<CallableType<Type>>(std::forward<ArgTypes>(args)...));
       }
 
-      template <typename TypeIDSequence, typename... A>
-      void on_each(std::map<std::array<type_id_t, TypeIDSequence::size2()>, callable> &callables, A &&... a) const
-      {
-        callables[i2a<TypeIDSequence>()] =
-            callable::make<typename apply<KernelType, TypeIDSequence>::type>(std::forward<A>(a)...);
+      template <typename TypeSequence, typename... ArgTypes>
+      void on_each(std::vector<callable> &callables, std::array<int, TypeSequence::size()>, ArgTypes &&... args) const {
+        typedef instantiate_t<CallableType, TypeSequence> callable_type;
+        callable f = make_callable<callable_type>(std::forward<ArgTypes>(args)...);
+        callables.push_back(f);
       }
     };
+
+    // insert_callable_if is an internal helper template for make_all_if that reorganizes
+    // its template parameters so that when a set of types does not pass the conditional
+    // test for whether or not it should be added to a callable, the kernel template used
+    // is never instantiated.
+    template <bool Enable, template <typename...> class KernelType>
+    struct insert_callable_if;
+
+    template <template <typename...> class KernelType>
+    struct insert_callable_if<false, KernelType> {
+      template <typename Arg0Type, typename... A>
+      static void insert(std::vector<callable> &DYND_UNUSED(callables), std::array<int, 1>, A &&... DYND_UNUSED(a)) {}
+
+      template <typename TypeSequence, typename... A>
+      static void insert(std::vector<callable> &DYND_UNUSED(callables), std::array<int, TypeSequence::size()>,
+                         A &&... DYND_UNUSED(a)) {}
+    };
+
+    template <template <typename...> class KernelType>
+    struct insert_callable_if<true, KernelType> {
+      template <typename Arg0Type, typename... A>
+      static void insert(std::vector<callable> &callables, std::array<int, 1>, A &&... a) {
+        callable f = make_callable<KernelType<Arg0Type>>(std::forward<A>(a)...);
+
+        callables.push_back(f);
+      }
+
+      template <typename TypeSequence, typename... A>
+      static void insert(std::vector<callable> &callables, std::array<int, TypeSequence::size()>, A &&... a) {
+        callable f = make_callable<instantiate_t<KernelType, TypeSequence>>(std::forward<A>(a)...);
+
+        callables.push_back(f);
+      }
+    };
+
+    template <template <typename...> class KernelType, template <typename...> class Condition>
+    struct make_all_if {
+      template <typename Type, typename... A>
+      void on_each(std::vector<callable> &callables, std::array<int, 1> arr, A &&... a) const {
+        insert_callable_if<Condition<Type>::value, KernelType>::template insert<Type, A...>(callables, arr,
+                                                                                            std::forward<A>(a)...);
+      }
+
+      template <typename TypeSequence, typename... A>
+      void on_each(std::vector<callable> &callables, std::array<int, TypeSequence::size()> arr, A &&... a) const {
+        insert_callable_if<instantiate_t<Condition, TypeSequence>::value,
+                           KernelType>::template insert<TypeSequence, A...>(callables, arr, std::forward<A>(a)...);
+      }
+    };
+
+    /**
+     * Returns a reference to the map of registered callables.
+     * NOTE: The internal representation will change, this
+     *       function will change.
+     */
+    DYND_API reg_entry &get_regfunctions();
+
+    extern DYND_API std::vector<void (*)(const char *, reg_entry *)> observers;
 
   } // namespace dynd::nd::detail
 
-  template <typename FuncType>
-  struct declfunc {
-    template <typename DstType, typename... ArgTypes>
-    array operator()(ArgTypes &&... args)
-    {
-      return FuncType::get().template operator()<DstType>(std::forward<ArgTypes>(args)...);
-    }
+  DYND_API reg_entry &get();
+  DYND_API reg_entry &get(const std::string &name, reg_entry &entry);
 
-    template <typename... ArgTypes>
-    array operator()(ArgTypes &&... args)
-    {
-      return FuncType::get()(std::forward<ArgTypes>(args)...);
-    }
+  DYND_API void set(const std::string &name, const reg_entry &entry);
 
-    array operator()(const std::initializer_list<array> &args,
-                     const std::initializer_list<std::pair<const char *, array>> &kwds)
-    {
-      return FuncType::get()(args, kwds);
-    }
-  };
-
-// A macro for defining the get method.
-#define DYND_DEFAULT_DECLFUNC_GET(NAME)                                                                                \
-  DYND_API dynd::nd::callable &NAME::get()                                                                             \
-  {                                                                                                                    \
-    static dynd::nd::callable self = NAME::make();                                                                     \
-    return self;                                                                                                       \
-  }
-
-  template <typename FuncType>
-  std::ostream &operator<<(std::ostream &o, const declfunc<FuncType> &DYND_UNUSED(rhs))
-  {
-    return o << FuncType::get();
-  }
-
-  namespace functional {
-
-    /**
-     * Makes a callable out of function ``func``, using the provided keyword
-     * parameter names. This function takes ``func`` as a template
-     * parameter, so can call it efficiently.
-     */
-    template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
-    callable apply(T &&... names)
-    {
-      typedef apply_function_kernel<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
-
-      ndt::type self_tp = ndt::make_type<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
-
-      return callable::make<CKT>(self_tp);
-    }
-
-    template <typename func_type, func_type func, typename... T>
-    callable apply(T &&... names)
-    {
-      return apply<kernel_request_host, func_type, func>(std::forward<T>(names)...);
-    }
-
-    /**
-     * Makes a callable out of the function object ``func``, using the provided
-     * keyword parameter names. This version makes a copy of provided ``func``
-     * object.
-     */
-    template <kernel_request_t kernreq, typename func_type, typename... T>
-    typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func, T &&... names)
-    {
-      typedef apply_callable_kernel<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
-
-      ndt::type self_tp = ndt::make_type<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
-
-      return callable::make<ck_type>(self_tp, func);
-    }
-
-    template <typename func_type, typename... T>
-    typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func, T &&... names)
-    {
-      static_assert(all_char_string_params<T...>::value, "All the names must be strings");
-      return apply<kernel_request_host>(func, std::forward<T>(names)...);
-    }
-
-    template <kernel_request_t kernreq, typename func_type, typename... T>
-    callable apply(func_type *func, T &&... names)
-    {
-      typedef apply_callable_kernel<func_type *, arity_of<func_type>::value - sizeof...(T)> ck_type;
-
-      ndt::type self_tp = ndt::make_type<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
-
-      return callable::make<ck_type>(self_tp, func);
-    }
-
-    template <typename func_type, typename... T>
-    callable apply(func_type *func, T &&... names)
-    {
-      return apply<kernel_request_host>(func, std::forward<T>(names)...);
-    }
-
-    template <kernel_request_t kernreq, typename T, typename R, typename... A, typename... S>
-    callable apply(T *obj, R (T::*mem_func)(A...), S &&... names)
-    {
-      typedef apply_member_function_kernel<T *, R (T::*)(A...), sizeof...(A) - sizeof...(S)> ck_type;
-
-      ndt::type self_tp = ndt::make_type<typename funcproto_of<R (T::*)(A...)>::type>(std::forward<S>(names)...);
-
-      return callable::make<ck_type>(self_tp, typename ck_type::data_type(obj, mem_func));
-    }
-
-    template <typename O, typename R, typename... A, typename... T>
-    callable apply(O *obj, R (O::*mem_func)(A...), T &&... names)
-    {
-      return apply<kernel_request_host>(obj, mem_func, std::forward<T>(names)...);
-    }
-
-    /**
-     * Makes a callable out of the provided function object type, specialized
-     * for a memory_type such as cuda_device based on the ``kernreq``.
-     */
-    template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
-    callable apply(T &&... names)
-    {
-      typedef construct_then_apply_callable_kernel<func_type, K...> ck_type;
-
-      ndt::type self_tp = ndt::make_type<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...);
-
-      return callable::make<ck_type>(self_tp);
-    }
-
-    /**
-     * Makes a callable out of the provided function object type, which
-     * constructs and calls the function object on demand.
-     */
-    template <typename func_type, typename... K, typename... T>
-    callable apply(T &&... names)
-    {
-      return apply<kernel_request_host, func_type, K...>(std::forward<T>(names)...);
-    }
-
-  } // namespace dynd::nd::functional
-
-  template <typename CallableType, typename... T, typename>
-  callable::callable(CallableType f, T &&... names)
-      : callable(nd::functional::apply(f, std::forward<T>(names)...))
-  {
-  }
+  DYND_API void observe(void (*callback)(const char *, reg_entry *));
 
 } // namespace dynd::nd
 

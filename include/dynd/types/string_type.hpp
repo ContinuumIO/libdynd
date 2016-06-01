@@ -1,69 +1,90 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
-// The string type uses memory_block references to store
-// arbitrarily sized strings.
+// The string type uses a 16-byte SSO representation
 //
 
 #pragma once
 
 #include <dynd/bytes.hpp>
-#include <dynd/type.hpp>
 #include <dynd/string_encodings.hpp>
+#include <dynd/type.hpp>
+#include <dynd/types/sso_bytestring.hpp>
+#include <dynd/types/string_kind_type.hpp>
 
 namespace dynd {
 
-class DYND_API string : public bytes {
+class DYNDT_API string : public sso_bytestring<1> {
 public:
+  /** Default-constructs to an empty string */
   string() {}
 
-  string(const char *data, size_t size) : bytes(data, size) {}
+  string(const string &rhs) : sso_bytestring(rhs) {}
 
-  string(const std::string &other) : string(other.data(), other.size()) {}
+  string(const string &&rhs) : sso_bytestring(std::move(rhs)) {}
 
-  bool operator<(const string &rhs) const
-  {
+  string(const char *data, size_t size) : sso_bytestring(data, size) {}
+
+  /** Construct from a std::string, assumed to be UTF-8 */
+  string(const std::string &other) : sso_bytestring(other.data(), other.size()) {}
+
+  /** Construct from a C string, assumed to be UTF-8 */
+  string(const char *cstr) : sso_bytestring(cstr, strlen(cstr)) {}
+
+  string &operator=(const string &rhs) {
+    sso_bytestring::assign(rhs.data(), rhs.size());
+    return *this;
+  }
+
+  string &operator=(string &&rhs) {
+    sso_bytestring::operator=(std::move(rhs));
+    return *this;
+  }
+
+  bool operator<(const string &rhs) const {
     return std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
   }
 
-  bool operator<=(const string &rhs) const
-  {
+  bool operator<=(const string &rhs) const {
     return !std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
   }
 
-  bool operator>=(const string &rhs) const
-  {
+  bool operator>=(const string &rhs) const {
     return !std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
   }
 
-  bool operator>(const string &rhs) const
-  {
+  bool operator>(const string &rhs) const {
     return std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
   }
 
-  const string operator+(const string &rhs)
-  {
+  string operator+(const string &rhs) {
     string result;
-
     result.resize(size() + rhs.size());
-
-    DYND_MEMCPY(result.begin(), begin(), size());
-    DYND_MEMCPY(result.begin() + size(), rhs.begin(), rhs.size());
-
+    DYND_MEMCPY(result.data(), data(), size());
+    DYND_MEMCPY(result.data() + size(), rhs.data(), rhs.size());
     return result;
+  }
+
+  string &operator+=(const string &rhs) {
+    sso_bytestring::append(rhs.data(), rhs.size());
+    return *this;
   }
 };
 
 namespace ndt {
 
-  class DYND_API string_type : public base_string_type {
+  class DYNDT_API string_type : public base_string_type {
   private:
-    const string_encoding_t m_encoding = string_encoding_utf_8;
+    const string_encoding_t m_encoding{string_encoding_utf_8};
+    const std::string m_encoding_repr{encoding_as_string(string_encoding_utf_8)};
+
   public:
     typedef string data_type;
 
-    string_type();
+    string_type(type_id_t id)
+        : base_string_type(id, make_type<string_kind_type>(), sizeof(string), alignof(string),
+                           type_flag_zeroinit | type_flag_destructor, 0) {}
 
     string_encoding_t get_encoding() const { return m_encoding; }
 
@@ -89,9 +110,17 @@ namespace ndt {
 
     bool operator==(const base_type &rhs) const;
 
+    void arrmeta_debug_print(const char *arrmeta, std::ostream &o, const std::string &indent) const;
+
     void data_destruct(const char *arrmeta, char *data) const;
     void data_destruct_strided(const char *arrmeta, char *data, intptr_t stride, size_t count) const;
   };
+
+  template <>
+  struct id_of<string> : std::integral_constant<type_id_t, string_id> {};
+
+  template <>
+  struct id_of<string_type> : std::integral_constant<type_id_t, string_id> {};
 
   template <>
   struct traits<string> {
@@ -99,7 +128,7 @@ namespace ndt {
 
     static const bool is_same_layout = true;
 
-    static type equivalent() { return type(string_id); }
+    static type equivalent() { return make_type<string_type>(); }
 
     static string na() { return string(); }
   };
@@ -111,6 +140,33 @@ namespace ndt {
     static const bool is_same_layout = false;
 
     static type equivalent() { return make_type<string>(); }
+  };
+
+  template <>
+  struct traits<const char *> {
+    static const size_t ndim = 0;
+
+    static const bool is_same_layout = false;
+
+    static type equivalent() { return make_type<string_type>(); }
+  };
+
+  template <size_t N>
+  struct traits<char[N]> {
+    static const size_t ndim = 0;
+
+    static const bool is_same_layout = false;
+
+    static type equivalent() { return make_type<string_type>(); }
+  };
+
+  template <size_t N>
+  struct traits<const char[N]> {
+    static const size_t ndim = 0;
+
+    static const bool is_same_layout = false;
+
+    static type equivalent() { return make_type<string_type>(); }
   };
 
 } // namespace dynd::ndt

@@ -1,20 +1,19 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
 #include <dynd/type.hpp>
+#include <dynd/types/scalar_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
 
-  class DYND_API categorical_kind_type : public base_type {
+  class DYNDT_API categorical_kind_type : public base_type {
   public:
-    categorical_kind_type();
-
-    virtual ~categorical_kind_type();
+    categorical_kind_type(type_id_t id) : base_type(id, make_type<scalar_kind_type>(), 0, 0, type_flag_symbolic, 0, 0, 0) {}
 
     size_t get_default_data_size() const;
 
@@ -32,7 +31,7 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
@@ -42,9 +41,10 @@ namespace ndt {
     void data_destruct_strided(const char *arrmeta, char *data, intptr_t stride, size_t count) const;
 
     bool match(const type &candidate_tp, std::map<std::string, type> &tp_vars) const;
-
-    static type make() { return type(new categorical_kind_type(), false); }
   };
+
+  template <>
+  struct id_of<categorical_kind_type> : std::integral_constant<type_id_t, categorical_id> {};
 
 } // namespace dynd::ndt
 } // namespace dynd

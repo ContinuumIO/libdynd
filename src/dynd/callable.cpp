@@ -1,14 +1,19 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#include <dynd/func/assignment.hpp>
-#include <dynd/callable.hpp>
-#include <dynd/kernels/base_kernel.hpp>
-#include <dynd/types/tuple_type.hpp>
-#include <dynd/types/option_type.hpp>
-#include <dynd/type.hpp>
+#include <dynd/arithmetic.hpp>
+#include <dynd/assignment.hpp>
+#include <dynd/comparison.hpp>
+#include <dynd/index.hpp>
+#include <dynd/io.hpp>
+#include <dynd/math.hpp>
+#include <dynd/option.hpp>
+#include <dynd/pointer.hpp>
+#include <dynd/random.hpp>
+#include <dynd/range.hpp>
+#include <dynd/statistics.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -18,49 +23,45 @@ namespace {
 ////////////////////////////////////////////////////////////////
 // Functions for the unary assignment as an callable
 
-struct unary_assignment_ck : nd::base_strided_kernel<unary_assignment_ck, 1> {
-  static void instantiate(char *static_data, char *DYND_UNUSED(data), nd::kernel_builder *ckb, const ndt::type &dst_tp,
-                          const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
-                          const char *const *src_arrmeta, kernel_request_t kernreq, intptr_t DYND_UNUSED(nkwd),
-                          const nd::array *DYND_UNUSED(kwds),
-                          const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
-  {
-    assign_error_mode errmode = *reinterpret_cast<assign_error_mode *>(static_data);
-    eval::eval_context ectx_tmp;
-    ectx_tmp.errmode = errmode;
-    make_assignment_kernel(ckb, dst_tp, dst_arrmeta, src_tp[0], src_arrmeta[0], kernreq, &ectx_tmp);
+class unary_assignment_callable : public nd::base_callable {
+  assign_error_mode errmode;
+
+public:
+  unary_assignment_callable(const ndt::type &tp, assign_error_mode error_mode)
+      : base_callable(tp), errmode(error_mode) {}
+
+  ndt::type resolve(nd::base_callable *DYND_UNUSED(caller), char *DYND_UNUSED(data), nd::call_graph &cg,
+                    const ndt::type &dst_tp, size_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
+                    size_t DYND_UNUSED(nkwd), const nd::array *DYND_UNUSED(kwds),
+                    const std::map<std::string, ndt::type> &tp_vars) {
+    nd::array error_mode = errmode;
+    return nd::assign->resolve(this, nullptr, cg, dst_tp, 1, src_tp, 1, &error_mode, tp_vars);
   }
 };
 
 } // anonymous namespace
 
 nd::callable dynd::make_callable_from_assignment(const ndt::type &dst_tp, const ndt::type &src_tp,
-                                                 assign_error_mode errmode)
-{
-  return nd::callable::make<unary_assignment_ck>(ndt::callable_type::make(dst_tp, src_tp), errmode);
+                                                 assign_error_mode errmode) {
+  return nd::make_callable<unary_assignment_callable>(ndt::make_type<ndt::callable_type>(dst_tp, {src_tp}), errmode);
 }
 
-void nd::detail::check_narg(const ndt::callable_type *af_tp, intptr_t narg)
-{
-  if (!af_tp->is_pos_variadic() && narg != af_tp->get_npos()) {
+void nd::detail::check_narg(const base_callable *self, size_t narg) {
+  if (!self->is_arg_variadic() && narg != self->get_narg()) {
     std::stringstream ss;
-    ss << "callable expected " << af_tp->get_npos() << " positional arguments, but received " << narg;
+    ss << "callable expected " << self->get_narg() << " positional arguments, but received " << narg;
     throw std::invalid_argument(ss.str());
   }
 }
 
-void nd::detail::check_arg(const ndt::callable_type *af_tp, intptr_t i, const ndt::type &actual_tp,
-                           const char *DYND_UNUSED(actual_arrmeta), std::map<std::string, ndt::type> &tp_vars)
-{
-  if (af_tp->is_pos_variadic()) {
+void nd::detail::check_arg(const base_callable *self, intptr_t i, const ndt::type &actual_tp,
+                           const char *DYND_UNUSED(actual_arrmeta), std::map<std::string, ndt::type> &tp_vars) {
+  if (self->is_arg_variadic()) {
     return;
   }
 
-  ndt::type expected_tp = af_tp->get_pos_type(i);
+  ndt::type expected_tp = self->get_arg_types()[i];
   ndt::type candidate_tp = actual_tp;
-  if (actual_tp.get_id() != pointer_id) {
-    candidate_tp = candidate_tp.value_type();
-  }
 
   if (!expected_tp.match(candidate_tp, tp_vars)) {
     std::stringstream ss;
@@ -70,65 +71,71 @@ void nd::detail::check_arg(const ndt::callable_type *af_tp, intptr_t i, const nd
   }
 }
 
-nd::array nd::callable::call(size_t args_size, const array *args_values, size_t kwds_size,
-                             const std::pair<const char *, array> *kwds_values)
-{
+nd::array nd::callable::call(size_t narg, const array *args, size_t nkwd,
+                             const pair<const char *, array> *unordered_kwds) const {
   std::map<std::string, ndt::type> tp_vars;
-  const ndt::callable_type *self_tp = get_type();
 
-  if (!self_tp->is_pos_variadic() && (static_cast<intptr_t>(args_size) < self_tp->get_npos())) {
+  if (!m_ptr->is_arg_variadic() && (narg < m_ptr->get_narg())) {
     std::stringstream ss;
-    ss << "callable expected " << self_tp->get_npos() << " positional arguments, but received " << args_size;
+    ss << "callable expected " << m_ptr->get_narg() << " positional arguments, but received " << narg;
     throw std::invalid_argument(ss.str());
   }
 
-  std::vector<ndt::type> args_tp(args_size);
-  std::vector<const char *> args_arrmeta(args_size);
+  unique_ptr<ndt::type[]> args_tp(new ndt::type[narg]);
+  unique_ptr<const char *[]> args_arrmeta(new const char *[narg]);
+  unique_ptr<array[]> kwds(new array[narg + m_ptr->get_nkwd()]);
 
-  for (intptr_t i = 0; i < (self_tp->is_pos_variadic() ? static_cast<intptr_t>(args_size) : self_tp->get_npos()); ++i) {
-    detail::check_arg(self_tp, i, args_values[i]->tp, args_values[i]->metadata(), tp_vars);
+  size_t j = 0;
+  if (m_ptr->is_arg_variadic()) {
+    for (size_t i = 0; i < narg; ++i) {
+      detail::check_arg(m_ptr, i, args[i].get_type(), args[i]->metadata(), tp_vars);
 
-    args_tp[i] = args_values[i]->tp;
-    args_arrmeta[i] = args_values[i]->metadata();
+      args_tp[i] = args[i].get_type();
+      args_arrmeta[i] = args[i]->metadata();
+    }
+  } else {
+    size_t i = 0;
+    for (; i < m_ptr->get_narg(); ++i) {
+      detail::check_arg(m_ptr, i, args[i].get_type(), args[i]->metadata(), tp_vars);
+
+      args_tp[i] = args[i].get_type();
+      args_arrmeta[i] = args[i]->metadata();
+    }
+
+    // ...
+    if (!m_ptr->is_kwd_variadic() && (narg - m_ptr->get_narg()) > m_ptr->get_nkwd()) {
+      throw std::invalid_argument("too many extra positional arguments");
+    }
+
+    for (; narg > m_ptr->get_narg(); ++i, --narg, ++j, ++nkwd) {
+      kwds[j] = args[i];
+    }
   }
 
   array dst;
 
-  intptr_t narg = args_size;
+  const std::vector<std::pair<ndt::type, std::string>> kwd_tp = m_ptr->get_kwd_types();
+  for (; j < nkwd; ++j, ++unordered_kwds) {
+    intptr_t k = m_ptr->get_kwd_index(unordered_kwds->first);
 
-  // ...
-  intptr_t nkwd = args_size - self_tp->get_npos();
-  if (!self_tp->is_kwd_variadic() && nkwd > self_tp->get_nkwd()) {
-    throw std::invalid_argument("too many extra positional arguments");
-  }
-
-  std::vector<array> kwds_as_vector(nkwd + self_tp->get_nkwd());
-  for (intptr_t i = 0; i < nkwd; ++i) {
-    kwds_as_vector[i] = args_values[self_tp->get_npos() + i];
-    --narg;
-  }
-
-  for (size_t i = 0; i < kwds_size; ++i) {
-    intptr_t j = self_tp->get_kwd_index(kwds_values[i].first);
-    if (j == -1) {
-      if (detail::is_special_kwd(self_tp, dst, kwds_values[i].first, kwds_values[i].second)) {
-      }
-      else {
+    if (k == -1) {
+      if (detail::is_special_kwd(dst, unordered_kwds->first, unordered_kwds->second)) {
+      } else {
         std::stringstream ss;
-        ss << "passed an unexpected keyword \"" << kwds_values[i].first << "\" to callable with type " << get()->tp;
+        ss << "passed an unexpected keyword \"" << unordered_kwds->first << "\" to callable with type "
+           << m_ptr->get_type();
         throw std::invalid_argument(ss.str());
       }
-    }
-    else {
-      array &value = kwds_as_vector[j];
+    } else {
+      array &value = kwds[k];
       if (!value.is_null()) {
         std::stringstream ss;
-        ss << "callable passed keyword \"" << kwds_values[i].first << "\" more than once";
+        ss << "callable passed keyword \"" << unordered_kwds->first << "\" more than once";
         throw std::invalid_argument(ss.str());
       }
-      value = kwds_values[i].second;
+      value = unordered_kwds->second;
 
-      ndt::type expected_tp = self_tp->get_kwd_type(j);
+      ndt::type expected_tp = kwd_tp[k].first;
       if (expected_tp.get_id() == option_id) {
         expected_tp = expected_tp.extended<ndt::option_type>()->get_value_type();
       }
@@ -136,54 +143,140 @@ nd::array nd::callable::call(size_t args_size, const array *args_values, size_t 
       const ndt::type &actual_tp = value.get_type();
       if (!expected_tp.match(actual_tp.value_type(), tp_vars)) {
         std::stringstream ss;
-        ss << "keyword \"" << self_tp->get_kwd_name(j) << "\" does not match, ";
+        ss << "keyword \"" << kwd_tp[k].second << "\" does not match, ";
         ss << "callable expected " << expected_tp << " but passed " << actual_tp;
         throw std::invalid_argument(ss.str());
       }
-      ++nkwd;
     }
   }
 
   // Validate the destination type, if it was provided
   if (!dst.is_null()) {
-    if (!self_tp->get_return_type().match(dst.get_type(), tp_vars)) {
+    if (!m_ptr->get_ret_type().match(dst.get_type(), tp_vars)) {
       std::stringstream ss;
       ss << "provided \"dst\" type " << dst.get_type() << " does not match callable return type "
-         << self_tp->get_return_type();
+         << m_ptr->get_ret_type();
       throw std::invalid_argument(ss.str());
     }
   }
 
-  for (intptr_t j : self_tp->get_option_kwd_indices()) {
-    if (kwds_as_vector[j].is_null()) {
-      ndt::type actual_tp = ndt::substitute(self_tp->get_kwd_type(j), tp_vars, false);
+  for (intptr_t j : m_ptr->get_option_kwd_indices()) {
+    if (kwds[j].is_null()) {
+      ndt::type actual_tp = ndt::substitute(kwd_tp[j].first, tp_vars, false);
       if (actual_tp.is_symbolic()) {
         actual_tp = ndt::make_type<ndt::option_type>(ndt::make_type<void>());
       }
-      kwds_as_vector[j] = empty(actual_tp);
-      kwds_as_vector[j].assign_na();
+      kwds[j] = assign_na({{"dst_tp", actual_tp}});
       ++nkwd;
     }
   }
 
-  if (nkwd < self_tp->get_nkwd()) {
+  if (nkwd < m_ptr->get_nkwd()) {
     std::stringstream ss;
     // TODO: Provide the missing keyword parameter names in this error
     //       message
     ss << "callable requires keyword parameters that were not provided. "
-          "callable signature " << get()->tp;
+          "callable signature "
+       << m_ptr->get_type();
     throw std::invalid_argument(ss.str());
   }
 
   ndt::type dst_tp;
   if (dst.is_null()) {
-    dst_tp = self_tp->get_return_type();
-    return get()->call(dst_tp, narg, args_tp.data(), args_arrmeta.data(), args_values, nkwd, kwds_as_vector.data(),
-                       tp_vars);
+    dst_tp = m_ptr->get_ret_type();
+    return m_ptr->call(dst_tp, narg, args_tp.get(), args_arrmeta.get(), args, nkwd, kwds.get(), tp_vars);
   }
 
   dst_tp = dst.get_type();
-  get()->call(dst_tp, dst->metadata(), &dst, narg, args_tp.data(), args_arrmeta.data(), args_values, nkwd,
-              kwds_as_vector.data(), tp_vars);
+  m_ptr->call(dst_tp, dst->metadata(), &dst, narg, args_tp.get(), args_arrmeta.get(), args, nkwd, kwds.get(), tp_vars);
   return dst;
 }
+
+nd::reg_entry &nd::detail::get_regfunctions() {
+  static reg_entry registry({{"add", add},
+                             {"assign", assign},
+                             {"assign_na", assign_na},
+                             {"bitwise_and", bitwise_and},
+                             {"bitwise_not", bitwise_not},
+                             {"bitwise_or", bitwise_or},
+                             {"bitwise_xor", bitwise_xor},
+                             {"cbrt", cbrt},
+                             {"compound_add", compound_add},
+                             {"compound_div", compound_div},
+                             {"conj", conj},
+                             {"cos", cos},
+                             {"dereference", dereference},
+                             {"divide", divide},
+                             {"equal", equal},
+                             {"exp", exp},
+                             {"greater", greater},
+                             {"greater_equal", greater_equal},
+                             {"imag", imag},
+                             {"is_na", is_na},
+                             {"left_shift", left_shift},
+                             {"less", less},
+                             {"less_equal", less_equal},
+                             {"logical_and", logical_and},
+                             {"logical_not", logical_not},
+                             {"logical_or", logical_or},
+                             {"logical_xor", logical_xor},
+                             {"max", max},
+                             {"min", min},
+                             {"minus", minus},
+                             {"mod", mod},
+                             {"multiply", multiply},
+                             {"not_equal", not_equal},
+                             {"plus", plus},
+                             {"pow", pow},
+                             {"range", range},
+                             {"real", real},
+                             {"right_shift", right_shift},
+                             {"serialize", serialize},
+                             {"sin", sin},
+                             {"sqrt", sqrt},
+                             {"subtract", subtract},
+                             {"sum", sum},
+                             {"take", take},
+                             {"tan", tan},
+                             {"total_order", total_order},
+                             {"random", {{"uniform", random::uniform}}}});
+
+  return registry;
+}
+
+nd::reg_entry &nd::get() { return detail::get_regfunctions(); }
+
+nd::reg_entry &nd::get(const std::string &path, reg_entry &entry) {
+  size_t i = path.find(".");
+  std::string name = path.substr(0, i);
+
+  auto it = entry.find(name);
+  if (it != entry.end()) {
+    if (i == std::string::npos) {
+      return it->second;
+    } else {
+      return get(path.substr(i + 1), it->second);
+    }
+  }
+
+  stringstream ss;
+  ss << "No dynd function ";
+  print_escaped_utf8_string(ss, name);
+  ss << " has been registered";
+  throw invalid_argument(ss.str());
+}
+
+nd::callable &nd::get(const std::string &name) { return get(name, get()).value(); }
+
+void nd::set(const std::string &name, const reg_entry &entry) {
+  reg_entry &root = get();
+  root.insert({name, entry});
+
+  for (auto observer : detail::observers) {
+    observer(name.c_str(), &root);
+  }
+}
+
+DYND_API std::vector<void (*)(const char *, nd::reg_entry *)> nd::detail::observers;
+
+void nd::observe(void (*callback)(const char *, reg_entry *)) { detail::observers.push_back(callback); }

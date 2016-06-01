@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -20,14 +20,4 @@ namespace nd {
   };
 
 } // namespace nd
-
-namespace ndt {
-
-  template <>
-  struct traits<dynd::nd::string_concatenation_kernel> {
-    static type equivalent() { return callable_type::make(type(string_id), {type(string_id), type(string_id)}); }
-  };
-
-} // namespace ndt
-
 } // namespace dynd

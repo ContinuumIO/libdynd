@@ -1,21 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#include <dynd/kernels/byteswap_kernels.hpp>
+#include <dynd/callables/byteswap_callable.hpp>
 
 using namespace std;
 using namespace dynd;
 
-nd::callable nd::byteswap::make() { return callable::make<byteswap_ck>(ndt::type("(Any) -> Any")); }
-
-DYND_DEFAULT_DECLFUNC_GET(nd::byteswap)
-
-struct nd::byteswap nd::byteswap;
-
-nd::callable nd::pairwise_byteswap::make() { return callable::make<pairwise_byteswap_ck>(ndt::type("(Any) -> Any")); }
-
-DYND_DEFAULT_DECLFUNC_GET(nd::pairwise_byteswap)
-
-struct nd::pairwise_byteswap nd::pairwise_byteswap;
+DYND_API nd::callable nd::byteswap = nd::make_callable<nd::byteswap_callable>();
+DYND_API nd::callable nd::pairwise_byteswap = nd::make_callable<nd::pairwise_byteswap_callable>();

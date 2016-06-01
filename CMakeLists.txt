@@ -1,19 +1,29 @@
 #
-# Copyright (C) 2011-15 DyND Developers
+# Copyright (C) 2011-16 DyND Developers
 # BSD 2-Clause License, see LICENSE.txt
 #
 
 cmake_minimum_required(VERSION 2.8.11)
 project(libdynd)
 
+include(CheckTypeSize)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 set(LIB_SUFFIX "" CACHE STRING
     "Typically an empty string or 64. Controls installation to lib or lib64")
 
-if(NOT WIN32)
-  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-  set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+add_definitions(-DDYND_SHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
+
+CHECK_TYPE_SIZE("float" SIZEOF_FLOAT)
+if(NOT (SIZEOF_FLOAT EQUAL 4))
+  message(FATAL_ERROR "libdynd requires sizeof(float) == 4")
+endif()
+
+CHECK_TYPE_SIZE("double" SIZEOF_DOUBLE)
+if(NOT (SIZEOF_DOUBLE EQUAL 8))
+  message(FATAL_ERROR "libdynd requires sizeof(double) == 8")
 endif()
 
 # Only add these options if this is the top level CMakeLists.txt
@@ -49,12 +59,28 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     option(DYND_BUILD_BENCHMARKS
            "Build the Google benchmarks for libdynd."
            ON)
+# -DDYND_BUILD_PLUGINS=ON/OFF, whether to build the DyND plugins
+    option(DYND_BUILD_PLUGINS
+           "Build the plugins for libdynd."
+           OFF)
 # -DDYND_BUILD_DOCS=ON/OFF, whether or not to build the documentation.
     option(DYND_BUILD_DOCS
            "Use Doxygen to generate the documentation."
            OFF)
+# -DDYND_COVERAGE=ON/OFF, whether to generate test coverage information
+    option(DYND_COVERAGE
+           "Generate code coverage reports from the unit test suite."
+           OFF)
 #
 ################################################
+endif()
+
+if(DYND_COVERAGE)
+  INCLUDE(CodeCoverage)
+
+  SET(CMAKE_BUILD_TYPE "Debug")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_COVERAGE}")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_COVERAGE}")
 endif()
 
 if(DYND_LLVM)
@@ -70,28 +96,43 @@ if(WIN32)
     set(DYND_BUILD_BENCHMARKS OFF)
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if (DEFINED CMAKE_CXX_SIMULATED_ID)
+    set(DYND_SIMULATED_COMPILER ${CMAKE_CXX_SIMULATED_ID})
+else()
+    set(DYND_SIMULATED_COMPILER ${CMAKE_CXX_COMPILER_ID})
+endif()
+
+if("${MSVC}" OR "${DYND_SIMULATED_COMPILER}" STREQUAL "MSVC")
     # -WX: Treat warnings as errors
     # -bigobj: Allow lots of symbols (assignment_kernels.cpp and assignment_kernels.cu need this flag)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -WX -EHsc -bigobj -wd4503")
-
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 19)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        # If this is the clang-cl compiler.
+        # Don't enable -WX here yet.
+        set(CMAKE_CXX_FLAGS "-EHsc -bigobj -wd4503 ${CMAKE_CXX_FLAGS}")
+    elseif(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 19)
         message(FATAL_ERROR "Only MSVC 2015 (Version 19.0) and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
-    endif ()
-else()
-    if(WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++14 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Wno-missing-field-initializers -fPIC -Wno-ignored-attributes -Werror")
+        set(CMAKE_CXX_FLAGS "-WX -EHsc -bigobj -wd4503 ${CMAKE_CXX_FLAGS}")
     endif()
+else()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
             message(FATAL_ERROR "Only GCC 4.9 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")
         endif()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fmax-errors=20 -Wno-type-limits")
+        set(CMAKE_CXX_FLAGS "-std=c++14 -fmax-errors=20 -Wno-type-limits -Wno-maybe-uninitialized ${CMAKE_CXX_FLAGS}")
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -ferror-limit=20 -Wno-missing-braces")
+        set(CMAKE_CXX_FLAGS "-std=c++1y -ferror-limit=20 -Wno-missing-braces -ftemplate-depth=500 ${CMAKE_CXX_FLAGS}")
     endif()
+
+    if(WIN32)
+        set(CMAKE_CXX_FLAGS "-O3 -std=c++14 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers ${CMAKE_CXX_FLAGS}")
+    else()
+        set(CMAKE_CXX_FLAGS "-O3 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Wno-missing-field-initializers -fPIC -Werror -Wno-ignored-attributes ${CMAKE_CXX_FLAGS}")
+    endif()
+endif()
+
+if("${UNIX}" AND NOT CMAKE_SYSTEM_NAME MATCHES "BSD")
+    set(DYNDT_LINK_LIBS ${DYNDT_LINK_LIBS} dl)
 endif()
 
 # LLVM, disabled for now
@@ -124,276 +165,243 @@ string(REPLACE "v" "" DYND_VERSION "${DYND_VERSION_STRING}")
 string(REPLACE "-" ";" DYND_VERSION "${DYND_VERSION}")
 list(GET DYND_VERSION 0 "${DYND_VERSION}")
 
-set(config_cpp src/dynd/config.cpp)
-
-set(libdynd_SRC
+set(libdyndt_SRC
+    # Eval
+    src/dynd/eval/eval_context.cpp
+    include/dynd/eval/eval_context.hpp
     # Types
-    src/dynd/types/adapt_type.cpp
     src/dynd/types/any_kind_type.cpp
     src/dynd/types/array_type.cpp
-    src/dynd/types/base_bytes_type.cpp
     src/dynd/types/base_type.cpp
-    src/dynd/types/base_fixed_dim_type.cpp
+    src/dynd/types/base_dim_type.cpp
     src/dynd/types/base_expr_type.cpp
     src/dynd/types/base_memory_type.cpp
     src/dynd/types/base_string_type.cpp
-    src/dynd/types/base_dim_type.cpp
     src/dynd/types/bytes_type.cpp
-    src/dynd/types/categorical_type.cpp
     src/dynd/types/categorical_kind_type.cpp
+    src/dynd/types/callable_type.cpp
     src/dynd/types/char_type.cpp
+    src/dynd/types/complex_kind_type.cpp
     src/dynd/types/cuda_host_type.cpp
     src/dynd/types/cuda_device_type.cpp
     src/dynd/types/datashape_formatter.cpp
     src/dynd/types/datashape_parser.cpp
     src/dynd/types/dim_fragment_type.cpp
     src/dynd/types/ellipsis_dim_type.cpp
-    src/dynd/types/fixed_dim_type.cpp
     src/dynd/types/fixed_bytes_kind_type.cpp
     src/dynd/types/fixed_bytes_type.cpp
+    src/dynd/types/fixed_dim_type.cpp
+    src/dynd/types/fixed_dim_kind_type.cpp
     src/dynd/types/fixed_string_kind_type.cpp
     src/dynd/types/fixed_string_type.cpp
-    src/dynd/types/callable_type.cpp
-    src/dynd/types/int_kind_sym_type.cpp
+    src/dynd/types/float_kind_type.cpp
+    src/dynd/types/int_kind_type.cpp
     src/dynd/types/option_type.cpp
     src/dynd/types/pointer_type.cpp
+    src/dynd/types/pow_dimsym_type.cpp
+    src/dynd/types/scalar_kind_type.cpp
+    src/dynd/types/state_type.cpp
     src/dynd/types/string_type.cpp
     src/dynd/types/struct_type.cpp
-    src/dynd/types/substitute_shape.cpp
-    src/dynd/types/substitute_typevars.cpp
     src/dynd/types/tuple_type.cpp
     src/dynd/types/type_id.cpp
     src/dynd/types/type_type.cpp
+    src/dynd/types/typevar_type.cpp
     src/dynd/types/typevar_constructed_type.cpp
     src/dynd/types/typevar_dim_type.cpp
-    src/dynd/types/pow_dimsym_type.cpp
-    src/dynd/types/scalar_kind_type.cpp
-    src/dynd/types/typevar_type.cpp
+    src/dynd/types/uint_kind_type.cpp
     src/dynd/types/var_dim_type.cpp
-    include/dynd/types/adapt_type.hpp
     include/dynd/types/any_kind_type.hpp
     include/dynd/types/array_type.hpp
-    include/dynd/types/callable_type.hpp
     include/dynd/types/base_bytes_type.hpp
     include/dynd/types/base_type.hpp
-    include/dynd/types/base_fixed_dim_type.hpp
-    include/dynd/types/base_memory_type.hpp
-    include/dynd/types/base_expr_type.hpp
-    include/dynd/types/base_string_type.hpp
     include/dynd/types/base_dim_type.hpp
+    include/dynd/types/base_string_type.hpp
     include/dynd/types/bytes_type.hpp
-    include/dynd/types/categorical_type.hpp
-    include/dynd/types/categorical_kind_type.hpp
     include/dynd/types/char_type.hpp
-    include/dynd/types/cuda_host_type.hpp
-    include/dynd/types/cuda_device_type.hpp
     include/dynd/types/datashape_formatter.hpp
     include/dynd/types/datashape_parser.hpp
-    include/dynd/types/dim_fragment_type.hpp
-    include/dynd/types/ellipsis_dim_type.hpp
-    include/dynd/types/fixed_dim_type.hpp
-    include/dynd/types/fixed_bytes_kind_type.hpp
     include/dynd/types/fixed_bytes_type.hpp
-    include/dynd/types/fixed_string_kind_type.hpp
-    include/dynd/types/fixed_string_type.hpp
-    include/dynd/types/int_kind_sym_type.hpp
-    include/dynd/types/option_type.hpp
-    include/dynd/types/pointer_type.hpp
-    include/dynd/types/pow_dimsym_type.hpp
-    include/dynd/types/scalar_kind_type.hpp
+    include/dynd/types/fixed_dim_type.hpp
+    include/dynd/types/fixed_dim_kind_type.hpp
+    include/dynd/types/sso_bytestring.hpp
+    include/dynd/types/state_type.hpp
     include/dynd/types/string_type.hpp
-    include/dynd/types/struct_type.hpp
-    include/dynd/types/substitute_shape.hpp
-    include/dynd/types/substitute_typevars.hpp
-    include/dynd/types/tuple_type.hpp
     include/dynd/types/type_id.hpp
     include/dynd/types/type_type.hpp
-    include/dynd/types/typevar_constructed_type.hpp
-    include/dynd/types/typevar_dim_type.hpp
-    include/dynd/types/typevar_type.hpp
-    include/dynd/types/var_dim_type.hpp
+    # Memory blocks
+    src/dynd/memblock/base_memory_block.cpp
+    include/dynd/memblock/buffer_memory_block.hpp
+    include/dynd/memblock/base_memory_block.hpp
+    include/dynd/memblock/external_memory_block.hpp
+    include/dynd/memblock/fixed_size_pod_memory_block.hpp
+    include/dynd/memblock/memmap_memory_block.hpp
+    include/dynd/memblock/objectarray_memory_block.hpp
+    include/dynd/memblock/pod_memory_block.hpp
+    include/dynd/memblock/zeroinit_memory_block.hpp
+    # Main
+    src/dynd/buffer.cpp
+    src/dynd/config.cpp
+    src/dynd/exceptions.cpp
+    src/dynd/float16.cpp
+    src/dynd/float128.cpp
+    src/dynd/git_version.cpp.in # Included here for ease of editing in IDEs
+    ${CMAKE_CURRENT_BINARY_DIR}/src/dynd/git_version.cpp
+    src/dynd/int128.cpp
+    src/dynd/parse_util.cpp
+    src/dynd/shape_tools.cpp
+    src/dynd/string_encodings.cpp
+    src/dynd/type.cpp
+    src/dynd/type_promotion.cpp
+    src/dynd/type_registry.cpp
+    src/dynd/uint128.cpp
+    include/dynd/bytes.hpp
+    include/dynd/float16.hpp
+    include/dynd/float128.hpp
+    include/dynd/int128.hpp
+    include/dynd/exceptions.hpp
+    include/dynd/parse.hpp
+    include/dynd/shape_tools.hpp
+    include/dynd/string_encodings.hpp
+    include/dynd/type.hpp
+    include/dynd/type_registry.hpp
+    include/dynd/uint128.hpp
+)
+
+set(libdynd_SRC
+    # Types
+    src/dynd/types/adapt_type.cpp
+    src/dynd/types/categorical_type.cpp
+    src/dynd/types/substitute_shape.cpp
+    src/dynd/types/substitute_typevars.cpp
+    include/dynd/types/adapt_type.hpp
+    include/dynd/types/categorical_type.hpp
+    include/dynd/types/substitute_shape.hpp
+    include/dynd/types/substitute_typevars.hpp
     # Callables
     src/dynd/callables/base_callable.cpp
     include/dynd/callables/base_callable.hpp
-    # Eval
-    src/dynd/eval/eval_context.cpp
-    include/dynd/eval/eval_context.hpp
-    # Func
-    src/dynd/func/arithmetic.cpp
-    src/dynd/callable_registry.cpp
-    src/dynd/func/assignment.cpp
-    src/dynd/func/comparison.cpp
-    src/dynd/func/complex.cpp
-    src/dynd/func/compose.cpp
-    src/dynd/func/compound.cpp
-    src/dynd/func/copy.cpp
-    src/dynd/func/constant.cpp
-    src/dynd/func/elwise.cpp
-    src/dynd/func/fft.cpp
-    src/dynd/func/reduction.cpp
-    src/dynd/func/max.cpp
-    src/dynd/func/min.cpp
-    src/dynd/func/mean.cpp
-    src/dynd/func/neighborhood.cpp
-    src/dynd/func/outer.cpp
-    src/dynd/func/permute.cpp
-    src/dynd/func/pointer.cpp
-    src/dynd/func/random.cpp
-    src/dynd/func/rolling.cpp
-    src/dynd/func/sum.cpp
-    src/dynd/func/take.cpp
-    src/dynd/func/take_by_pointer.cpp
-    src/dynd/func/view.cpp
-    include/dynd/func/arithmetic.hpp
-    include/dynd/callable_registry.hpp
-    include/dynd/func/assignment.hpp
-    include/dynd/func/copy.hpp
-    include/dynd/func/comparison.hpp
-    include/dynd/func/complex.hpp
-    include/dynd/func/compose.hpp
-    include/dynd/func/compound.hpp
-    include/dynd/func/constant.hpp
-    include/dynd/func/elwise.hpp
-    include/dynd/func/fft.hpp
-    include/dynd/func/reduction.hpp
-    include/dynd/func/max.hpp
-    include/dynd/func/mean.hpp
-    include/dynd/func/min.hpp
-    include/dynd/func/neighborhood.hpp
-    include/dynd/func/outer.hpp
-    include/dynd/func/permute.hpp
-    include/dynd/func/pointer.hpp
-    include/dynd/func/random.hpp
-    include/dynd/func/rolling.hpp
-    include/dynd/func/sum.hpp
-    include/dynd/func/take.hpp
-    include/dynd/func/take_by_pointer.hpp
-    include/dynd/func/view.hpp
+    include/dynd/callables/base_dispatch_callable.hpp
     # Kernels
     src/dynd/kernels/byteswap_kernels.cpp
-    src/dynd/kernels/compare_kernels.cpp
-    src/dynd/kernels/copy_kernel.cpp
-    src/dynd/kernels/fft_kernel.cpp
+    src/dynd/kernels/old_fft_kernel.cpp
     src/dynd/kernels/kernel_builder.cpp
-    src/dynd/kernels/kernel_prefix.cpp
-    src/dynd/kernels/rolling_kernel.cpp
-    src/dynd/kernels/struct_assignment_kernels.cpp
-    src/dynd/kernels/tuple_assignment_kernels.cpp
     include/dynd/kernels/apply.hpp
     include/dynd/kernels/arithmetic.hpp
     include/dynd/kernels/assign_na_kernel.hpp
     include/dynd/kernels/assignment_kernels.hpp
     include/dynd/kernels/base_kernel.hpp
     include/dynd/kernels/byteswap_kernels.hpp
-    include/dynd/kernels/compare_kernels.hpp
     include/dynd/kernels/compose_kernel.hpp
     include/dynd/kernels/compound_kernel.hpp
-    include/dynd/kernels/copy_kernel.hpp
     include/dynd/kernels/constant_kernel.hpp
     include/dynd/kernels/cuda_launch.hpp
     include/dynd/kernels/dereference_kernel.hpp
-    include/dynd/kernels/elwise.hpp
-    include/dynd/kernels/fft_kernel.hpp
+    include/dynd/kernels/elwise_kernel.hpp
+    include/dynd/kernels/old_fft_kernel.hpp
     include/dynd/kernels/index_kernel.hpp
     include/dynd/kernels/is_na_kernel.hpp
     include/dynd/kernels/kernel_builder.hpp
     include/dynd/kernels/kernel_prefix.hpp
     include/dynd/kernels/max_kernel.hpp
     include/dynd/kernels/min_kernel.hpp
-    include/dynd/kernels/multidispatch_kernel.hpp
-    include/dynd/kernels/outer.hpp
     include/dynd/kernels/reduction_kernel.hpp
-    include/dynd/kernels/rolling_kernel.hpp
     include/dynd/kernels/serialize_kernel.hpp
     include/dynd/kernels/sort_kernel.hpp
     include/dynd/kernels/string_concat_kernel.hpp
     include/dynd/kernels/string_count_kernel.hpp
     include/dynd/kernels/string_find_kernel.hpp
+    include/dynd/kernels/string_rfind_kernel.hpp
     include/dynd/kernels/string_replace_kernel.hpp
-    include/dynd/kernels/struct_assignment_kernels.hpp
+    include/dynd/kernels/string_startswith_kernel.hpp
+    include/dynd/kernels/string_endswith_kernel.hpp
+    include/dynd/kernels/string_contains_kernel.hpp
     include/dynd/kernels/take_kernel.hpp
     include/dynd/kernels/tuple_assignment_kernels.hpp
     include/dynd/kernels/uniform_kernel.hpp
     include/dynd/kernels/view_kernel.hpp
-    # MemBlock
-    src/dynd/memblock/memory_block.cpp
-    src/dynd/memblock/external_memory_block.cpp
-    src/dynd/memblock/fixed_size_pod_memory_block.cpp
-    src/dynd/memblock/memmap_memory_block.cpp
-    src/dynd/memblock/pod_memory_block.cpp
-    src/dynd/memblock/array_memory_block.cpp
-    src/dynd/memblock/objectarray_memory_block.cpp
-    src/dynd/memblock/zeroinit_memory_block.cpp
-    include/dynd/memblock/memory_block.hpp
-    include/dynd/memblock/external_memory_block.hpp
-    include/dynd/memblock/fixed_size_pod_memory_block.hpp
-    include/dynd/memblock/memmap_memory_block.hpp
-    include/dynd/memblock/pod_memory_block.hpp
-    include/dynd/memblock/array_memory_block.hpp
-    include/dynd/memblock/objectarray_memory_block.hpp
-    include/dynd/memblock/zeroinit_memory_block.hpp
     # Main
+    src/dynd/access.cpp
+    src/dynd/add.cpp
     src/dynd/array.cpp
     src/dynd/array_range.cpp
     src/dynd/asarray.cpp
+    src/dynd/assignment.cpp
+    src/dynd/bitwise_and.cpp
+    src/dynd/bitwise_not.cpp
+    src/dynd/bitwise_or.cpp
+    src/dynd/bitwise_xor.cpp
     src/dynd/callable.cpp
-    # src/dynd/config.cpp
+    src/dynd/cbrt.cpp
+    src/dynd/comparison.cpp
+    src/dynd/compound_add.cpp
+    src/dynd/compound_div.cpp
     src/dynd/convert.cpp
-    src/dynd/float16.cpp
-    src/dynd/float128.cpp
-    src/dynd/int128.cpp
-    src/dynd/io.cpp
-    src/dynd/math.cpp
-    src/dynd/option.cpp
-    src/dynd/search.cpp
-    src/dynd/sort.cpp
-    src/dynd/struct.cpp
-    src/dynd/type.cpp
-    src/dynd/type_registry.cpp
-    src/dynd/type_promotion.cpp
-    src/dynd/exceptions.cpp
-    src/dynd/git_version.cpp.in # Included here for ease of editing in IDEs
-    ${CMAKE_CURRENT_BINARY_DIR}/src/dynd/git_version.cpp
+    src/dynd/divide.cpp
+    src/dynd/old_fft.cpp
+    src/dynd/functional.cpp
     src/dynd/index.cpp
+    src/dynd/io.cpp
     src/dynd/json_formatter.cpp
     src/dynd/json_parser.cpp
+    src/dynd/left_shift.cpp
     src/dynd/logic.cpp
+    src/dynd/logical_and.cpp
+    src/dynd/logical_not.cpp
+    src/dynd/logical_or.cpp
+    src/dynd/logical_xor.cpp
+    src/dynd/math.cpp
+    src/dynd/minus.cpp
+    src/dynd/mod.cpp
+    src/dynd/multiply.cpp
+    src/dynd/option.cpp
     src/dynd/parse.cpp
-    src/dynd/parse_util.cpp
-    src/dynd/shape_tools.cpp
+    src/dynd/plus.cpp
+    src/dynd/pointer.cpp
+    src/dynd/pow.cpp
+    src/dynd/random.cpp
+    src/dynd/range.cpp
+    src/dynd/right_shift.cpp
+    src/dynd/search.cpp
+    src/dynd/sort.cpp
+    src/dynd/sqrt.cpp
+    src/dynd/statistics.cpp
     src/dynd/string.cpp
-    src/dynd/string_encodings.cpp
-    src/dynd/uint128.cpp
+    src/dynd/subtract.cpp
+    src/dynd/sum.cpp
     src/dynd/view.cpp
+    include/dynd/access.hpp
+    include/dynd/arithmetic.hpp
     include/dynd/array.hpp
     include/dynd/array_range.hpp
     include/dynd/array_iter.hpp
     include/dynd/arrmeta_holder.hpp
     include/dynd/asarray.hpp
-    include/dynd/bool1.hpp
-    include/dynd/bytes.hpp
+    include/dynd/assignment.hpp
     include/dynd/callable.hpp
     include/dynd/cmake_config.hpp.in # Included here for ease of editing in IDEs
     ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cmake_config.hpp
+    include/dynd/comparison.hpp
     include/dynd/complex.hpp
     include/dynd/config.hpp
     include/dynd/cling_all.hpp
     include/dynd/convert.hpp
     include/dynd/diagnostics.hpp
     include/dynd/ensure_immutable_contig.hpp
-    include/dynd/float16.hpp
-    include/dynd/float128.hpp
-    include/dynd/int128.hpp
+    include/dynd/old_fft.hpp
+    include/dynd/func/elwise.hpp
+    include/dynd/func/reduction.hpp
+    include/dynd/functional.hpp
     include/dynd/io.hpp
     include/dynd/iterator.hpp
     include/dynd/logic.hpp
     include/dynd/math.hpp
+    include/dynd/random.hpp
+    include/dynd/range.hpp
     include/dynd/sort.hpp
+    include/dynd/statistics.hpp
     include/dynd/string.hpp
     include/dynd/string_search.hpp
-    include/dynd/struct.hpp
-    include/dynd/type.hpp
-    include/dynd/type_registry.hpp
     include/dynd/type_sequence.hpp
     include/dynd/type_promotion.hpp
     include/dynd/exceptions.hpp
@@ -404,12 +412,10 @@ set(libdynd_SRC
     include/dynd/index.hpp
     include/dynd/irange.hpp
     include/dynd/option.hpp
-    include/dynd/parse.hpp
     include/dynd/platform_definitions.hpp
+    include/dynd/pointer.hpp
     include/dynd/shortvector.hpp
-    include/dynd/shape_tools.hpp
     include/dynd/string_encodings.hpp
-    include/dynd/uint128.hpp
     include/dynd/view.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/visibility.hpp
     include/dynd/with.hpp
@@ -458,20 +464,41 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (DYND_SHARED_LIB)
     # xcode doesn't like when all cpp files are contained in an OBJECT library
-    add_library(libdynd SHARED ${config_cpp} ${libdynd_SRC})
-    set_target_properties(libdynd
+    add_library(libdyndt SHARED ${libdyndt_SRC})
+    set_target_properties(libdyndt
         PROPERTIES
-        OUTPUT_NAME "dynd"
-        PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}"
+        OUTPUT_NAME "dyndt"
+        PREFIX "lib"
+        IMPORT_PREFIX "lib"
         )
-else()
-    add_library(libdynd STATIC ${config_cpp} ${libdynd_SRC})
+    add_library(libdynd SHARED ${libdynd_SRC})
     set_target_properties(libdynd
         PROPERTIES
         OUTPUT_NAME "dynd"
-        PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}"
+        PREFIX "lib"
+        IMPORT_PREFIX "lib"
+        )
+    add_dependencies(libdynd libdyndt)
+else()
+    add_library(libdyndt STATIC ${libdyndt_SRC})
+    set_target_properties(libdyndt
+        PROPERTIES
+        OUTPUT_NAME "dyndt"
+        PREFIX "lib"
+        )
+
+    add_library(libdynd STATIC ${libdynd_SRC})
+    set_target_properties(libdynd
+        PROPERTIES
+        OUTPUT_NAME "dynd"
+        PREFIX "lib"
         )
 endif()
+
+set_property(
+    TARGET libdyndt
+    PROPERTY COMPILE_DEFINITIONS DYNDT_EXPORT
+)
 
 set_property(
     TARGET libdynd
@@ -482,13 +509,7 @@ set_property(
 configure_file("include/dynd/cmake_config.hpp.in"
                "${CMAKE_CURRENT_BINARY_DIR}/include/dynd/cmake_config.hpp")
 
-if(WIN32)
-    set_target_properties(libdynd
-        PROPERTIES
-        PREFIX "lib"
-        IMPORT_PREFIX "lib"
-        )
-elseif(APPLE)
+if(APPLE)
     # The rpath stuff is confusing, and this is our attempt to get it right.
     # It's been complicated by a bug in certain versions of CMake that plays
     # particularly badly with CUDA. If anyone knows the "right" way to do this,
@@ -496,6 +517,11 @@ elseif(APPLE)
     #
     # See http://stackoverflow.com/questions/22885207/opencv-and-pcl-builds-on-osx-result-in-malformed-object-load-command-cmdsize
     #
+    set_target_properties(libdyndt
+        PROPERTIES
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_NAME_DIR "@rpath"
+    )
     set_target_properties(libdynd
         PROPERTIES
         BUILD_WITH_INSTALL_RPATH ON
@@ -506,8 +532,11 @@ endif()
 if (DYND_SHARED_LIB OR (NOT DYND_INSTALL_LIB))
     # If we're not making an installable static library,
     # link the sublibraries normally
-    target_link_libraries(libdynd ${DYND_LINK_LIBS})
+    set(DYND_LINK_LIBS ${DYND_LINK_LIBS} libdyndt)
 endif()
+
+target_link_libraries(libdyndt ${DYNDT_LINK_LIBS})
+target_link_libraries(libdynd ${DYND_LINK_LIBS})
 
 if(DYND_BUILD_TESTS)
     add_subdirectory(tests)
@@ -517,20 +546,27 @@ if(DYND_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
 
+if(DYND_BUILD_PLUGINS)
+    add_subdirectory(plugins/mkl)
+endif()
+
 add_subdirectory(examples)
 
 # Create a libdynd-config script
 get_property(dynd_library_prefix TARGET libdynd PROPERTY PREFIX)
 get_property(dynd_output_name TARGET libdynd PROPERTY OUTPUT_NAME)
-set(DYND_LINK_FLAG "-l${dynd_output_name}")
+get_property(dyndt_output_name TARGET libdyndt PROPERTY OUTPUT_NAME)
 if (DYND_SHARED_LIB)
     if ("${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
         set(DYND_LIB_FILE "${dynd_library_prefix}${dynd_output_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        set(DYNDT_LIB_FILE "${dynd_library_prefix}${dyndt_output_name}${CMAKE_SHARED_LIBRARY_SUFFIX}")
     else()
         set(DYND_LIB_FILE "${dynd_library_prefix}${dynd_output_name}${CMAKE_IMPORT_LIBRARY_SUFFIX}")
+        set(DYNDT_LIB_FILE "${dynd_library_prefix}${dyndt_output_name}${CMAKE_IMPORT_LIBRARY_SUFFIX}")
     endif()
 else()
     set(DYND_LIB_FILE "${dynd_library_prefix}${dynd_output_name}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    set(DYNDT_LIB_FILE "${dynd_library_prefix}${dyndt_output_name}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif()
 if(WIN32)
     if (DYND_SHARED_LIB)
@@ -569,28 +605,29 @@ if(DYND_BUILD_DOCS)
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION docs)
 endif()
 
-# If requested, install the .lib/.so/.dll file and headers to the install prefix
-if (DYND_INSTALL_LIB)
-    # Install the libdynd binary
-    install(TARGETS libdynd
-        RUNTIME DESTINATION lib${LIB_SUFFIX}
-        LIBRARY DESTINATION lib${LIB_SUFFIX}
-        ARCHIVE DESTINATION lib${LIB_SUFFIX}${DYND_STATIC_LIB_DIR})
-    # Install the libdynd headers
-    install(DIRECTORY "include/dynd"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/dynd"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
-    # Install the libdynd-config script
-    if(WIN32)
-        install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libdynd-config.bat"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-        if(DYND_SHARED_LIB)
-            install(FILES "$<TARGET_FILE_DIR:libdynd>/libdynd.dll"
-                DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-        endif()
-    else()
-        install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libdynd-config"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-    endif()
+# Install the libdyndt binary
+install(TARGETS libdyndt DESTINATION lib${LIB_SUFFIX} COMPONENT ndt)
+
+# Install the libdynd binary
+install(TARGETS libdynd DESTINATION lib${LIB_SUFFIX} COMPONENT nd)
+
+# Install the libdynd headers
+install(DIRECTORY "include/dynd" DESTINATION "include" COMPONENT headers)
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/dynd" DESTINATION "include" COMPONENT include)
+
+# Install the libdynd-config script
+if(WIN32)
+  install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libdynd-config.bat" DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+  if(DYND_SHARED_LIB)
+    install(FILES "$<TARGET_FILE_DIR:libdynd>/libdynd.dll" DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+    install(FILES "$<TARGET_FILE_DIR:libdyndt>/libdyndt.dll" DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+  endif()
+  else()
+    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/libdynd-config" DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 endif()
+
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+set(CPACK_COMPONENTS_ALL nd ndt include)
+set(CPACK_PACKAGE_VERSION "0.7.2")
+include(CPack)

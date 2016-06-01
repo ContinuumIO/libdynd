@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
@@ -8,22 +8,25 @@
 #include <iostream>
 #include <string>
 
-#include <dynd/memblock/memory_block.hpp>
+#include <dynd/memblock/base_memory_block.hpp>
 
 namespace dynd {
+namespace nd {
 
-struct fixed_size_pod_memory_block : memory_block_data {
-  fixed_size_pod_memory_block(long use_count) : memory_block_data(use_count, fixed_size_pod_memory_block_type) {}
-};
+  class fixed_size_pod_memory_block : public base_memory_block {
+  public:
+    void debug_print(std::ostream &o, const std::string &indent) {
+      o << indent << "------ memory_block at " << static_cast<const void *>(this) << "\n";
+      o << indent << " reference count: " << static_cast<long>(m_use_count) << "\n";
+      o << indent << "------" << std::endl;
+    }
 
-/**
- * Creates a memory block of a pre-determined fixed size. A pointer to the
- * memory allocated for data is placed in the output parameter.
- */
-DYND_API intrusive_ptr<memory_block_data> make_fixed_size_pod_memory_block(intptr_t size_bytes, intptr_t alignment,
-                                                                           char **out_datapointer);
+    static void *operator new(size_t size, size_t extra_size) { return ::operator new(size + extra_size); }
 
-DYND_API void fixed_size_pod_memory_block_debug_print(const memory_block_data *memblock, std::ostream &o,
-                                                      const std::string &indent);
+    static void operator delete(void *ptr) { return ::operator delete(ptr); }
 
+    static void operator delete(void *ptr, size_t DYND_UNUSED(extra_size)) { return ::operator delete(ptr); }
+  };
+
+} // namespace dynd::nd
 } // namespace dynd

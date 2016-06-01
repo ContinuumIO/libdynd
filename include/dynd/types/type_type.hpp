@@ -1,11 +1,12 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
 #include <dynd/type.hpp>
+#include <dynd/types/scalar_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
@@ -13,19 +14,13 @@ namespace ndt {
   /**
    * A type whose instance represents a type itself.
    */
-  class DYND_API type_type : public base_type {
-    type m_pattern_tp;
-
+  class DYNDT_API type_type : public base_type {
   public:
     typedef type data_type;
 
-    type_type();
-
-    type_type(const type &pattern_tp);
-
-    virtual ~type_type();
-
-    const type &get_pattern_type() const { return m_pattern_tp; }
+    type_type(type_id_t id)
+        : base_type(id, make_type<scalar_kind_type>(), sizeof(ndt::type), sizeof(ndt::type),
+                    type_flag_zeroinit | type_flag_destructor, 0, 0, 0) {}
 
     void print_data(std::ostream &o, const char *arrmeta, const char *data) const;
 
@@ -35,17 +30,30 @@ namespace ndt {
 
     void arrmeta_default_construct(char *arrmeta, bool blockref_alloc) const;
     void arrmeta_copy_construct(char *dst_arrmeta, const char *src_arrmeta,
-                                const intrusive_ptr<memory_block_data> &embedded_reference) const;
+                                const nd::memory_block &embedded_reference) const;
     void arrmeta_reset_buffers(char *arrmeta) const;
     void arrmeta_finalize_buffers(char *arrmeta) const;
     void arrmeta_destruct(char *arrmeta) const;
     void arrmeta_debug_print(const char *DYND_UNUSED(arrmeta), std::ostream &DYND_UNUSED(o),
-                             const std::string &DYND_UNUSED(indent)) const
-    {
-    }
+                             const std::string &DYND_UNUSED(indent)) const {}
 
     void data_destruct(const char *arrmeta, char *data) const;
     void data_destruct_strided(const char *arrmeta, char *data, intptr_t stride, size_t count) const;
+  };
+
+  template <>
+  struct id_of<type_type> : std::integral_constant<type_id_t, type_id> {};
+
+  template <>
+  struct id_of<type> : std::integral_constant<type_id_t, type_id> {};
+
+  template <>
+  struct traits<type> {
+    static const size_t ndim = 0;
+
+    static const bool is_same_layout = true;
+
+    static type equivalent() { return make_type<type_type>(); }
   };
 
 } // namespace dynd::ndt

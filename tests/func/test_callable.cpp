@@ -1,22 +1,24 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#include <iostream>
-#include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <stdexcept>
 
-#include "inc_gtest.hpp"
 #include "../dynd_assertions.hpp"
+#include "inc_gtest.hpp"
 
-#include <dynd/types/fixed_string_type.hpp>
-#include <dynd/callable.hpp>
-#include <dynd/kernels/assignment_kernels.hpp>
-#include <dynd/func/elwise.hpp>
-#include <dynd/func/take.hpp>
 #include <dynd/array.hpp>
+#include <dynd/callable.hpp>
+#include <dynd/functional.hpp>
+#include <dynd/index.hpp>
+#include <dynd/kernels/assignment_kernels.hpp>
+#include <dynd/types/fixed_string_type.hpp>
+
+#include <dynd/arithmetic.hpp>
 
 using namespace std;
 using namespace dynd;
@@ -32,8 +34,7 @@ TEST(Callable, SingleStridedConstructor)
 }
 */
 
-TEST(Callable, Construction)
-{
+TEST(Callable, Construction) {
   nd::callable f0([](int x, double y) { return 2.0 * x + y; });
   EXPECT_ARRAY_EQ(4.5, f0(1, 2.5));
 
@@ -47,8 +48,17 @@ TEST(Callable, Construction)
   EXPECT_ARRAY_EQ(-4, f3({3}, {{"y", 7}}).as<int>());
 }
 
-TEST(Callable, CallOperator)
-{
+TEST(Callable, FromKernel) {
+  struct kernel : nd::base_strided_kernel<kernel, 1> {
+    void single(char *res, char *const *args) { *reinterpret_cast<int *>(res) = *reinterpret_cast<int *>(args[0]) + 7; }
+  };
+
+  nd::callable f = nd::make_callable<kernel>(ndt::make_type<int(int)>());
+  EXPECT_EQ(ndt::make_type<int(int)>(), f->get_type());
+  EXPECT_ARRAY_EQ(9, f(2));
+}
+
+TEST(Callable, CallOperator) {
   nd::callable f([](int x, double y) { return 2.0 * x + y; });
   // Calling with positional arguments
   EXPECT_EQ(4.5, f(1, 2.5).as<double>());
@@ -83,8 +93,7 @@ TEST(Callable, CallOperator)
   EXPECT_THROW(f({}, {{"y", 3.5}}), invalid_argument);
 }
 
-TEST(Callable, DynamicCall)
-{
+TEST(Callable, DynamicCall) {
   nd::array args[3] = {7, 2.5, 5};
   pair<const char *, nd::array> kwds[3] = {{"x", args[0]}, {"y", args[1]}, {"z", args[2]}};
 
@@ -101,8 +110,7 @@ TEST(Callable, DynamicCall)
   EXPECT_EQ(26.5, af.call(0, nullptr, 3, kwds).as<double>());
 }
 
-TEST(Callable, DecomposedDynamicCall)
-{
+TEST(Callable, DecomposedDynamicCall) {
   nd::callable af;
 
   ndt::type ret_tp;
@@ -110,30 +118,30 @@ TEST(Callable, DecomposedDynamicCall)
   ndt::type types[3] = {values[0].get_type(), values[1].get_type(), values[2].get_type()};
   const char *const arrmetas[3] = {values[0].get()->metadata(), values[1].get()->metadata(),
                                    values[2].get()->metadata()};
-  char *const datas[3] = {values[0].get()->data, values[1].get()->data, values[2].get()->data};
+  char *const datas[3] = {const_cast<char *>(values[0].cdata()), const_cast<char *>(values[1].cdata()),
+                          const_cast<char *>(values[2].cdata())};
   //  const char *names[3] = {"x", "y", "z"};
 
   af = nd::functional::apply([](int x, double y, int z) { return 2 * x - y + 3 * z; });
-  ret_tp = af.get_ret_type();
+  ret_tp = af->get_ret_type();
   EXPECT_EQ(26.5, af->call(ret_tp, 3, types, arrmetas, datas, 0, NULL, map<std::string, ndt::type>()).as<double>());
 
   af = nd::functional::apply([](int x, double y, int z) { return 2 * x - y + 3 * z; }, "z");
-  ret_tp = af.get_ret_type();
+  ret_tp = af->get_ret_type();
   EXPECT_EQ(26.5,
             af->call(ret_tp, 2, types, arrmetas, datas, 1, values + 2, map<std::string, ndt::type>()).as<double>());
 
   af = nd::functional::apply([](int x, double y, int z) { return 2 * x - y + 3 * z; }, "y", "z");
-  ret_tp = af.get_ret_type();
+  ret_tp = af->get_ret_type();
   EXPECT_EQ(26.5,
             af->call(ret_tp, 1, types, arrmetas, datas, 2, values + 1, map<std::string, ndt::type>()).as<double>());
 
   //  af = nd::functional::apply([](int x, double y, int z) { return 2 * x - y + 3 * z; }, "x", "y", "z");
-  //  ret_tp = af.get_ret_type();
+  //  ret_tp = af->get_ret_type();
   //  EXPECT_EQ(26.5, af->call(ret_tp, 0, NULL, NULL, NULL, 3, values, map<string, ndt::type>()).as<double>());
 }
 
-TEST(Callable, KeywordParsing)
-{
+TEST(Callable, KeywordParsing) {
   nd::callable af0 = nd::functional::apply([](int x, int y) { return x + y; }, "y");
   EXPECT_EQ(5, af0({1}, {{"y", 4}}).as<int>());
   EXPECT_THROW(af0({1}, {{"z", 4}}).as<int>(), std::invalid_argument);
@@ -142,10 +150,9 @@ TEST(Callable, KeywordParsing)
   EXPECT_THROW(af0({1}, {{"y", 4}, {"y", 2.5}}).as<int>(), std::invalid_argument);
 }
 
-TEST(Callable, Assignment_CallInterface)
-{
+TEST(Callable, Assignment_CallInterface) {
   // Test with the unary operation prototype
-  nd::callable af = nd::assign::get().get_overload(ndt::make_type<int>(), {ndt::make_type<ndt::string_type>()});
+  nd::callable af = nd::assign.specialize(ndt::make_type<int>(), {ndt::make_type<ndt::string_type>()});
 
   // Call it through the call() interface
   nd::array b = af("12345678");
@@ -158,9 +165,9 @@ TEST(Callable, Assignment_CallInterface)
 }
 
 /*
+#include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IRReader/IRReader.h>
-#include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/SourceMgr.h>
 */
 

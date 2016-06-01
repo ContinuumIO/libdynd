@@ -1,18 +1,20 @@
 //
-// Copyright (C) 2011-15 DyND Developers
+// Copyright (C) 2011-16 DyND Developers
 // BSD 2-Clause License, see LICENSE.txt
 //
 
 #pragma once
 
-#include <dynd/types/base_type.hpp>
+#include <dynd/types/scalar_kind_type.hpp>
 
 namespace dynd {
 namespace ndt {
 
-  class DYND_API array_type : public base_type {
+  class DYNDT_API array_type : public base_type {
   public:
-    array_type();
+    array_type(type_id_t id)
+        : base_type(id, make_type<scalar_kind_type>(), sizeof(void *), alignof(void *),
+                    type_flag_construct | type_flag_destructor, 0, 0, 0) {}
 
     bool operator==(const base_type &rhs) const;
 
@@ -23,9 +25,10 @@ namespace ndt {
     void print_data(std::ostream &o, const char *arrmeta, const char *data) const;
 
     void print_type(std::ostream &o) const;
-
-    static type make() { return type(new array_type(), false); }
   };
+
+  template <>
+  struct id_of<array_type> : std::integral_constant<type_id_t, array_id> {};
 
 } // namespace dynd::ndt
 } // namespace dynd

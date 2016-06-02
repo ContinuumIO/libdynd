@@ -51,6 +51,10 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     option(DYND_INSTALL_LIB
            "Do installation of the built libdynd library to the CMAKE_INSTALL_PREFIX"
            ON)
+# -DDYND_BUILD_LIBDYND=ON/OFF, whether to build libdynd.
+    option(DYND_BUILD_LIBDYND
+           "Build libdynd."
+           ON)
 # -DDYND_BUILD_TESTS=ON/OFF, whether to build the googletest unit tests.
     option(DYND_BUILD_TESTS
            "Build the googletest unit tests for libdynd."
@@ -73,6 +77,16 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
            OFF)
 #
 ################################################
+endif()
+
+if(NOT DYND_BUILD_LIBDYND)
+  if(DYND_INSTALL_LIB OR DYND_BUILD_TESTS OR DYND_BUILD_BENCHMARKS OR
+     DYND_BUILD_PLUGINS OR DYND_BUILD_DOCS OR DYND_COVERAGE)
+    message(FATAL_ERROR
+              "If DYND_BUILD_LIBDYND=OFF, then all of DYND_INSTALL_LIB, "
+              "DYND_BUILD_TESTS, DYND_BUILD_BENCHMARKS, DYND_BUILD_PLUGINS, "
+              "DYND_BUILD_DOCS, DYND_COVERAGE must be OFF.")
+  endif()
 endif()
 
 if(DYND_COVERAGE)
@@ -268,7 +282,8 @@ set(libdyndt_SRC
     include/dynd/uint128.hpp
 )
 
-set(libdynd_SRC
+if (DYND_BUILD_LIBDYND)
+  set(libdynd_SRC
     # Types
     src/dynd/types/adapt_type.cpp
     src/dynd/types/categorical_type.cpp
@@ -420,6 +435,7 @@ set(libdynd_SRC
     ${CMAKE_CURRENT_BINARY_DIR}/include/dynd/visibility.hpp
     include/dynd/with.hpp
     )
+endif()
 
 include_directories(
     include
@@ -471,14 +487,16 @@ if (DYND_SHARED_LIB)
         PREFIX "lib"
         IMPORT_PREFIX "lib"
         )
-    add_library(libdynd SHARED ${libdynd_SRC})
-    set_target_properties(libdynd
-        PROPERTIES
-        OUTPUT_NAME "dynd"
-        PREFIX "lib"
-        IMPORT_PREFIX "lib"
-        )
-    add_dependencies(libdynd libdyndt)
+    if(DYND_BUILD_LIBDYND)
+        add_library(libdynd SHARED ${libdynd_SRC})
+        set_target_properties(libdynd
+            PROPERTIES
+            OUTPUT_NAME "dynd"
+            PREFIX "lib"
+            IMPORT_PREFIX "lib"
+            )
+        add_dependencies(libdynd libdyndt)
+    endif()
 else()
     add_library(libdyndt STATIC ${libdyndt_SRC})
     set_target_properties(libdyndt
@@ -487,12 +505,14 @@ else()
         PREFIX "lib"
         )
 
-    add_library(libdynd STATIC ${libdynd_SRC})
-    set_target_properties(libdynd
-        PROPERTIES
-        OUTPUT_NAME "dynd"
-        PREFIX "lib"
-        )
+    if(DYND_BUILD_LIBDYND)
+        add_library(libdynd STATIC ${libdynd_SRC})
+        set_target_properties(libdynd
+            PROPERTIES
+            OUTPUT_NAME "dynd"
+            PREFIX "lib"
+            )
+    endif()
 endif()
 
 set_property(
@@ -500,10 +520,12 @@ set_property(
     PROPERTY COMPILE_DEFINITIONS DYNDT_EXPORT
 )
 
-set_property(
-    TARGET libdynd
-    PROPERTY COMPILE_DEFINITIONS DYND_EXPORT
-)
+if(DYND_BUILD_LIBDYND)
+    set_property(
+        TARGET libdynd
+        PROPERTY COMPILE_DEFINITIONS DYND_EXPORT
+    )
+endif()
 
 # Add preprocessor definitions from CMake
 configure_file("include/dynd/cmake_config.hpp.in"
@@ -522,11 +544,14 @@ if(APPLE)
         BUILD_WITH_INSTALL_RPATH ON
         INSTALL_NAME_DIR "@rpath"
     )
-    set_target_properties(libdynd
-        PROPERTIES
-        BUILD_WITH_INSTALL_RPATH ON
-        INSTALL_NAME_DIR "@rpath"
-    )
+    if(DYND_BUILD_LIBDYND)
+        add_library(libdynd STATIC ${libdynd_SRC})
+        set_target_properties(libdynd
+            PROPERTIES
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_NAME_DIR "@rpath"
+        )
+    endif()
 endif()
 
 if (DYND_SHARED_LIB OR (NOT DYND_INSTALL_LIB))
@@ -536,7 +561,9 @@ if (DYND_SHARED_LIB OR (NOT DYND_INSTALL_LIB))
 endif()
 
 target_link_libraries(libdyndt ${DYNDT_LINK_LIBS})
-target_link_libraries(libdynd ${DYND_LINK_LIBS})
+if(DYND_BUILD_LIBDYND)
+    target_link_libraries(libdynd ${DYND_LINK_LIBS})
+endif()
 
 if(DYND_BUILD_TESTS)
     add_subdirectory(tests)
@@ -550,11 +577,15 @@ if(DYND_BUILD_PLUGINS)
     add_subdirectory(plugins/mkl)
 endif()
 
-add_subdirectory(examples)
+if(DYND_BUILD_LIBDYND)
+    add_subdirectory(examples)
+endif()
 
 # Create a libdynd-config script
-get_property(dynd_library_prefix TARGET libdynd PROPERTY PREFIX)
-get_property(dynd_output_name TARGET libdynd PROPERTY OUTPUT_NAME)
+if(DYND_BUILD_LIBDYND)
+    get_property(dynd_library_prefix TARGET libdynd PROPERTY PREFIX)
+    get_property(dynd_output_name TARGET libdynd PROPERTY OUTPUT_NAME)
+endif()
 get_property(dyndt_output_name TARGET libdyndt PROPERTY OUTPUT_NAME)
 if (DYND_SHARED_LIB)
     if ("${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
@@ -609,7 +640,9 @@ endif()
 install(TARGETS libdyndt DESTINATION lib${LIB_SUFFIX} COMPONENT ndt)
 
 # Install the libdynd binary
-install(TARGETS libdynd DESTINATION lib${LIB_SUFFIX} COMPONENT nd)
+if (DYND_BUILD_LIBDYND)
+    install(TARGETS libdynd DESTINATION lib${LIB_SUFFIX} COMPONENT nd)
+endif()
 
 # Install the libdynd headers
 install(DIRECTORY "include/dynd" DESTINATION "include" COMPONENT headers)

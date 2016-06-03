@@ -103,6 +103,7 @@ enum type_id_t {
   // Symbolic types
   typevar_id,
   typevar_dim_id,
+  escape_option_id,
   typevar_constructed_id,
   pow_dimsym_id,
   ellipsis_dim_id,

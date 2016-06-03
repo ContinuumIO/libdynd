@@ -20,6 +20,7 @@
 #include <dynd/types/cuda_host_type.hpp>
 #include <dynd/types/datashape_parser.hpp>
 #include <dynd/types/ellipsis_dim_type.hpp>
+#include <dynd/types/escape_option_type.hpp>
 #include <dynd/types/fixed_bytes_kind_type.hpp>
 #include <dynd/types/fixed_bytes_type.hpp>
 #include <dynd/types/fixed_dim_type.hpp>
@@ -1263,6 +1264,10 @@ static ndt::type parse_datashape(const char *&rbegin, const char *end, map<std::
     } else {
       return ndt::type();
     }
+  } else if (parse_token_no_ws(begin, end, "\\?")) {
+    ndt::type child_tp = parse_datashape_nooption(begin, end, symtable);
+    rbegin = begin;
+    return ndt::make_type<ndt::escape_option_type>(child_tp);
   } else {
     return parse_datashape_nooption(rbegin, end, symtable);
   }

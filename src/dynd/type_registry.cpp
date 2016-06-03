@@ -76,6 +76,7 @@ DYNDT_API vector<id_info> &detail::infos() {
                                {"State", state_id, {any_kind_id}},
                                {"", typevar_id, base_ids<typevar_id>()},
                                {"", typevar_dim_id, {any_kind_id}},
+                               {"EscapeOption", escape_option_id, {any_kind_id}},
                                {"", typevar_constructed_id, {any_kind_id}},
                                {"", pow_dimsym_id, {any_kind_id}},
                                {"", ellipsis_dim_id, {any_kind_id}},

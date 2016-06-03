@@ -187,6 +187,7 @@ set(libdyndt_SRC
     src/dynd/types/datashape_formatter.cpp
     src/dynd/types/datashape_parser.cpp
     src/dynd/types/dim_fragment_type.cpp
+    src/dynd/types/escape_option_type.cpp
     src/dynd/types/ellipsis_dim_type.cpp
     src/dynd/types/fixed_bytes_kind_type.cpp
     src/dynd/types/fixed_bytes_type.cpp

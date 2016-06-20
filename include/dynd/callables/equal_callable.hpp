@@ -60,8 +60,9 @@ namespace nd {
           e = kb.get_at<equal_kernel<ndt::tuple_type, ndt::tuple_type>>(self_offset);
           field_kernel_offsets = reinterpret_cast<size_t *>(e + 1);
           field_kernel_offsets[i] = kb.size() - self_offset;
-          const char *field_arrmeta = src_arrmeta[0] + arrmeta_offsets[i];
-          const char *child_src_arrmeta[2] = {field_arrmeta, field_arrmeta};
+          const char *field0_arrmeta = src_arrmeta[0] + arrmeta_offsets[i];
+          const char *field1_arrmeta = src_arrmeta[1] + arrmeta_offsets[i];
+          const char *child_src_arrmeta[2] = {field0_arrmeta, field1_arrmeta};
           kb(kernreq | kernel_request_data_only, nullptr, dst_arrmeta, nsrc, child_src_arrmeta);
         }
       });
@@ -69,7 +70,7 @@ namespace nd {
       for (size_t i = 0; i != field_count; ++i) {
         ndt::type src_field_tp[2] = {src_tp[0].extended<ndt::tuple_type>()->get_field_type(i),
                                      src_tp[1].extended<ndt::tuple_type>()->get_field_type(i)};
-        equal->resolve(this, nullptr, cg, dst_tp, 1, src_field_tp, nkwd, kwds, tp_vars);
+        equal->resolve(this, nullptr, cg, dst_tp, 2, src_field_tp, nkwd, kwds, tp_vars);
       }
 
       return dst_tp;

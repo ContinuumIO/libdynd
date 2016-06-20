@@ -55,6 +55,7 @@ public:
 
   char *data() const { return m_data; }
   size_t size() const { return m_size_stride.dim_size; }
+  intptr_t stride() const { return m_size_stride.stride; }
 
   fixed &assign(char *data) {
     m_data = data;
@@ -222,8 +223,7 @@ namespace ndt {
     static type equivalent() { return make_type<fixed_dim_kind_type>(make_type<ElementType>()); }
 
     static void metadata_copy_construct(char *dst, const char *src) {
-      reinterpret_cast<size_stride_t *>(dst)->dim_size = reinterpret_cast<const size_stride_t *>(src)->dim_size;
-      reinterpret_cast<size_stride_t *>(dst)->stride = reinterpret_cast<const size_stride_t *>(src)->stride;
+      *reinterpret_cast<size_stride_t *>(dst) = *reinterpret_cast<const size_stride_t *>(src);
 
       traits<ElementType>::metadata_copy_construct(dst + sizeof(size_stride_t), src + sizeof(size_stride_t));
     }

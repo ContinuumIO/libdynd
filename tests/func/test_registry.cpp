@@ -11,6 +11,7 @@
 #include "inc_gtest.hpp"
 
 #include <dynd/callable.hpp>
+#include <dynd/registry.hpp>
 
 using namespace std;
 using namespace dynd;

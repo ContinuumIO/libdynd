@@ -13,6 +13,7 @@
 
 #include <dynd/array.hpp>
 #include <dynd/math.hpp>
+#include <dynd/registry.hpp>
 
 using namespace std;
 using namespace dynd;

@@ -3,7 +3,7 @@
 # BSD 2-Clause License, see LICENSE.txt
 #
 
-cmake_minimum_required(VERSION 2.8.11) 
+cmake_minimum_required(VERSION 2.8.11)
 project(libdynd)
 
 include(CheckTypeSize)
@@ -179,7 +179,6 @@ set(libdyndt_SRC
     src/dynd/types/base_string_type.cpp
     src/dynd/types/bytes_type.cpp
     src/dynd/types/categorical_kind_type.cpp
-    src/dynd/types/callable_type.cpp
     src/dynd/types/char_type.cpp
     src/dynd/types/complex_kind_type.cpp
     src/dynd/types/cuda_host_type.cpp
@@ -271,6 +270,7 @@ set(libdyndt_SRC
 set(libdynd_SRC
     # Types
     src/dynd/types/adapt_type.cpp
+    src/dynd/types/callable_type.cpp
     src/dynd/types/categorical_type.cpp
     src/dynd/types/substitute_shape.cpp
     src/dynd/types/substitute_typevars.cpp
@@ -362,6 +362,7 @@ set(libdynd_SRC
     src/dynd/pow.cpp
     src/dynd/random.cpp
     src/dynd/range.cpp
+    src/dynd/registry.cpp
     src/dynd/right_shift.cpp
     src/dynd/search.cpp
     src/dynd/sort.cpp
@@ -399,6 +400,7 @@ set(libdynd_SRC
     include/dynd/math.hpp
     include/dynd/random.hpp
     include/dynd/range.hpp
+    include/dynd/registry.hpp
     include/dynd/sort.hpp
     include/dynd/statistics.hpp
     include/dynd/string.hpp

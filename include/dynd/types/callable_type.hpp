@@ -12,7 +12,7 @@
 namespace dynd {
 namespace ndt {
 
-  class DYNDT_API callable_type : public base_type {
+  class DYND_API callable_type : public base_type {
     type m_return_type;
     // Always a tuple type containing the types for positional args
     type m_pos_tuple;

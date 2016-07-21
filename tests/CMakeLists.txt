@@ -140,6 +140,10 @@ source_group("Func Tests" REGULAR_EXPRESSION "\\/func\\/test_[^\\/]*\\.cpp$")
 add_executable(test_libdynd ${tests_SRC})
 set(LINK_LIBS ${LINK_LIBS} libdyndt libdynd)
 
+target_compile_definitions(test_libdynd PRIVATE
+    GTEST_LANG_CXX11=1
+    )
+
 if(DYND_BUILD_PLUGINS)
     set(LINK_LIBS ${LINK_LIBS} dynd_mkl)
 endif()

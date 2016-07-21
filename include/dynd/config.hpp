@@ -32,7 +32,7 @@
 /** The number of elements to process at once when doing chunking/buffering */
 #define DYND_BUFFER_CHUNK_SIZE 128
 
-#ifdef __clang__
+#if defined(__clang__) && !defined(_MSC_VER)
 
 #if __has_feature(cxx_constexpr)
 #define DYND_CONSTEXPR constexpr
@@ -1178,6 +1178,14 @@ decltype(auto) zip(ArgTypes &&... args) {
 template <typename... ValueType>
 decltype(auto) zip(std::initializer_list<ValueType> &&... args) {
   return zip_pair<std::initializer_list<ValueType>...>(args...);
+}
+
+template <typename Arg0Type, typename Arg1Type>
+Arg0Type postfix_add(Arg0Type &lhs, const Arg1Type &rhs) {
+  Arg0Type old = lhs;
+  lhs += rhs;
+
+  return old;
 }
 
 namespace ndt {

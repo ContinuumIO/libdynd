@@ -563,6 +563,25 @@ TEST(Array, CArrayConstructor) {
   EXPECT_ARRAY_EQ((nd::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), values);
 }
 
+TEST(Array, ConstructTuple) {
+#if !defined(_MSC_VER) || defined(__clang__) // TEMPORARY: until MSVC variadic problem is worked out
+  ASSERT_EQ(ndt::type("(int32, float64)").get_arrmeta_size(), (ndt::traits<std::tuple<int, double>>::metadata_size));
+  nd::array a(make_tuple(1, 2.0));
+  EXPECT_EQ(ndt::make_type<ndt::tuple_type>({ndt::make_type<int>(), ndt::make_type<double>()}), a.get_type());
+  const auto &v = a.view<dynd::tuple<int, double>>();
+  EXPECT_EQ(1, get<0>(v));
+  EXPECT_EQ(2.0, get<1>(v));
+
+//  int x[2] = {0, 1};
+//  nd::array a0(std::make_tuple<int[2], int>(x, 2));
+//  std::cout << a0 << std::endl;
+
+//  std::exit(-1);
+#else
+  cerr << "WARNING: Array.ConstructTuple test disabled on MSVC" << endl;
+#endif
+}
+
 TEST(Array, ConstructAssign) {
   using dynd::fixed;
 

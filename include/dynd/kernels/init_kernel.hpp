@@ -114,6 +114,48 @@ namespace nd {
     }
   };
 
+  template <typename ContainerType, typename Enable = void>
+  struct fixed_dim_init_kernel;
+
+  template <typename ContainerType>
+  struct fixed_dim_init_kernel<ContainerType, std::enable_if_t<ndt::traits<ContainerType>::ndim == 1>> {
+    typedef typename ContainerType::value_type value_type;
+
+    init_kernel<value_type> child;
+
+    fixed_dim_init_kernel(const ndt::type &tp, const char *metadata)
+        : child(tp.extended<ndt::base_dim_type>()->get_element_type(), metadata + sizeof(size_stride_t)) {}
+
+    void single(char *data, const ContainerType &values) { child.contiguous(data, values.data(), values.size()); }
+  };
+
+  template <typename ContainerType>
+  struct fixed_dim_init_kernel<ContainerType, std::enable_if_t<ndt::traits<ContainerType>::ndim != 1>> {
+    typedef typename ContainerType::value_type value_type;
+
+    intptr_t stride;
+    init_kernel<value_type> child;
+
+    fixed_dim_init_kernel(const ndt::type &tp, const char *metadata)
+        : child(tp.extended<ndt::base_dim_type>()->get_element_type(),
+                metadata + tp.extended<ndt::base_dim_type>()->get_element_arrmeta_offset()) {
+      switch (tp.get_id()) {
+      case fixed_dim_id:
+        stride = reinterpret_cast<const size_stride_t *>(metadata)->stride;
+        break;
+      default:
+        throw std::runtime_error("unsupported");
+      }
+    }
+
+    void single(char *data, const ContainerType &values) {
+      for (const value_type &value : values) {
+        child.single(data, value);
+        data += stride;
+      }
+    }
+  };
+
   template <typename ContainerType, size_t Rank>
   struct container_init {
     typedef void (*closure_type)(container_init *, char *, const ContainerType &);
@@ -191,6 +233,11 @@ namespace nd {
     void single(char *data, const ContainerType &values) { child.contiguous(data, values.data(), values.size()); }
   };
 
+  template <typename ValueType, size_t Size>
+  struct init_kernel<std::array<ValueType, Size>> : fixed_dim_init_kernel<std::array<ValueType, Size>> {
+    using fixed_dim_init_kernel<std::array<ValueType, Size>>::fixed_dim_init_kernel;
+  };
+
   template <typename T>
   struct init_kernel<std::initializer_list<T>> : container_init<std::initializer_list<T>, ndt::traits<T>::ndim + 1> {
     using container_init<std::initializer_list<T>, ndt::traits<T>::ndim + 1>::container_init;
@@ -199,11 +246,6 @@ namespace nd {
   template <typename T>
   struct init_kernel<std::vector<T>> : container_init<std::vector<T>, ndt::traits<T>::ndim + 1> {
     using container_init<std::vector<T>, ndt::traits<T>::ndim + 1>::container_init;
-  };
-
-  template <typename T, size_t N>
-  struct init_kernel<std::array<T, N>> : container_init<std::array<T, N>, ndt::traits<T>::ndim + 1> {
-    using container_init<std::array<T, N>, ndt::traits<T>::ndim + 1>::container_init;
   };
 
   namespace detail {
@@ -272,7 +314,7 @@ namespace nd {
       void operator()(const char *metadata, std::tuple<init_kernel<ElementTypes>...> &children, char *data,
                       const std::tuple<ElementTypes...> &value) {
         init_kernel<ElementType> &child = std::get<I>(children);
-        child.single(data + *(reinterpret_cast<const uintptr_t *>(metadata) + I), std::get<I>(value));
+        child.single(data + *(reinterpret_cast<const offset_t *>(metadata) + I), std::get<I>(value));
       }
     };
 
@@ -280,7 +322,7 @@ namespace nd {
     std::tuple<init_kernel<ElementTypes>...> children;
 
     init_kernel(const ndt::type *field_tp, const char *metadata)
-        : metadata(postfix_add(metadata, sizeof...(ElementTypes) * sizeof(uintptr_t))),
+        : metadata(postfix_add(metadata, sizeof...(ElementTypes) * sizeof(offset_t))),
           children({*postfix_add(field_tp, 1), postfix_add(metadata, ndt::traits<ElementTypes>::metadata_size)}...) {}
 
     init_kernel(const ndt::type &tp, const char *metadata)

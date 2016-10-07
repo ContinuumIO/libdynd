@@ -75,3 +75,11 @@ TEST(TupleType, Properties) {
 }
 
 TEST(TupleType, IDOf) { EXPECT_EQ(tuple_id, ndt::id_of<ndt::tuple_type>::value); }
+
+TEST(TupleType, Match) {
+  ndt::type pattern = ndt::type("(D * int, ...)");
+  ndt::type x = ndt::type("22 * 10 * uint64");
+
+  EXPECT_FALSE(pattern.match(x));
+}
+

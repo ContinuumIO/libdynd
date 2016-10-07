@@ -661,6 +661,13 @@ TEST(Array, ConstructAssign) {
   EXPECT_EQ(4, v2[4].value());
 }
 
+TEST(Array, AsStruct)
+{
+  nd::array a {1,2,3,4,5,6,7,8,9,10,11,12};
+  nd::array s = nd::as_struct({{"a", a}});
+  EXPECT_EQ(s, s);
+}
+
 REGISTER_TYPED_TEST_CASE_P(Array, ScalarConstructor, OneDimConstructor, TwoDimConstructor, ThreeDimConstructor,
                            AsScalar);
 

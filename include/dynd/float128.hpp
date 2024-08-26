@@ -145,9 +145,9 @@ public:
 
   explicit float128(const bool &rhs) : m_lo(0ULL), m_hi(rhs ? 0x3fff000000000000ULL : 0ULL) {}
 
-  bool iszero() const { return (m_hi & 0x7fffffffffffffffULL) == 0 && m_lo == 0; }
+  bool iszero() const { return (m_hi & 0x7fffffffffffffffULL) == 0ULL && m_lo == 0ULL; }
 
-  bool signbit_() const { return (m_hi & 0x8000000000000000ULL) != 0; }
+  bool signbit_() const { return (m_hi & 0x8000000000000000ULL) != 0ULL; }
 
   bool isnan_() const
   {
@@ -250,9 +250,9 @@ public:
 
   float128 operator-() const { return float128(-static_cast<double>(*this)); }
 
-  bool operator!() const { return ((0x7fffffffffffffffULL & m_hi) | m_lo) == 0; }
+  bool operator!() const { return ((0x7fffffffffffffffULL & m_hi) | m_lo) == 0ULL; }
 
-  explicit operator bool() const { return ((0x7fffffffffffffffULL & m_hi) | m_lo) != 0; }
+  explicit operator bool() const { return ((0x7fffffffffffffffULL & m_hi) | m_lo) != 0ULL; }
 };
 
 template <>
